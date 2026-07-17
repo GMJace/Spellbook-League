@@ -1,0 +1,418 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLAYER
+  DM
+}
+
+enum GameStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipantLogStatus {
+  PENDING
+  APPROVED
+}
+
+enum Tier {
+  TIER_1
+  TIER_2
+  TIER_3
+  TIER_4
+}
+
+enum NotificationType {
+  ADMIN
+  SYSTEM
+  GAME_CREATED
+  GAME_UPDATED
+  GAME_DELETED
+  GAME_LOGGED
+  PRO_DM_ROSTER
+}
+
+enum GrimoireDmSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SiteMonitorLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+enum SiteMonitorCategory {
+  HEALTH_CHECK
+  APPLICATION_ERROR
+  SYSTEM_EVENT
+}
+
+enum SiteHealthStatus {
+  HEALTHY
+  DEGRADED
+  FAILING
+}
+
+model User {
+  id           String            @id @default(cuid())
+  name         String
+  email        String            @unique
+  discordHandle String?
+  profileImagePath String?
+  passwordHash String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  roles        UserRole[]
+  characters   Character[]
+  gamesCreated Game[]            @relation("GameDungeonMaster")
+  gamesLogged  Game[]            @relation("GameLoggedBy")
+  participants GameParticipant[]
+  awardedAchievements CharacterAchievement[] @relation("AchievementAwardedBy")
+  accounts     Account[]
+  sessions     Session[]
+  passwordResetTokens PasswordResetToken[]
+  notifications Notification[]   @relation("UserNotifications")
+  createdNotifications Notification[] @relation("NotificationCreatedBy")
+  siteHealthChecksTriggered SiteHealthCheck[]
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  role      Role
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+}
+
+model Character {
+  id           String            @id @default(cuid())
+  userId       String
+  name         String
+  characterSheetLink String?
+  armorClass   Int?
+  spellSaveDc  Int?
+  tokenImagePath String?
+  class1Name   String
+  class1Subclass String?
+  class1Level  Int
+  class2Name   String?
+  class2Subclass String?
+  class2Level  Int?
+  class3Name   String?
+  class3Subclass String?
+  class3Level  Int?
+  feats        String            @default("")
+  proficiencies String           @default("")
+  tools        String            @default("")
+  languages    String            @default("")
+  notes        String            @default("")
+  backstory    String            @default("")
+  totalGold    Int               @default(0)
+  magicItems   String            @default("[]")
+  commonMagicItems String        @default("[]")
+  consumables  String            @default("[]")
+  boon         String            @default("")
+  blessing     String            @default("")
+  charms       String            @default("[]")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  participants GameParticipant[]
+  achievementAwards CharacterAchievement[]
+}
+
+model Achievement {
+  id            String                 @id @default(cuid())
+  slug          String                 @unique
+  category      String
+  name          String
+  description   String
+  badgeImagePath String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  awards        CharacterAchievement[]
+}
+
+model CharacterAchievement {
+  id              String      @id @default(cuid())
+  achievementId   String
+  characterId     String
+  awardedByUserId String
+  awardedAt       DateTime    @default(now())
+  gameCode        String?
+  achievement     Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  character       Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  awardedBy       User        @relation("AchievementAwardedBy", fields: [awardedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([achievementId])
+  @@index([characterId, awardedAt])
+  @@index([awardedByUserId, awardedAt])
+}
+
+model Game {
+  id                  String            @id @default(cuid())
+  dmId                String?
+  loggedByUserId      String?
+  dmName              String?
+  title               String
+  adventureCode       String
+  gameSummary         String            @default("")
+  ticketPrice         String            @default("Free")
+  adventureImagePath  String?
+  datePlayed          DateTime
+  tier                Tier
+  seatCapacity        Int               @default(6)
+  serviceHours        Float             @default(0)
+  downtimeDaysAwarded Int               @default(0)
+  rewardsSummary      String
+  magicItemsAwarded   String            @default("")
+  consumablesAwarded  String            @default("")
+  consequencesSummary String
+  sessionNotes        String
+  status              GameStatus
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  dm                  User?             @relation("GameDungeonMaster", fields: [dmId], references: [id], onDelete: Cascade)
+  loggedByUser        User?             @relation("GameLoggedBy", fields: [loggedByUserId], references: [id], onDelete: SetNull)
+  participants        GameParticipant[]
+}
+
+model GameParticipant {
+  id                    String               @id @default(cuid())
+  gameId                String
+  characterId           String
+  userId                String
+  logStatus             ParticipantLogStatus @default(APPROVED)
+  approvedAt            DateTime?
+  logRewardsSummary     String?
+  logMagicItemsAwarded  String?
+  logConsumablesAwarded String?
+  logSessionNotes       String?
+  createdAt             DateTime             @default(now())
+  game                  Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  character             Character            @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, characterId])
+}
+
+model Handbook {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  content   String
+  sortOrder Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([sessionToken])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SpellbookMonthlySubscriber {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  lastSubscribedAt DateTime @default(now())
+}
+
+model LeagueLegalChoiceList {
+  id        String   @id @default(cuid())
+  category  String
+  key       String
+  label     String
+  valuesJson String  @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, key])
+  @@index([category, key])
+}
+
+model Notification {
+  id              String           @id @default(cuid())
+  userId          String
+  createdByUserId String?
+  type            NotificationType @default(SYSTEM)
+  title           String
+  body            String
+  detailsJson     String           @default("[]")
+  actionLabel     String?
+  actionHref      String?
+  isRead          Boolean          @default(false)
+  readAt          DateTime?
+  createdAt       DateTime         @default(now())
+  user            User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy       User?            @relation("NotificationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isRead, createdAt(sort: Desc)])
+}
+
+model GrimoireEvent {
+  id             String               @id
+  label          String
+  subtitle       String
+  date           DateTime
+  displayDate    String
+  theme          String
+  themeDetails   String               @default("[]")
+  focus          String
+  ticketLabel    String
+  ticketPrice    String
+  ticketPriceUsd Float
+  finale         Boolean              @default(false)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  slots          GrimoireEventSlot[]
+  curatedGames   GrimoireCuratedGame[]
+  submissions    GrimoireDmSubmission[]
+
+  @@index([date])
+}
+
+model GrimoireEventSlot {
+  id        String        @id @default(cuid())
+  eventId   String
+  label     String
+  startAt   DateTime
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  event     GrimoireEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, startAt])
+  @@index([eventId, startAt])
+}
+
+model GrimoireCuratedGame {
+  id             String        @id @default(cuid())
+  eventId        String
+  slug           String        @unique
+  title          String
+  summary        String
+  details        String        @default("[]")
+  adventureImagePath String?
+  startAt        DateTime
+  dm             String
+  tier           Tier
+  ticketPrice    String
+  ticketPriceUsd Float
+  seatCapacity   Int
+  gameCode       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  event          GrimoireEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, startAt])
+}
+
+model GrimoireDmSubmission {
+  id          String                     @id @default(cuid())
+  name        String
+  email       String
+  discord     String?
+  title       String
+  gameCode    String?
+  eventId     String
+  slotStartAt DateTime
+  tier        Tier
+  seats       Int
+  summary     String
+  notes       String?
+  status      GrimoireDmSubmissionStatus @default(PENDING)
+  reviewedAt  DateTime?
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  event       GrimoireEvent              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, slotStartAt])
+}
+
+model SiteMonitorEvent {
+  id          String              @id @default(cuid())
+  category    SiteMonitorCategory @default(SYSTEM_EVENT)
+  level       SiteMonitorLevel    @default(INFO)
+  source      String
+  message     String
+  detailsJson String              @default("[]")
+  stack       String?
+  requestPath String?
+  createdAt   DateTime            @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([level, createdAt(sort: Desc)])
+  @@index([category, createdAt(sort: Desc)])
+}
+
+model SiteHealthCheck {
+  id                String           @id @default(cuid())
+  triggeredByUserId String?
+  status            SiteHealthStatus
+  summary           String
+  reportJson        String
+  durationMs        Int
+  createdAt         DateTime         @default(now())
+  triggeredBy       User?            @relation(fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}

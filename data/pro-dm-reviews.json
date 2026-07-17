@@ -1,0 +1,29 @@
+[
+  {
+    "id": "review-garrick-1",
+    "userId": "cmrcl3itf0000cok8n9wfsbbk",
+    "game": "The Haunted Chapel",
+    "date": "2026-06-14",
+    "rating": 5,
+    "notes": "Great pacing, great tension, and every player got a spotlight scene.",
+    "createdAt": "2026-07-05T21:22:43.583Z"
+  },
+  {
+    "id": "review-garrick-2",
+    "userId": "cmrcl3itf0000cok8n9wfsbbk",
+    "game": "Lanterns in the Mist prep session",
+    "date": "2026-06-30",
+    "rating": 4,
+    "notes": "Very organized and welcoming. I'd happily book another table.",
+    "createdAt": "2026-07-06T21:22:43.583Z"
+  },
+  {
+    "id": "review-selene-1",
+    "userId": "cmrcl3itg0003cok82gd4al48",
+    "game": "Pilgrimage of Ash",
+    "date": "2026-06-22",
+    "rating": 5,
+    "notes": "Fantastic roleplay hooks and smooth scene transitions all night.",
+    "createdAt": "2026-07-03T21:22:43.583Z"
+  }
+]
