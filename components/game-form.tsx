@@ -189,6 +189,13 @@ export function GameForm({
       {initialValues?.id ? (
         <input name="gameId" type="hidden" value={initialValues.id} />
       ) : null}
+      {!initialValues?.id && initialValues?.adventureImagePath ? (
+        <input
+          name="reuseAdventureImagePath"
+          type="hidden"
+          value={initialValues.adventureImagePath}
+        />
+      ) : null}
 
       <div className="form-grid">
         <label>

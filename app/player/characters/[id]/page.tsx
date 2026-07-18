@@ -86,6 +86,18 @@ function getCharmLabel(index: number) {
   return `Charm Slot ${index + 1}`;
 }
 
+function getVisibleSlottedItems(
+  items: string[],
+  getLabel: (index: number) => string,
+) {
+  return items
+    .map((item, index) => ({
+      label: getLabel(index),
+      value: item.trim(),
+    }))
+    .filter((item) => item.value);
+}
+
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
@@ -196,6 +208,15 @@ export default async function CharacterLogsheetPage({
   );
   const consumables = parseMagicItems(character.consumables, consumableSlots);
   const charms = parseMagicItems(character.charms, charmSlots);
+  const visibleMagicItems = getVisibleSlottedItems(magicItems, getMagicItemLabel);
+  const visibleCommonMagicItems = getVisibleSlottedItems(
+    commonMagicItems,
+    getCommonMagicItemLabel,
+  );
+  const visibleConsumables = getVisibleSlottedItems(consumables, getConsumableLabel);
+  const visibleCharms = getVisibleSlottedItems(charms, getCharmLabel);
+  const visibleBoon = boonSlotEnabled ? character.boon.trim() : "";
+  const visibleBlessing = character.blessing.trim();
   const pendingLogReviews = character.participants
     .filter(
       (participant) =>
@@ -626,14 +647,12 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            {magicItems.map((item, index) => (
+            {visibleMagicItems.map((item, index) => (
               <div key={`${character.id}-item-${index}`}>
                 <p className="muted" style={sectionItemHeaderStyle}>
-                  {getMagicItemLabel(index)}
+                  {item.label}
                 </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {item.trim() ? item : "Empty"}
-                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>{item.value}</p>
               </div>
             ))}
           </div>
@@ -658,14 +677,12 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            {commonMagicItems.map((item, index) => (
+            {visibleCommonMagicItems.map((item, index) => (
               <div key={`${character.id}-common-item-${index}`}>
                 <p className="muted" style={sectionItemHeaderStyle}>
-                  {getCommonMagicItemLabel(index)}
+                  {item.label}
                 </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {item.trim() ? item : "Empty"}
-                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>{item.value}</p>
               </div>
             ))}
           </div>
@@ -690,14 +707,12 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            {consumables.map((item, index) => (
+            {visibleConsumables.map((item, index) => (
               <div key={`${character.id}-consumable-${index}`}>
                 <p className="muted" style={sectionItemHeaderStyle}>
-                  {getConsumableLabel(index)}
+                  {item.label}
                 </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {item.trim() ? item : "Empty"}
-                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>{item.value}</p>
               </div>
             ))}
           </div>
@@ -722,32 +737,28 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            {boonSlotEnabled ? (
+            {visibleBoon ? (
               <div>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Boon Slot
                 </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {character.boon.trim() ? character.boon : "Empty"}
-                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>{visibleBoon}</p>
               </div>
             ) : null}
-            <div>
-              <p className="muted" style={sectionItemHeaderStyle}>
-                Blessing Slot
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>
-                {character.blessing.trim() ? character.blessing : "Empty"}
-              </p>
-            </div>
-            {charms.map((item, index) => (
+            {visibleBlessing ? (
+              <div>
+                <p className="muted" style={sectionItemHeaderStyle}>
+                  Blessing Slot
+                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>{visibleBlessing}</p>
+              </div>
+            ) : null}
+            {visibleCharms.map((item, index) => (
               <div key={`${character.id}-charm-${index}`}>
                 <p className="muted" style={sectionItemHeaderStyle}>
-                  {getCharmLabel(index)}
+                  {item.label}
                 </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {item.trim() ? item : "Empty"}
-                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>{item.value}</p>
               </div>
             ))}
           </div>
@@ -822,13 +833,10 @@ export default async function CharacterLogsheetPage({
         </div>
 
         <div className="list-card stack">
-          <div
-            aria-hidden="true"
-            style={{
-              width: "100%",
-              height: "1px",
-              background: "rgba(255, 255, 255, 0.85)",
-            }}
+          <img
+            alt="Adventure log divider"
+            className="homepage-roster-divider"
+            src="/divider4.png"
           />
 
           <div className="section-heading">

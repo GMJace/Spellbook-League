@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { CreateGameForm } from "@/components/create-game-form";
 import { GrimoireDmSubmissionForm } from "@/components/grimoire-dm-submission-form";
+import type { GameFormInitialValues } from "@/components/game-form";
 import type { GrimoireEventSlot, SeasonEvent } from "@/lib/grimoire";
 
 type DmGameCreationSwitcherProps = {
@@ -13,6 +14,7 @@ type DmGameCreationSwitcherProps = {
     name?: string;
   };
   eventOptions: SeasonEvent[];
+  initialGameValues?: GameFormInitialValues;
   initialEventId?: string;
   playersJson: string;
   slotsByEvent: Record<string, GrimoireEventSlot[]>;
@@ -23,6 +25,7 @@ type CreationMode = "league" | "event";
 export function DmGameCreationSwitcher({
   dmProfile,
   eventOptions,
+  initialGameValues,
   initialEventId,
   playersJson,
   slotsByEvent,
@@ -55,9 +58,17 @@ export function DmGameCreationSwitcher({
       {mode === "league" ? (
         <div className="stack">
           <p className="muted" style={{ margin: 0 }}>
-            Create or log a standard league game with participants, rewards, and session notes.
+            {initialGameValues
+              ? "Duplicate a previous league game, update the new date and any details you want to change, then save it as a fresh signup."
+              : "Create or log a standard league game with participants, rewards, and session notes."}
           </p>
-          <CreateGameForm playersJson={playersJson} />
+          <CreateGameForm
+            initialValuesJson={
+              initialGameValues ? JSON.stringify(initialGameValues) : undefined
+            }
+            playersJson={playersJson}
+            submitLabel={initialGameValues ? "Create duplicated game" : undefined}
+          />
         </div>
       ) : (
         <div className="stack">

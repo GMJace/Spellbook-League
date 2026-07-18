@@ -101,18 +101,13 @@ export default async function RootLayout({
             <div className="site-actions">
               {user ? (
                 <>
-                  <a
-                    href="https://www.spellbookpublishing.com/"
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    STORE
-                  </a>
+                  <Link href="/store">STORE</Link>
                   <NotificationBell
                     notifications={notifications}
                     unreadCount={unreadNotificationCount}
                   />
                   <SettingsMenu
+                    showEventAdminLink={user.roles.includes("EVENT_ADMIN")}
                     userName={user.name ?? user.email ?? "Account"}
                     showAdminLink={isAdminEmail(user.email)}
                   />

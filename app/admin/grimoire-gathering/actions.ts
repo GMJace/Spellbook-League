@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { requireAdminUser } from "@/lib/admin";
+import { requireGrimoireAdminUser } from "@/lib/admin";
 import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { sendGrimoireSubmissionStatusEmail } from "@/lib/transactional-email";
@@ -334,7 +334,7 @@ type ExistingCuratedGameRecord = {
 };
 
 export async function createGrimoireEvent(formData: FormData) {
-  await requireAdminUser();
+  await requireGrimoireAdminUser();
 
   const parsed = createEventSchema.safeParse({
     label: formData.get("label"),
@@ -429,7 +429,7 @@ export async function createGrimoireEvent(formData: FormData) {
 }
 
 export async function updateGrimoireEvent(formData: FormData) {
-  await requireAdminUser();
+  await requireGrimoireAdminUser();
 
   const parsed = updateEventSchema.safeParse({
     eventId: formData.get("eventId"),
@@ -608,7 +608,7 @@ export async function updateGrimoireEvent(formData: FormData) {
 }
 
 export async function deleteGrimoireEvent(formData: FormData) {
-  await requireAdminUser();
+  await requireGrimoireAdminUser();
 
   const parsed = deleteEventSchema.safeParse({
     eventId: formData.get("eventId"),
@@ -668,17 +668,17 @@ export async function deleteGrimoireEvent(formData: FormData) {
 }
 
 export async function createGrimoireCuratedGame(formData: FormData) {
-  await requireAdminUser();
+  await requireGrimoireAdminUser();
   redirect(await createCuratedGameRedirectPath(formData));
 }
 
 export async function updateGrimoireCuratedGame(formData: FormData) {
-  await requireAdminUser();
+  await requireGrimoireAdminUser();
   redirect(await updateCuratedGameRedirectPath(formData));
 }
 
 export async function deleteGrimoireCuratedGame(formData: FormData) {
-  await requireAdminUser();
+  await requireGrimoireAdminUser();
 
   const parsed = deleteGameSchema.safeParse({
     gameId: formData.get("gameId"),
@@ -721,7 +721,7 @@ export async function deleteGrimoireCuratedGame(formData: FormData) {
 }
 
 export async function moderateGrimoireDmSubmission(formData: FormData) {
-  const adminUser = await requireAdminUser();
+  const adminUser = await requireGrimoireAdminUser();
 
   const parsed = moderationSchema.safeParse({
     submissionId: formData.get("submissionId"),

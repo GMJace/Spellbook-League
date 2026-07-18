@@ -311,7 +311,8 @@ export async function createGame(formData: FormData) {
   }
 
   const adventureImageFile = formData.get("adventureImage");
-  let adventureImagePath: string | null = null;
+  const reuseAdventureImagePath = String(formData.get("reuseAdventureImagePath") ?? "").trim();
+  let adventureImagePath: string | null = reuseAdventureImagePath || null;
 
   if (adventureImageFile instanceof File && adventureImageFile.size > 0) {
     const uploadResult = await saveAdventureImage(adventureImageFile);

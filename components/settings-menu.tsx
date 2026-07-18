@@ -5,9 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 
 export function SettingsMenu({
+  showEventAdminLink = false,
   userName,
   showAdminLink = false,
 }: {
+  showEventAdminLink?: boolean;
   userName: string;
   showAdminLink?: boolean;
 }) {
@@ -71,6 +73,15 @@ export function SettingsMenu({
           {showAdminLink ? (
             <Link href="/admin/users" className="settings-item" onClick={() => setOpen(false)}>
               Admin
+            </Link>
+          ) : null}
+          {!showAdminLink && showEventAdminLink ? (
+            <Link
+              href="/admin/grimoire-gathering"
+              className="settings-item"
+              onClick={() => setOpen(false)}
+            >
+              Grimoire Moderation
             </Link>
           ) : null}
           <Link href="/faq" className="settings-item" onClick={() => setOpen(false)}>

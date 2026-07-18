@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { LocalizedEventTime } from "@/components/localized-event-time";
+import { PayPalCheckoutButton } from "@/components/paypal-checkout-button";
+import type { LeaguePayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
 import { formatTier, formatUsd } from "@/lib/utils";
 
 type LeagueCartGame = {
@@ -21,9 +23,8 @@ type LeagueCartGame = {
 
 type LeagueCartBuilderProps = {
   games: LeagueCartGame[];
-  hostedButtonId: string | null;
   initialSelectedGameIds: string[];
-  paypalLink: string | null;
+  paypalClientId: string | null;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -34,9 +35,8 @@ function isValidEmailAddress(value: string) {
 
 export function LeagueCartBuilder({
   games,
-  hostedButtonId,
   initialSelectedGameIds,
-  paypalLink,
+  paypalClientId,
 }: LeagueCartBuilderProps) {
   const [selectedGameQuantities, setSelectedGameQuantities] = useState(() =>
     Object.fromEntries(
@@ -113,6 +113,17 @@ export function LeagueCartBuilder({
       return `${game.title} x${selectedGameQuantities[game.id] ?? 0} (${game.ticketPrice})${guestEmailSummary}`;
     })
     .join(" | ");
+  const checkoutPayload: LeaguePayPalCheckoutPayload = {
+    checkoutType: "LEAGUE",
+    items: selectedGames.map((game) => ({
+      gameId: game.id,
+      guestEmails: (guestEmailsByGame[game.id] ?? [])
+        .slice(0, Math.max((selectedGameQuantities[game.id] ?? 0) - 1, 0))
+        .map((email) => email.trim())
+        .filter(Boolean),
+      quantity: selectedGameQuantities[game.id] ?? 0,
+    })),
+  };
 
   return (
     <div className="stack">
@@ -181,35 +192,12 @@ export function LeagueCartBuilder({
               </p>
             ) : null}
 
-            {hostedButtonId ? (
-              <form
-                action="https://www.paypal.com/cgi-bin/webscr"
-                className="stack"
-                method="post"
-                target="_blank"
-              >
-                <input type="hidden" name="cmd" value="_s-xclick" />
-                <input type="hidden" name="hosted_button_id" value={hostedButtonId} />
-                <input type="hidden" name="custom" value={checkoutSummary} />
-                <button disabled={!hasSelections || hasIncompleteGuestEmails} type="submit">
-                  Continue to PayPal
-                </button>
-              </form>
-            ) : paypalLink ? (
-              hasSelections && !hasIncompleteGuestEmails ? (
-                <a className="button" href={paypalLink} rel="noreferrer" target="_blank">
-                  Continue to PayPal
-                </a>
-              ) : (
-                <span aria-disabled="true" className="button ggcon-button-disabled">
-                  Continue to PayPal
-                </span>
-              )
-            ) : (
-              <span aria-disabled="true" className="button ggcon-button-disabled">
-                PayPal checkout coming soon
-              </span>
-            )}
+            <PayPalCheckoutButton
+              clientId={paypalClientId}
+              disabled={!hasSelections || hasIncompleteGuestEmails}
+              disabledText="Continue to PayPal"
+              payload={checkoutPayload}
+            />
 
             <div className="inline-actions" style={{ flexWrap: "wrap" }}>
               <Link className="button secondary" href="/league">

@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   PLAYER
   DM
+  EVENT_ADMIN
 }
 
 enum GameStatus {
@@ -64,6 +65,17 @@ enum SiteHealthStatus {
   FAILING
 }
 
+enum CheckoutType {
+  LEAGUE
+  GRIMOIRE
+}
+
+enum CheckoutStatus {
+  CREATED
+  COMPLETED
+  FAILED
+}
+
 model User {
   id           String            @id @default(cuid())
   name         String
@@ -85,6 +97,7 @@ model User {
   notifications Notification[]   @relation("UserNotifications")
   createdNotifications Notification[] @relation("NotificationCreatedBy")
   siteHealthChecksTriggered SiteHealthCheck[]
+  checkoutOrders CheckoutOrder[]
 }
 
 model UserRole {
@@ -415,4 +428,27 @@ model SiteHealthCheck {
 
   @@index([createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
+}
+
+model CheckoutOrder {
+  id                String         @id @default(cuid())
+  userId            String?
+  provider          String         @default("PAYPAL")
+  checkoutType      CheckoutType
+  status            CheckoutStatus @default(CREATED)
+  paypalOrderId     String         @unique
+  currencyCode      String         @default("USD")
+  amountUsd         Float
+  summaryText       String
+  itemDataJson      String         @default("[]")
+  recipientDataJson String         @default("[]")
+  payerEmail        String?
+  captureDataJson   String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  capturedAt        DateTime?
+  user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([checkoutType, createdAt(sort: Desc)])
 }

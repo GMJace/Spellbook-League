@@ -103,9 +103,17 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
                 {formatStatus(game.status)}
               </p>
               <p>{game.adventureCode}</p>
-              <Link href={`/dm/games/${game.id}`} className="button secondary">
-                View game
-              </Link>
+              <div className="stack" style={{ gap: "0.6rem", justifyItems: "start" }}>
+                <Link href={`/dm/games/${game.id}`} className="button secondary">
+                  View game
+                </Link>
+                <Link
+                  href={`/dm/games/new?duplicateFrom=${encodeURIComponent(game.id)}`}
+                  className="button secondary"
+                >
+                  Duplicate game
+                </Link>
+              </div>
             </article>
           ))
         ) : (

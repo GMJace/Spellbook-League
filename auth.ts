@@ -148,6 +148,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? "";
+        session.user.name = typeof token.name === "string" ? token.name : null;
+        session.user.email =
+          typeof token.email === "string" ? token.email : (session.user.email ?? "");
         session.user.roles = Array.isArray(token.roles)
           ? (token.roles as string[])
           : [];
@@ -169,6 +172,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async authorized({ auth: session, request }) {
       const pathname = request.nextUrl.pathname;
       const roles = session?.user?.roles ?? [];
+
+      if (pathname.startsWith("/admin/grimoire-gathering")) {
+        return isAdminEmail(session?.user?.email) || roles.includes("EVENT_ADMIN");
+      }
 
       if (pathname.startsWith("/admin")) {
         return isAdminEmail(session?.user?.email);

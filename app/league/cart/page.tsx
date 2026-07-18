@@ -1,4 +1,5 @@
 import { LeagueCartBuilder } from "@/components/league-cart-builder";
+import { getPayPalClientId } from "@/lib/paypal";
 import { prisma } from "@/lib/prisma";
 import { isPaidTicketPrice, parseTicketPriceUsd } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ function parseSelectedGames(rawValue: string | string[] | undefined) {
 
 export default async function LeagueCartPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
+  const paypalClientId = getPayPalClientId();
   const pricedLeagueGames = await prisma.game.findMany({
     where: {
       status: "SCHEDULED",
@@ -62,9 +64,8 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
         {cartGames.length ? (
           <LeagueCartBuilder
             games={cartGames}
-            hostedButtonId={process.env.LEAGUE_PAYPAL_HOSTED_BUTTON_ID?.trim() ?? null}
             initialSelectedGameIds={parseSelectedGames(resolvedSearchParams.games)}
-            paypalLink={process.env.LEAGUE_PAYPAL_LINK?.trim() ?? null}
+            paypalClientId={paypalClientId}
           />
         ) : (
           <div className="empty">No priced league games are available for checkout yet.</div>

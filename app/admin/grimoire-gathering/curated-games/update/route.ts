@@ -7,7 +7,7 @@ import { isAdminEmail } from "@/lib/admin-access";
 export async function POST(request: Request) {
   const session = await auth();
 
-  if (!isAdminEmail(session?.user?.email)) {
+  if (!isAdminEmail(session?.user?.email) && !session?.user?.roles?.includes("EVENT_ADMIN")) {
     const fallbackPath = session?.user?.email ? "/" : "/login";
     return NextResponse.redirect(new URL(fallbackPath, request.url), { status: 303 });
   }

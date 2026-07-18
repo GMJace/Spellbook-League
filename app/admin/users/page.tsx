@@ -6,9 +6,11 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import {
   addProDmToRoster,
+  addEventAdminRole,
   createAdminNotification,
   deleteProDmReview,
   removeDmFromRoster,
+  removeEventAdminRole,
   removeProDmFromRoster,
   updateProDmRating,
 } from "@/app/admin/users/actions";
@@ -60,6 +62,7 @@ export default async function AdminUsersPage({
     review?: string;
     notification?: string;
     dmRoster?: string;
+    eventAdmin?: string;
   }>;
 }) {
   const adminUser = await requireAdminUser();
@@ -138,6 +141,14 @@ export default async function AdminUsersPage({
   const dmRosterMessage = params.dmRoster
     ? dmRosterMessageMap[params.dmRoster]
     : "";
+  const eventAdminMessageMap: Record<string, string> = {
+    added: "Event Admin role granted.",
+    removed: "Event Admin role removed.",
+    invalid: "The requested Event Admin change could not be completed.",
+  };
+  const eventAdminMessage = params.eventAdmin
+    ? eventAdminMessageMap[params.eventAdmin]
+    : "";
 
   return (
     <main className="page-shell">
@@ -153,6 +164,9 @@ export default async function AdminUsersPage({
         ) : null}
         {dmRosterMessage ? (
           <p style={{ color: "#ffffff", margin: 0 }}>{dmRosterMessage}</p>
+        ) : null}
+        {eventAdminMessage ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>{eventAdminMessage}</p>
         ) : null}
 
         <AdminPageHeader
@@ -466,8 +480,10 @@ export default async function AdminUsersPage({
                   <th>Email</th>
                   <th>Discord Handle</th>
                   <th>Roles</th>
+                  <th>Event Admin</th>
                   <th>Pro DM</th>
                   <th>Joined</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -483,8 +499,40 @@ export default async function AdminUsersPage({
                             .join(", ")
                         : "None"}
                     </td>
+                    <td>
+                      {user.roles.some((role: AdminUserRow["roles"][number]) => role.role === "EVENT_ADMIN")
+                        ? "Yes"
+                        : "No"}
+                    </td>
                     <td>{proDmRosterMap.get(user.id)?.isListed ? "Yes" : "No"}</td>
                     <td>{formatDate(user.createdAt)}</td>
+                    <td>
+                      {user.id === adminUser.id ? (
+                        <span className="muted">Current account</span>
+                      ) : user.roles.some(
+                          (role: AdminUserRow["roles"][number]) => role.role === "EVENT_ADMIN"
+                        ) ? (
+                        <form action={removeEventAdminRole}>
+                          <input name="targetUserId" type="hidden" value={user.id} />
+                          <ConfirmSubmitButton
+                            className="button-danger button-small"
+                            message={`Remove Event Admin access from ${user.name}?`}
+                          >
+                            Remove Event Admin
+                          </ConfirmSubmitButton>
+                        </form>
+                      ) : (
+                        <form action={addEventAdminRole}>
+                          <input name="targetUserId" type="hidden" value={user.id} />
+                          <ConfirmSubmitButton
+                            className="button-secondary button-small"
+                            message={`Grant Event Admin access to ${user.name}? This will allow access to Grimoire moderation.`}
+                          >
+                            Make Event Admin
+                          </ConfirmSubmitButton>
+                        </form>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

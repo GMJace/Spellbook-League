@@ -12,3 +12,13 @@ export async function requireAdminUser() {
 
   return user;
 }
+
+export async function requireGrimoireAdminUser() {
+  const user = await requireUser();
+
+  if (!isAdminEmail(user.email) && !user.roles.includes("EVENT_ADMIN")) {
+    redirect("/");
+  }
+
+  return user;
+}

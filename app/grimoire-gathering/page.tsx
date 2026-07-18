@@ -30,7 +30,9 @@ function buildPaypalWidget(nextEvent: SeasonEvent) {
       >
         <input type="hidden" name="cmd" value="_s-xclick" />
         <input type="hidden" name="hosted_button_id" value={hostedButtonId} />
-        <button type="submit">Buy {nextEvent.ticketLabel} with PayPal</button>
+        <button className="ggcon-buy-badge-button" type="submit">
+          Buy {nextEvent.ticketLabel} with PayPal
+        </button>
       </form>
     );
   }
@@ -38,7 +40,7 @@ function buildPaypalWidget(nextEvent: SeasonEvent) {
   if (paypalLink) {
     return (
       <a
-        className="button"
+        className="button ggcon-buy-badge-button"
         href={paypalLink}
         rel="noreferrer"
         target="_blank"
@@ -49,15 +51,9 @@ function buildPaypalWidget(nextEvent: SeasonEvent) {
   }
 
   return (
-    <div className="stack">
-      <span className="button ggcon-button-disabled" aria-disabled="true">
-        PayPal ticket button coming soon
-      </span>
-      <p className="muted ggcon-meta-note">
-        Add <code>GG_PAYPAL_LINK</code> or <code>GG_PAYPAL_HOSTED_BUTTON_ID</code>{" "}
-        to enable checkout for the next event.
-      </p>
-    </div>
+    <Link className="button ggcon-buy-badge-button" href="/grimoire-gathering/cart?badges=1">
+      Buy {nextEvent.ticketLabel}
+    </Link>
   );
 }
 

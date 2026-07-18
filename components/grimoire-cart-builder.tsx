@@ -4,19 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { LocalizedEventTime } from "@/components/localized-event-time";
+import { PayPalCheckoutButton } from "@/components/paypal-checkout-button";
 import {
   formatGrimoireTier,
   formatUsd,
   type GrimoireGame,
   type SeasonEvent,
 } from "@/lib/grimoire";
+import type { GrimoirePayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
 
 type GrimoireCartBuilderProps = {
   games: GrimoireGame[];
-  hostedButtonId: string | null;
+  initialBadgeQuantity: number;
   initialSelectedGameSlugs: string[];
   nextEvent: SeasonEvent;
-  paypalLink: string | null;
+  paypalClientId: string | null;
 };
 
 function getConflictingGames(games: GrimoireGame[]) {
@@ -33,10 +35,10 @@ function getConflictingGames(games: GrimoireGame[]) {
 
 export function GrimoireCartBuilder({
   games,
-  hostedButtonId,
+  initialBadgeQuantity,
   initialSelectedGameSlugs,
   nextEvent,
-  paypalLink,
+  paypalClientId,
 }: GrimoireCartBuilderProps) {
   const [selectedGameQuantities, setSelectedGameQuantities] = useState(() =>
     Object.fromEntries(
@@ -45,7 +47,7 @@ export function GrimoireCartBuilder({
         .map((slug) => [slug, 1]),
     ) as Record<string, number>,
   );
-  const [badgeQuantity, setBadgeQuantity] = useState(0);
+  const [badgeQuantity, setBadgeQuantity] = useState(initialBadgeQuantity);
   const [conflictAcknowledged, setConflictAcknowledged] = useState(false);
   const [isGiftPurchase, setIsGiftPurchase] = useState(false);
   const [receiverEmails, setReceiverEmails] = useState<string[]>([""]);
@@ -104,6 +106,16 @@ export function GrimoireCartBuilder({
   ]
     .filter(Boolean)
     .join(" | ");
+  const checkoutPayload: GrimoirePayPalCheckoutPayload = {
+    checkoutType: "GRIMOIRE",
+    badgeQuantity,
+    isGiftPurchase,
+    receiverEmails: receiverEmails.map((email) => email.trim()).filter(Boolean),
+    items: selectedGames.map((game) => ({
+      quantity: selectedGameQuantities[game.slug] ?? 0,
+      slug: game.slug,
+    })),
+  };
 
   return (
     <div className="stack">
@@ -277,35 +289,12 @@ export function GrimoireCartBuilder({
               </p>
             </div>
 
-            {hostedButtonId ? (
-              <form
-                action="https://www.paypal.com/cgi-bin/webscr"
-                className="stack"
-                method="post"
-                target="_blank"
-              >
-                <input type="hidden" name="cmd" value="_s-xclick" />
-                <input type="hidden" name="hosted_button_id" value={hostedButtonId} />
-                <input type="hidden" name="custom" value={checkoutSummary} />
-                <button disabled={!canCheckout} type="submit">
-                  Continue to PayPal
-                </button>
-              </form>
-            ) : paypalLink ? (
-              canCheckout ? (
-                <a className="button" href={paypalLink} rel="noreferrer" target="_blank">
-                  Continue to PayPal
-                </a>
-              ) : (
-                <span className="button ggcon-button-disabled" aria-disabled="true">
-                  Continue to PayPal
-                </span>
-              )
-            ) : (
-              <span className="button ggcon-button-disabled" aria-disabled="true">
-                PayPal checkout coming soon
-              </span>
-            )}
+            <PayPalCheckoutButton
+              clientId={paypalClientId}
+              disabled={!canCheckout}
+              disabledText="Continue to PayPal"
+              payload={checkoutPayload}
+            />
 
             <div className="inline-actions" style={{ flexWrap: "wrap" }}>
               <Link className="button secondary" href="/grimoire-gathering">

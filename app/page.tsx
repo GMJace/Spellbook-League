@@ -142,28 +142,100 @@ export default async function HomePage() {
 
       <section className="card ledger-panel stack homepage-handbooks">
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>Adventurers&apos; League Handbooks</h2>
+          <div className="stack" style={{ gap: "0.25rem" }}>
+            <h2 style={{ margin: 0 }}>Adventurers&apos; League Guides</h2>
+            <p className="muted" style={{ margin: 0, fontSize: "0.95rem" }}>
+              Downloadable PDFs
+            </p>
+          </div>
         </div>
         <div className="handbook-link-grid">
           <a
             className="handbook-link-card"
-            href="https://www.spellbookrpg.games/PG"
+            href="/handbooks/adventurers-league-players-guide-v2026.4.pdf"
+            download
             rel="noreferrer"
             target="_blank"
           >
+            <img
+              alt="Adventurers League logo"
+              className="handbook-link-logo"
+              src="/al-logo-white.png"
+            />
             <strong>Player&apos;s Guide</strong>
           </a>
           <a
             className="handbook-link-card"
-            href="https://www.spellbookrpg.games/become-an-sb-dm"
+            href="/handbooks/adventurers-league-dm-guide-v2026.2.pdf"
+            download
             rel="noreferrer"
             target="_blank"
           >
+            <img
+              alt="Adventurers League logo"
+              className="handbook-link-logo"
+              src="/al-logo-white.png"
+            />
             <strong>DM&apos;s Guide</strong>
           </a>
-          <Link href="/handbooks/developers-guide" className="handbook-link-card">
-            <strong>Developer&apos;s Guide</strong>
-          </Link>
+          <a
+            className="handbook-link-card"
+            href="/handbooks/adventurers-league-dm-service-awards-2025v2.2.pdf"
+            download
+            rel="noreferrer"
+            target="_blank"
+          >
+            <img
+              alt="Adventurers League logo"
+              className="handbook-link-logo"
+              src="/al-logo-white.png"
+            />
+            <strong>DM Service Awards</strong>
+          </a>
+        </div>
+        <div className="handbook-link-grid">
+          <a
+            className="handbook-link-card"
+            href="/handbooks/adventurers-league-adaptation-guide-v2026.2.pdf"
+            download
+            rel="noreferrer"
+            target="_blank"
+          >
+            <img
+              alt="Adventurers League logo"
+              className="handbook-link-logo"
+              src="/al-logo-white.png"
+            />
+            <strong>Adaptation Guide</strong>
+          </a>
+          <a
+            className="handbook-link-card"
+            href="/handbooks/adventurers-league-organizers-guide-v12.pdf"
+            download
+            rel="noreferrer"
+            target="_blank"
+          >
+            <img
+              alt="Adventurers League logo"
+              className="handbook-link-logo"
+              src="/al-logo-white.png"
+            />
+            <strong>Organizer&apos;s Guide</strong>
+          </a>
+          <a
+            className="handbook-link-card"
+            href="/handbooks/dungeoncraft-cc-v1.9c.pdf"
+            download
+            rel="noreferrer"
+            target="_blank"
+          >
+            <img
+              alt="Adventurers League logo"
+              className="handbook-link-logo"
+              src="/al-logo-white.png"
+            />
+            <strong>Dungeoncraft</strong>
+          </a>
         </div>
       </section>
 
@@ -220,6 +292,14 @@ export default async function HomePage() {
                               >
                                 View game
                               </Link>
+                              {game.dm?.id ? (
+                                <Link
+                                  className="button button-secondary button-small"
+                                  href={`/dm/${game.dm.id}`}
+                                >
+                                  View DM
+                                </Link>
+                              ) : null}
                               {isPaidTicketPrice(game.ticketPrice) ? (
                                 <Link
                                   className="button button-small"

@@ -1,6 +1,4 @@
 "use server";
-
-import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -20,6 +18,10 @@ export type RemoveUserState = {
 const proDmRosterSchema = z.object({
   targetUserId: z.string().min(1),
   rating: z.coerce.number().int().min(1).max(5),
+});
+
+const eventAdminRoleSchema = z.object({
+  targetUserId: z.string().min(1),
 });
 
 const proDmReviewRemovalSchema = z.object({
@@ -226,6 +228,109 @@ export async function removeDmFromRoster(formData: FormData) {
   redirect("/admin/users?dmRoster=removed");
 }
 
+export async function addEventAdminRole(formData: FormData) {
+  const adminUser = await requireAdminUser();
+
+  const parsed = eventAdminRoleSchema.safeParse({
+    targetUserId: formData.get("targetUserId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?eventAdmin=invalid");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: parsed.data.targetUserId },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!targetUser || targetUser.id === adminUser.id) {
+    redirect("/admin/users?eventAdmin=invalid");
+  }
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_role: {
+        userId: targetUser.id,
+        role: "EVENT_ADMIN",
+      },
+    },
+    update: {},
+    create: {
+      userId: targetUser.id,
+      role: "EVENT_ADMIN",
+    },
+  });
+
+  await createNotifications(prisma, [
+    {
+      userId: targetUser.id,
+      createdByUserId: adminUser.id,
+      type: "ADMIN",
+      title: "Granted Grimoire moderation access",
+      body: "You can now access the Grimoire moderation tools.",
+      actionLabel: "Open Grimoire moderation",
+      actionHref: "/admin/grimoire-gathering",
+    },
+  ]);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/grimoire-gathering");
+
+  redirect("/admin/users?eventAdmin=added");
+}
+
+export async function removeEventAdminRole(formData: FormData) {
+  const adminUser = await requireAdminUser();
+
+  const parsed = eventAdminRoleSchema.safeParse({
+    targetUserId: formData.get("targetUserId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?eventAdmin=invalid");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: parsed.data.targetUserId },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!targetUser || targetUser.id === adminUser.id) {
+    redirect("/admin/users?eventAdmin=invalid");
+  }
+
+  await prisma.userRole.deleteMany({
+    where: {
+      userId: targetUser.id,
+      role: "EVENT_ADMIN",
+    },
+  });
+
+  await createNotifications(prisma, [
+    {
+      userId: targetUser.id,
+      createdByUserId: adminUser.id,
+      type: "ADMIN",
+      title: "Removed Grimoire moderation access",
+      body: "Your Event Admin access for Grimoire moderation was removed.",
+      actionLabel: "Review account",
+      actionHref: "/profile",
+    },
+  ]);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/grimoire-gathering");
+
+  redirect("/admin/users?eventAdmin=removed");
+}
+
 export async function deleteProDmReview(formData: FormData) {
   await requireAdminUser();
 
@@ -301,10 +406,6 @@ export async function removeUserAccount(
 ): Promise<RemoveUserState> {
   const adminUser = await requireAdminUser();
   const targetUserId = String(formData.get("targetUserId") ?? "").trim();
-  const confirmationEmail = String(formData.get("confirmationEmail") ?? "")
-    .trim()
-    .toLowerCase();
-  const currentPassword = String(formData.get("currentPassword") ?? "").trim();
 
   if (!targetUserId) {
     return {
@@ -313,54 +414,14 @@ export async function removeUserAccount(
     };
   }
 
-  if (!confirmationEmail) {
-    return {
-      error: "Type the selected user's email to confirm the deletion.",
-      success: "",
-    };
-  }
-
-  if (!currentPassword) {
-    return {
-      error: "Enter your password to authorize the deletion.",
-      success: "",
-    };
-  }
-
-  const [dbAdminUser, targetUser] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: adminUser.id },
-      select: {
-        id: true,
-        email: true,
-        passwordHash: true,
-      },
-    }),
-    prisma.user.findUnique({
-      where: { id: targetUserId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
-    }),
-  ]);
-
-  if (!dbAdminUser?.passwordHash) {
-    return {
-      error: "Your admin account needs a password before it can remove users.",
-      success: "",
-    };
-  }
-
-  const passwordMatches = await bcrypt.compare(currentPassword, dbAdminUser.passwordHash);
-
-  if (!passwordMatches) {
-    return {
-      error: "Your password was incorrect.",
-      success: "",
-    };
-  }
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+    },
+  });
 
   if (!targetUser) {
     return {
@@ -379,13 +440,6 @@ export async function removeUserAccount(
   if (isAdminEmail(targetUser.email)) {
     return {
       error: `Protected admin accounts cannot be removed here (${ADMIN_EMAILS.join(", ")}).`,
-      success: "",
-    };
-  }
-
-  if (targetUser.email.toLowerCase() !== confirmationEmail) {
-    return {
-      error: "The confirmation email did not match the selected user.",
       success: "",
     };
   }

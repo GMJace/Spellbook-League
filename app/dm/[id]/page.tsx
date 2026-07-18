@@ -1,10 +1,12 @@
-// @ts-nocheck
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { getProDmRatingSummary, getProDmReviews } from "@/lib/pro-dm-reviews";
+import { getProDmRosterEntry } from "@/lib/pro-dm-roster";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatStatus, formatTier } from "@/lib/utils";
+import { formatDate, formatStarRating, formatStatus, formatTier } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +20,23 @@ function formatServiceHours(hours: number) {
   return Number.isInteger(hours) ? String(hours) : hours.toFixed(2).replace(/\.?0+$/, "");
 }
 
+function splitSpecialties(value: string | null) {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export default async function DmProfilePage({ params }: PageProps) {
   const { id } = await params;
+  const [dmProfile, proDmReviews] = await Promise.all([
+    getProDmRosterEntry(id),
+    getProDmReviews(),
+  ]);
 
   const dm = await prisma.user.findFirst({
     where: {
@@ -50,65 +67,79 @@ export default async function DmProfilePage({ params }: PageProps) {
     notFound();
   }
 
+  const publicProfile = dmProfile?.isListed ? dmProfile : null;
   const games = dm.gamesCreated as Array<{
     id: string;
     datePlayed: Date;
     adventureCode: string;
     title: string;
+    serviceHours: number;
     tier: Parameters<typeof formatTier>[0];
     status: Parameters<typeof formatStatus>[0];
     _count: {
       participants: number;
     };
   }>;
-  const totalPlayersHosted = games.reduce(
-    (sum, game) => sum + game._count.participants,
-    0
-  );
-  const totalServiceHours = games.reduce(
-    (sum, game) => sum + (game.serviceHours ?? 0),
-    0
-  );
+  const totalPlayersHosted = games.reduce((sum, game) => sum + game._count.participants, 0);
+  const totalServiceHours = games.reduce((sum, game) => sum + (game.serviceHours ?? 0), 0);
+  const specialties = splitSpecialties(publicProfile?.specialties ?? null);
+  const ratingSummary = getProDmRatingSummary(id, publicProfile?.rating ?? 5, proDmReviews);
 
   return (
     <main className="page-shell">
       <section className="stack">
-        <div className="section-heading">
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <ProfileAvatar
-              name={dm.name}
-              src={dm.profileImagePath}
-              size={112}
-            />
-            <div>
-              <p className="eyebrow">Dungeon master profile</p>
-              <h1 style={{ margin: "0.35rem 0 0" }}>{dm.name}</h1>
-              <p className="muted" style={{ margin: "0.5rem 0 0" }}>
-                {dm.gamesCreated.length} logged game
-                {games.length === 1 ? "" : "s"}
-              </p>
+        <div className="list-card stack">
+          <div className="section-heading">
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <ProfileAvatar name={dm.name} src={dm.profileImagePath} size={112} />
+              <div>
+                <p className="eyebrow">
+                  {publicProfile ? (
+                    <>
+                      Professional <RainbowSpellbook /> DM
+                    </>
+                  ) : (
+                    "Dungeon master profile"
+                  )}
+                </p>
+                <h1 style={{ margin: "0.35rem 0 0" }}>{dm.name}</h1>
+                <p className="muted" style={{ margin: "0.5rem 0 0", maxWidth: "62ch" }}>
+                  {publicProfile?.headline || (
+                    <>
+                      <RainbowSpellbook /> Dungeon Master with a public game history and
+                      community profile.
+                    </>
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <Link className="button button-secondary" href="/">
-              Back
-            </Link>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              {publicProfile ? (
+                <>
+                  <Link className="button" href={`/hire-a-dm/${dm.id}/hire`}>
+                    Hire DM
+                  </Link>
+                  <Link className="button button-secondary" href={`/hire-a-dm/${dm.id}/rate`}>
+                    Rate DM
+                  </Link>
+                </>
+              ) : null}
+              <Link className="button button-secondary" href="/">
+                Back
+              </Link>
+            </div>
           </div>
         </div>
 
         <div className="list-card stack">
-          <div className="section-heading">
-            <h2 style={{ margin: 0 }}>DM summary</h2>
-          </div>
-
           <div
             style={{
               display: "grid",
@@ -118,9 +149,23 @@ export default async function DmProfilePage({ params }: PageProps) {
           >
             <div>
               <p className="muted" style={{ margin: 0 }}>
+                Rating
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>
+                {publicProfile ? formatStarRating(ratingSummary.rating) : "Not rated yet"}
+              </p>
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
                 Games logged
               </p>
               <p style={{ margin: "0.35rem 0 0" }}>{games.length}</p>
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                Service hours
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>{formatServiceHours(totalServiceHours)}</p>
             </div>
             <div>
               <p className="muted" style={{ margin: 0 }}>
@@ -130,10 +175,10 @@ export default async function DmProfilePage({ params }: PageProps) {
             </div>
             <div>
               <p className="muted" style={{ margin: 0 }}>
-                Service hours
+                Contact
               </p>
               <p style={{ margin: "0.35rem 0 0" }}>
-                {formatServiceHours(totalServiceHours)}
+                {dm.discordHandle || "Contact SPELLBOOK for table details."}
               </p>
             </div>
           </div>
@@ -141,7 +186,37 @@ export default async function DmProfilePage({ params }: PageProps) {
 
         <div className="list-card stack">
           <div className="section-heading">
-            <h2 style={{ margin: 0 }}>Adventure log</h2>
+            <h2 style={{ margin: 0 }}>Profile</h2>
+          </div>
+          <p style={{ margin: 0 }}>
+            {publicProfile?.bio ||
+              "This DM has not added a public bio yet. Their table history and recent adventure log are still available below."}
+          </p>
+        </div>
+
+        <div className="list-card stack">
+          <div className="section-heading">
+            <h2 style={{ margin: 0 }}>Specialties</h2>
+          </div>
+
+          {specialties.length ? (
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {specialties.map((specialty) => (
+                <span key={specialty} className="pill specialty-pill">
+                  {specialty}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="muted" style={{ margin: 0 }}>
+              Specialties have not been listed yet.
+            </p>
+          )}
+        </div>
+
+        <div className="list-card stack">
+          <div className="section-heading">
+            <h2 style={{ margin: 0 }}>Recent adventure log</h2>
           </div>
 
           <div className="table-wrap">

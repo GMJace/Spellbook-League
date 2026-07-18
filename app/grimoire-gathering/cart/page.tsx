@@ -1,8 +1,10 @@
 import { GrimoireCartBuilder } from "@/components/grimoire-cart-builder";
 import { getCuratedGamesForEvent, getNextGrimoireEvent } from "@/lib/grimoire-server";
+import { getPayPalClientId } from "@/lib/paypal";
 
 type PageProps = {
   searchParams: Promise<{
+    badges?: string | string[];
     games?: string | string[];
   }>;
 };
@@ -20,8 +22,20 @@ function parseSelectedGames(rawValue: string | string[] | undefined) {
     .filter(Boolean);
 }
 
+function parseBadgeQuantity(rawValue: string | string[] | undefined) {
+  const value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(6, Math.trunc(parsed)));
+}
+
 export default async function GrimoireCartPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
+  const paypalClientId = getPayPalClientId();
   const nextEvent = await getNextGrimoireEvent();
 
   if (!nextEvent) {
@@ -41,10 +55,10 @@ export default async function GrimoireCartPage({ searchParams }: PageProps) {
       <section className="stack">
         <GrimoireCartBuilder
           games={nextEventGames}
-          hostedButtonId={process.env.GG_PAYPAL_HOSTED_BUTTON_ID?.trim() ?? null}
+          initialBadgeQuantity={parseBadgeQuantity(resolvedSearchParams.badges)}
           initialSelectedGameSlugs={parseSelectedGames(resolvedSearchParams.games)}
           nextEvent={nextEvent}
-          paypalLink={process.env.GG_PAYPAL_LINK?.trim() ?? null}
+          paypalClientId={paypalClientId}
         />
       </section>
     </main>
