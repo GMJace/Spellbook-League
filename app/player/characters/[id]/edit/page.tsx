@@ -14,10 +14,14 @@ import {
   getLeagueLegalCharmOptions,
   getCharacterBuildMagicItemOptions,
   getLeagueLegalConsumableOptions,
+  getLeagueLegalFeatGroups,
   getLeagueLegalFeatOptions,
+  getLeagueLegalLanguageGroups,
   getLeagueLegalLanguageOptions,
   getLeagueLegalMagicItemOptions,
+  getLeagueLegalMinorPropertyOptions,
   getLeagueLegalSubclassOptions,
+  getLeagueLegalToolGroups,
   getLeagueLegalToolOptions,
 } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
@@ -37,9 +41,13 @@ export default async function EditCharacterPage({
   const [
     legalSubclassOptions,
     legalMagicItemOptions,
+    legalMinorPropertyOptions,
     legalConsumableOptions,
+    legalFeatGroups,
     legalFeatOptions,
+    legalToolGroups,
     legalToolOptions,
+    legalLanguageGroups,
     legalLanguageOptions,
     legalBoonOptions,
     legalBlessingOptions,
@@ -47,9 +55,13 @@ export default async function EditCharacterPage({
   ] = await Promise.all([
     getLeagueLegalSubclassOptions(),
     getLeagueLegalMagicItemOptions(),
+    getLeagueLegalMinorPropertyOptions(),
     getLeagueLegalConsumableOptions(),
+    getLeagueLegalFeatGroups(),
     getLeagueLegalFeatOptions(),
+    getLeagueLegalToolGroups(),
     getLeagueLegalToolOptions(),
+    getLeagueLegalLanguageGroups(),
     getLeagueLegalLanguageOptions(),
     getLeagueLegalBoonOptions(),
     getLeagueLegalBlessingOptions(),
@@ -120,13 +132,18 @@ export default async function EditCharacterPage({
         <CharacterForm
           action={updateCharacter.bind(null, character.id)}
           legalBuildMagicItemOptions={getCharacterBuildMagicItemOptions(legalMagicItemOptions)}
+          legalUncommonMagicItemOptions={legalMagicItemOptions.Uncommon}
           legalCommonMagicItemOptions={legalMagicItemOptions.Common}
+          legalMinorPropertyOptions={legalMinorPropertyOptions}
           legalConsumableOptions={legalConsumableOptions}
           legalBoonOptions={legalBoonOptions}
           legalBlessingOptions={legalBlessingOptions}
           legalCharmOptions={legalCharmOptions}
+          legalFeatGroups={legalFeatGroups}
           legalFeatOptions={legalFeatOptions}
+          legalToolGroups={legalToolGroups}
           legalToolOptions={legalToolOptions}
+          legalLanguageGroups={legalLanguageGroups}
           legalLanguageOptions={legalLanguageOptions}
           legalSubclassOptions={legalSubclassOptions}
           submitLabel="Update character log"
@@ -153,7 +170,9 @@ export default async function EditCharacterPage({
             backstory: character.backstory,
             totalGold: character.totalGold,
             magicItems: character.magicItems,
+            magicItemMinorProperties: character.magicItemMinorProperties,
             commonMagicItems: character.commonMagicItems,
+            commonMagicItemMinorProperties: character.commonMagicItemMinorProperties,
             consumables: character.consumables,
             boon: character.boon,
             blessing: character.blessing,

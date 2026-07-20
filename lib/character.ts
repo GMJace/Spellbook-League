@@ -175,7 +175,9 @@ export const DND_FEAT_GROUPS = [
       "Crafter",
       "Healer",
       "Lucky",
-      "Magic Initiate",
+      "Magic Initiate (Cleric)",
+      "Magic Initiate (Druid)",
+      "Magic Initiate (Wizard)",
       "Musician",
       "Savage Attacker",
       "Skilled",
@@ -365,6 +367,13 @@ export const DND_FEAT_GROUPS = [
   },
 ] as const;
 
+export const LEGACY_FEAT_COMPATIBILITY_OPTIONS = [
+  "Magic Initiate",
+  "Magic Initiate : Cleric",
+  "Magic Initiate : Druid",
+  "Magic Initiate : Wizard",
+] as const;
+
 export const ELEMENTAL_ADEPT_TYPES = [
   "Acid",
   "Cold",
@@ -389,6 +398,38 @@ export const DND_FEATS = DND_FEAT_GROUPS.flatMap((group) =>
   )
 );
 
+export const SPLIT_MAGIC_INITIATE_ORIGIN_FEATS = [
+  "Magic Initiate (Cleric)",
+  "Magic Initiate (Druid)",
+  "Magic Initiate (Wizard)",
+] as const;
+
+export function normalizeLegalFeatOptions(legalFeatOptions: string[]) {
+  return normalizeLeagueChoiceValues(
+    legalFeatOptions.map((feat) => {
+      if (feat === "Magic Initiate") {
+        return feat;
+      }
+
+      if (feat === "Magic Initiate : Cleric") {
+        return "Magic Initiate (Cleric)";
+      }
+
+      if (feat === "Magic Initiate : Druid") {
+        return "Magic Initiate (Druid)";
+      }
+
+      if (feat === "Magic Initiate : Wizard") {
+        return "Magic Initiate (Wizard)";
+      }
+
+      return feat;
+    }).flatMap((feat) =>
+      feat === "Magic Initiate" ? [...SPLIT_MAGIC_INITIATE_ORIGIN_FEATS] : [feat]
+    )
+  );
+}
+
 export type LegalToolGroup = {
   title: string;
   note?: string;
@@ -407,7 +448,7 @@ export type LegalFeatGroup = {
   feats: string[];
 };
 
-const TOOL_GROUP_NOTES: Partial<Record<string, string>> = {
+export const TOOL_GROUP_NOTES: Partial<Record<string, string>> = {
   "Gaming Sets": "Each gaming set is a separate proficiency.",
   "Musical Instruments": "Each instrument is a separate proficiency.",
 };
@@ -807,8 +848,12 @@ export function parseFeatSelections(value: string | null | undefined) {
     const parsed = JSON.parse(value);
 
     if (Array.isArray(parsed)) {
-      return DND_FEATS.reduce((next, feat) => {
-        if (parsed.includes(feat)) {
+      const parsedFeatSet = new Set(
+        parsed.filter((entry): entry is string => typeof entry === "string")
+      );
+
+      return [...DND_FEATS, ...LEGACY_FEAT_COMPATIBILITY_OPTIONS].reduce((next, feat) => {
+        if (parsedFeatSet.has(feat)) {
           next[feat] = true;
         }
         return next;
@@ -816,7 +861,7 @@ export function parseFeatSelections(value: string | null | undefined) {
     }
 
     if (parsed && typeof parsed === "object") {
-      return DND_FEATS.reduce((next, feat) => {
+      return [...DND_FEATS, ...LEGACY_FEAT_COMPATIBILITY_OPTIONS].reduce((next, feat) => {
         if (parsed[feat] === true) {
           next[feat] = true;
         }
@@ -829,7 +874,7 @@ export function parseFeatSelections(value: string | null | undefined) {
 
   const normalizedValue = value.toLowerCase();
 
-  return DND_FEATS.reduce((next, feat) => {
+  return [...DND_FEATS, ...LEGACY_FEAT_COMPATIBILITY_OPTIONS].reduce((next, feat) => {
     if (normalizedValue.includes(feat.toLowerCase())) {
       next[feat] = true;
     }
@@ -838,12 +883,18 @@ export function parseFeatSelections(value: string | null | undefined) {
 }
 
 export function serializeFeatSelections(selections: Record<string, true>) {
-  return JSON.stringify(DND_FEATS.filter((feat) => selections[feat] === true));
+  return JSON.stringify(
+    [...DND_FEATS, ...LEGACY_FEAT_COMPATIBILITY_OPTIONS].filter(
+      (feat) => selections[feat] === true
+    )
+  );
 }
 
 export function formatFeatSelections(value: string | null | undefined) {
   const parsedSelections = parseFeatSelections(value);
-  const formattedSelections = DND_FEATS.filter((feat) => parsedSelections[feat] === true);
+  const formattedSelections = [...DND_FEATS, ...LEGACY_FEAT_COMPATIBILITY_OPTIONS].filter(
+    (feat) => parsedSelections[feat] === true
+  );
 
   if (formattedSelections.length) {
     return formattedSelections.join("\n");

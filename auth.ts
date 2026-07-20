@@ -5,6 +5,7 @@ import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
 import { ensureAutomaticAdminRoles } from "@/lib/admin-roles";
+import { addPatronRoleFromMembership } from "@/lib/grimoire-guild-membership";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin-access";
 import { loginSchema } from "@/lib/validation";
@@ -35,12 +36,13 @@ async function syncTokenWithDatabase(token: {
     return token;
   }
 
-  const roles = await ensureAutomaticAdminRoles(
+  const automaticRoles = await ensureAutomaticAdminRoles(
     prisma,
     dbUser.id,
     dbUser.email,
     dbUser.roles.map((role: { role: Role }) => role.role)
   );
+  const roles = await addPatronRoleFromMembership(dbUser.id, automaticRoles);
 
   token.sub = dbUser.id;
   token.name = dbUser.name;
@@ -185,6 +187,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const pathname = request.nextUrl.pathname;
       const roles = session?.user?.roles ?? [];
       const isAdmin = isAdminEmail(session?.user?.email);
+
+       if (pathname.startsWith("/admin/league-choices")) {
+        return isAdmin || roles.includes("LEAGUE_ADMIN");
+      }
 
       if (pathname.startsWith("/admin/grimoire-gathering")) {
         return isAdmin || roles.includes("EVENT_ADMIN");

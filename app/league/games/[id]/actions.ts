@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireRole } from "@/lib/auth";
 import { getCharacterTier, getCharacterTotalLevel } from "@/lib/character";
+import type { SerializedLeagueCheckoutData } from "@/lib/paypal-checkout-types";
 import { prisma } from "@/lib/prisma";
 import {
   sendLeagueRefundRequestConfirmationEmail,
@@ -24,26 +25,17 @@ function getLeagueSupportEmail() {
   return process.env.LEAGUE_SUPPORT_EMAIL?.trim() || "trevor@spellbookrpg.games";
 }
 
-type SerializedLeagueCheckoutItem = {
-  characterId?: string;
-  characterName?: string;
-  gameId?: string;
-  guestEmails?: string[];
-  quantity?: number;
-  ticketPrice?: string;
-  title?: string;
-};
-
 function parseSerializedLeagueCheckoutItems(value: string) {
   try {
-    const parsed = JSON.parse(value) as unknown;
+    const parsed = JSON.parse(value) as SerializedLeagueCheckoutData;
+    const items = Array.isArray(parsed) ? parsed : parsed?.games;
 
-    if (!Array.isArray(parsed)) {
+    if (!Array.isArray(items)) {
       return [];
     }
 
-    return parsed.filter(
-      (item): item is SerializedLeagueCheckoutItem =>
+    return items.filter(
+      (item): item is NonNullable<(typeof items)[number]> =>
         Boolean(item) && typeof item === "object",
     );
   } catch {

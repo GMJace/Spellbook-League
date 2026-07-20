@@ -283,6 +283,61 @@ export async function addEventAdminRole(formData: FormData) {
   redirect("/admin/users?eventAdmin=added");
 }
 
+export async function addLeagueAdminRole(formData: FormData) {
+  const adminUser = await requireAdminUser();
+
+  const parsed = eventAdminRoleSchema.safeParse({
+    targetUserId: formData.get("targetUserId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?leagueAdmin=invalid");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: parsed.data.targetUserId },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!targetUser || targetUser.id === adminUser.id) {
+    redirect("/admin/users?leagueAdmin=invalid");
+  }
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_role: {
+        userId: targetUser.id,
+        role: "LEAGUE_ADMIN",
+      },
+    },
+    update: {},
+    create: {
+      userId: targetUser.id,
+      role: "LEAGUE_ADMIN",
+    },
+  });
+
+  await createNotifications(prisma, [
+    {
+      userId: targetUser.id,
+      createdByUserId: adminUser.id,
+      type: "ADMIN",
+      title: "Granted League Choices admin access",
+      body: "You can now edit the League legal choices page.",
+      actionLabel: "Open League Choices",
+      actionHref: "/admin/league-choices",
+    },
+  ]);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/league-choices");
+
+  redirect("/admin/users?leagueAdmin=added");
+}
+
 export async function removeEventAdminRole(formData: FormData) {
   const adminUser = await requireAdminUser();
 
@@ -329,6 +384,54 @@ export async function removeEventAdminRole(formData: FormData) {
   revalidatePath("/admin/grimoire-gathering");
 
   redirect("/admin/users?eventAdmin=removed");
+}
+
+export async function removeLeagueAdminRole(formData: FormData) {
+  const adminUser = await requireAdminUser();
+
+  const parsed = eventAdminRoleSchema.safeParse({
+    targetUserId: formData.get("targetUserId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?leagueAdmin=invalid");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: parsed.data.targetUserId },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!targetUser || targetUser.id === adminUser.id) {
+    redirect("/admin/users?leagueAdmin=invalid");
+  }
+
+  await prisma.userRole.deleteMany({
+    where: {
+      userId: targetUser.id,
+      role: "LEAGUE_ADMIN",
+    },
+  });
+
+  await createNotifications(prisma, [
+    {
+      userId: targetUser.id,
+      createdByUserId: adminUser.id,
+      type: "ADMIN",
+      title: "Removed League Choices admin access",
+      body: "Your League legal choices editing access was removed.",
+      actionLabel: "Review account",
+      actionHref: "/profile",
+    },
+  ]);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/league-choices");
+
+  redirect("/admin/users?leagueAdmin=removed");
 }
 
 export async function addPatronRole(formData: FormData) {

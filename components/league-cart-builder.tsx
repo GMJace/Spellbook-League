@@ -28,9 +28,18 @@ type PlayerCharacter = {
 };
 
 type LeagueCartBuilderProps = {
+  currentPatronAccessEndsAt: null | string;
   games: LeagueCartGame[];
   initialSelectedGameIds: string[];
+  initialMembershipQuantity: number;
   isPlayerSignedIn: boolean;
+  membershipProduct: {
+    description: string;
+    durationDays: number;
+    isActive: boolean;
+    name: string;
+    priceUsd: number;
+  };
   paypalClientId: string | null;
   playerCharacters: PlayerCharacter[];
 };
@@ -41,10 +50,17 @@ function isValidEmailAddress(value: string) {
   return EMAIL_PATTERN.test(value.trim());
 }
 
+function formatPriceLabel(amount: number) {
+  return Number.isInteger(amount) ? `$${amount} USD` : `$${amount.toFixed(2)} USD`;
+}
+
 export function LeagueCartBuilder({
+  currentPatronAccessEndsAt,
   games,
   initialSelectedGameIds,
+  initialMembershipQuantity,
   isPlayerSignedIn,
+  membershipProduct,
   paypalClientId,
   playerCharacters,
 }: LeagueCartBuilderProps) {
@@ -68,6 +84,9 @@ export function LeagueCartBuilder({
           return [id, firstEligibleCharacter?.id ?? ""];
         }),
     ) as Record<string, string>,
+  );
+  const [membershipQuantity, setMembershipQuantity] = useState(
+    membershipProduct.isActive ? Math.min(Math.max(initialMembershipQuantity, 0), 1) : 0,
   );
   const [guestEmailsByGame, setGuestEmailsByGame] = useState<Record<string, string[]>>({});
 
@@ -140,9 +159,10 @@ export function LeagueCartBuilder({
   const subtotal = selectedGames.reduce(
     (total, game) => total + game.ticketPriceUsd * (selectedGameQuantities[game.id] ?? 0),
     0,
-  );
-  const hasSelections = selectedGames.length > 0;
+  ) + membershipProduct.priceUsd * membershipQuantity;
+  const hasSelections = selectedGames.length > 0 || membershipQuantity > 0;
   const hasInvalidSelectedCharacters = selectedGameCharacterIssues.some((entry) => !entry.valid);
+  const hasMembershipSignInIssue = membershipQuantity > 0 && !isPlayerSignedIn;
   const guestEmailIssues = selectedGames.flatMap((game) => {
     const quantity = selectedGameQuantities[game.id] ?? 0;
     const requiredGuestCount = Math.max(quantity - 1, 0);
@@ -172,9 +192,19 @@ export function LeagueCartBuilder({
 
       return `${game.title} x${selectedGameQuantities[game.id] ?? 0} (${game.ticketPrice}); Character: ${characterName}${guestEmailSummary}`;
     })
+    .concat(
+      membershipQuantity > 0
+        ? [
+            `${membershipProduct.name} x${membershipQuantity} (${formatUsd(
+              membershipProduct.priceUsd,
+            )}); Duration: ${membershipProduct.durationDays} days`,
+          ]
+        : [],
+    )
     .join(" | ");
   const checkoutPayload: LeaguePayPalCheckoutPayload = {
     checkoutType: "LEAGUE",
+    membershipQuantity,
     items: selectedGames.map((game) => ({
       characterId: selectedCharacterByGame[game.id] ?? "",
       gameId: game.id,
@@ -194,7 +224,7 @@ export function LeagueCartBuilder({
             <p className="eyebrow">Customize Purchase</p>
             <h1 style={{ margin: 0 }}>League Cart</h1>
             <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-              Add priced league games to your cart before continuing to checkout.
+              Add store items and priced league games to your cart before continuing to checkout.
             </p>
           </div>
 
@@ -204,6 +234,17 @@ export function LeagueCartBuilder({
             </div>
             {hasSelections ? (
               <div className="stack" style={{ gap: "0.75rem" }}>
+                {membershipQuantity > 0 ? (
+                  <div className="stack league-cart-summary-item" style={{ gap: "0.35rem" }}>
+                    <div className="ggcon-summary-line">
+                      <span>{membershipProduct.name} x{membershipQuantity}</span>
+                      <strong>{formatUsd(membershipProduct.priceUsd * membershipQuantity)}</strong>
+                    </div>
+                    <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                      Patron access for {membershipProduct.durationDays} days.
+                    </p>
+                  </div>
+                ) : null}
                 {selectedGames.map((game) => {
                   const guestEmails = (guestEmailsByGame[game.id] ?? [])
                     .slice(0, Math.max((selectedGameQuantities[game.id] ?? 0) - 1, 0))
@@ -243,7 +284,7 @@ export function LeagueCartBuilder({
               </div>
             ) : (
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-                Add at least one priced league game to start checkout.
+                Add a paid league game or the Grimoire Guild membership to start checkout.
               </p>
             )}
           </div>
@@ -265,6 +306,11 @@ export function LeagueCartBuilder({
                 Sign in with a player account to choose a character before checkout.
               </p>
             ) : null}
+            {hasMembershipSignInIssue ? (
+              <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
+                Sign in with a player account before purchasing the Grimoire Guild membership.
+              </p>
+            ) : null}
             {isPlayerSignedIn && hasInvalidSelectedCharacters ? (
               <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
                 Choose a character whose tier matches each selected league game.
@@ -273,7 +319,12 @@ export function LeagueCartBuilder({
 
             <PayPalCheckoutButton
               clientId={paypalClientId}
-              disabled={!hasSelections || hasIncompleteGuestEmails || hasInvalidSelectedCharacters}
+              disabled={
+                !hasSelections ||
+                hasIncompleteGuestEmails ||
+                hasInvalidSelectedCharacters ||
+                hasMembershipSignInIssue
+              }
               disabledText="Continue to PayPal"
               payload={checkoutPayload}
             />
@@ -292,6 +343,48 @@ export function LeagueCartBuilder({
         </section>
 
         <section className="card ledger-panel stack ggcon-cart-tickets-card">
+          <div className="section-heading">
+            <h2 style={{ margin: 0 }}>Store items</h2>
+          </div>
+          <div className="ggcon-ticket-grid league-ticket-grid">
+            <div className="ggcon-ticket-option">
+              <div className="stack" style={{ gap: "0.35rem" }}>
+                <strong>{membershipProduct.name}</strong>
+                <span className="muted ggcon-meta-note">{membershipProduct.description}</span>
+                {currentPatronAccessEndsAt ? (
+                  <span className="muted ggcon-meta-note">
+                    Current Patron access through{" "}
+                    {new Intl.DateTimeFormat("en-CA", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    }).format(new Date(currentPatronAccessEndsAt))}
+                    . Purchasing again extends your access.
+                  </span>
+                ) : null}
+                {membershipProduct.isActive ? (
+                  <label className="stack ggcon-ticket-quantity" style={{ gap: "0.35rem" }}>
+                    <span className="muted">Memberships</span>
+                    <select
+                      value={membershipQuantity}
+                      onChange={(event) => setMembershipQuantity(Number(event.target.value))}
+                    >
+                      <option value={0}>No membership</option>
+                      <option value={1}>1 annual membership</option>
+                    </select>
+                  </label>
+                ) : (
+                  <span className="muted ggcon-meta-note league-cart-warning">
+                    Grimoire Guild membership is not available right now.
+                  </span>
+                )}
+              </div>
+              <span className="pill" style={{ border: "none" }}>
+                {formatPriceLabel(membershipProduct.priceUsd)}
+              </span>
+            </div>
+          </div>
+
           <div className="section-heading">
             <h2 style={{ margin: 0 }}>Priced league games</h2>
           </div>

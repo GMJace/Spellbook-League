@@ -21,6 +21,7 @@ import {
   getLeagueLegalFeatOptions,
   getLeagueLegalLanguageOptions,
   getLeagueLegalMagicItemOptions,
+  getLeagueLegalMinorPropertyOptions,
   getLeagueLegalSubclassOptions,
   getLeagueLegalToolOptions,
 } from "@/lib/league-legal-choices";
@@ -44,6 +45,31 @@ function redirectWithCharacterError(
   redirect(`${path}?${searchParams.toString()}`);
 }
 
+function getSubmittedSlotSelections(formData: FormData, name: string) {
+  return formData.getAll(name).map((value) => String(value).trim());
+}
+
+function compressSlottedSelections(items: string[], details: string[]) {
+  const nextItems: string[] = [];
+  const nextDetails: string[] = [];
+
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index] ?? "";
+
+    if (!item) {
+      continue;
+    }
+
+    nextItems.push(item);
+    nextDetails.push(details[index] ?? "");
+  }
+
+  return {
+    items: nextItems,
+    details: nextDetails,
+  };
+}
+
 export async function createCharacter(
   formData: FormData
 ) {
@@ -63,6 +89,7 @@ export async function createCharacter(
   const [
     legalSubclassOptions,
     legalMagicItemOptions,
+    legalMinorPropertyOptions,
     legalConsumableOptions,
     legalFeatOptions,
     legalToolOptions,
@@ -73,6 +100,7 @@ export async function createCharacter(
   ] = await Promise.all([
     getLeagueLegalSubclassOptions(),
     getLeagueLegalMagicItemOptions(),
+    getLeagueLegalMinorPropertyOptions(),
     getLeagueLegalConsumableOptions(),
     getLeagueLegalFeatOptions(),
     getLeagueLegalToolOptions(),
@@ -81,6 +109,25 @@ export async function createCharacter(
     getLeagueLegalBlessingOptions(),
     getLeagueLegalCharmOptions(),
   ]);
+  const submittedMagicItems = getSubmittedSlotSelections(formData, "magicItems");
+  const submittedMagicItemMinorProperties = getSubmittedSlotSelections(
+    formData,
+    "magicItemMinorProperties"
+  );
+  const submittedCommonMagicItems = getSubmittedSlotSelections(formData, "commonMagicItems");
+  const submittedCommonMagicItemMinorProperties = getSubmittedSlotSelections(
+    formData,
+    "commonMagicItemMinorProperties"
+  );
+  const compressedMagicItemSelections = compressSlottedSelections(
+    submittedMagicItems,
+    submittedMagicItemMinorProperties
+  );
+  const compressedCommonMagicItemSelections = compressSlottedSelections(
+    submittedCommonMagicItems,
+    submittedCommonMagicItemMinorProperties
+  );
+
   const parsed = characterSchema.safeParse({
     name: formData.get("name"),
     characterSheetLink: formData.get("characterSheetLink"),
@@ -102,14 +149,10 @@ export async function createCharacter(
     notes: formData.get("notes"),
     backstory: formData.get("backstory"),
     totalGold: formData.get("totalGold"),
-    magicItems: formData
-      .getAll("magicItems")
-      .map((value) => String(value).trim())
-      .filter(Boolean),
-    commonMagicItems: formData
-      .getAll("commonMagicItems")
-      .map((value) => String(value).trim())
-      .filter(Boolean),
+    magicItems: compressedMagicItemSelections.items,
+    magicItemMinorProperties: compressedMagicItemSelections.details,
+    commonMagicItems: compressedCommonMagicItemSelections.items,
+    commonMagicItemMinorProperties: compressedCommonMagicItemSelections.details,
     consumables: formData
       .getAll("consumables")
       .map((value) => String(value).trim())
@@ -164,6 +207,8 @@ export async function createCharacter(
   const legalBuildMagicItemSet = new Set(
     getCharacterBuildMagicItemOptions(legalMagicItemOptions)
   );
+  const legalUncommonMagicItemSet = new Set(legalMagicItemOptions.Uncommon);
+  const legalMinorPropertySet = new Set(legalMinorPropertyOptions);
   const invalidBuildMagicItem = parsed.data.magicItems.find(
     (item) => !legalBuildMagicItemSet.has(item)
   );
@@ -186,6 +231,47 @@ export async function createCharacter(
       `"${invalidCommonMagicItem}" is not in the Common legal magic items list.`
     );
   }
+
+  const invalidBuildMinorProperty = parsed.data.magicItemMinorProperties.find(
+    (minorProperty, index) =>
+      minorProperty &&
+      legalUncommonMagicItemSet.has(parsed.data.magicItems[index]) &&
+      !legalMinorPropertySet.has(minorProperty)
+  );
+
+  if (invalidBuildMinorProperty) {
+    redirectWithCharacterError(
+      "/player/characters/new",
+      `"${invalidBuildMinorProperty}" is not in the Minor Properties list.`
+    );
+  }
+
+  const invalidCommonMinorProperty = parsed.data.commonMagicItemMinorProperties.find(
+    (minorProperty) => minorProperty && !legalMinorPropertySet.has(minorProperty)
+  );
+
+  if (invalidCommonMinorProperty) {
+    redirectWithCharacterError(
+      "/player/characters/new",
+      `"${invalidCommonMinorProperty}" is not in the Minor Properties list.`
+    );
+  }
+
+  const normalizedMagicItemMinorProperties = parsed.data.magicItems.map((item, index) => {
+    const minorProperty = parsed.data.magicItemMinorProperties[index] ?? "";
+
+    return legalUncommonMagicItemSet.has(item) && legalMinorPropertySet.has(minorProperty)
+      ? minorProperty
+      : "";
+  });
+
+  const normalizedCommonMagicItemMinorProperties = parsed.data.commonMagicItems.map(
+    (_, index) => {
+      const minorProperty = parsed.data.commonMagicItemMinorProperties[index] ?? "";
+
+      return legalMinorPropertySet.has(minorProperty) ? minorProperty : "";
+    }
+  );
 
   const legalConsumableSet = new Set(legalConsumableOptions);
   const invalidConsumable = parsed.data.consumables.find((item) => !legalConsumableSet.has(item));
@@ -263,7 +349,11 @@ export async function createCharacter(
       backstory: parsed.data.backstory || "",
       totalGold: parsed.data.totalGold,
       magicItems: JSON.stringify(parsed.data.magicItems),
+      magicItemMinorProperties: JSON.stringify(normalizedMagicItemMinorProperties),
       commonMagicItems: JSON.stringify(parsed.data.commonMagicItems),
+      commonMagicItemMinorProperties: JSON.stringify(
+        normalizedCommonMagicItemMinorProperties
+      ),
       consumables: JSON.stringify(parsed.data.consumables),
       boon: parsed.data.boon || "",
       blessing: parsed.data.blessing || "",

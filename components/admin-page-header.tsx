@@ -24,7 +24,7 @@ const adminNavigationLinks = [
   {
     href: "/admin/league-choices",
     label: "League legal choices",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "LEAGUE_ADMIN"],
   },
   {
     href: "/admin/spellbook-monthly",
@@ -38,7 +38,7 @@ const adminNavigationLinks = [
   },
 ] as const;
 
-type AdminNavigationRole = "ADMIN" | "EVENT_ADMIN";
+type AdminNavigationRole = "ADMIN" | "EVENT_ADMIN" | "LEAGUE_ADMIN";
 
 export function AdminPageHeader({
   description,

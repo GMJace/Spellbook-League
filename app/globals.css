@@ -1704,9 +1704,23 @@ label {
   width: 100%;
 }
 
+.league-choices-section-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.league-choices-section-card {
+  align-content: start;
+}
+
 .league-choices-consumables-field textarea {
   min-height: clamp(24rem, 55vh, 42rem);
   line-height: 1.45;
+}
+
+.league-choices-section-card .league-choices-consumables-field textarea {
+  min-height: 18rem;
 }
 
 .checkbox-row {

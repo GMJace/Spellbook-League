@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { grantGrimoireGuildMembership } from "@/lib/grimoire-guild-membership";
 import { paypalRequest } from "@/lib/paypal";
+import type { SerializedLeagueCheckoutData } from "@/lib/paypal-checkout-types";
 import { prisma } from "@/lib/prisma";
 
 const captureOrderSchema = z.object({
@@ -23,6 +25,43 @@ type PayPalCaptureOrderResponse = {
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
+}
+
+function getLeagueCheckoutMembership(
+  serializedValue: string,
+): null | {
+  durationDays: number;
+  productName: string;
+  quantity: number;
+} {
+  try {
+    const parsed = JSON.parse(serializedValue) as SerializedLeagueCheckoutData;
+
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
+      return null;
+    }
+
+    const membership = parsed.membership;
+
+    if (
+      !membership ||
+      typeof membership !== "object" ||
+      typeof membership.durationDays !== "number" ||
+      typeof membership.productName !== "string" ||
+      typeof membership.quantity !== "number" ||
+      membership.quantity < 1
+    ) {
+      return null;
+    }
+
+    return {
+      durationDays: membership.durationDays,
+      productName: membership.productName,
+      quantity: membership.quantity,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(request: Request) {
@@ -89,6 +128,25 @@ export async function POST(request: Request) {
 
     if (!isCompleted) {
       return jsonError("PayPal did not complete the payment capture.", 400);
+    }
+
+    const membership = getLeagueCheckoutMembership(checkoutOrder.itemDataJson);
+
+    if (
+      checkoutOrder.checkoutType === "LEAGUE" &&
+      membership &&
+      checkoutOrder.userId
+    ) {
+      try {
+        await grantGrimoireGuildMembership({
+          checkoutOrderId: checkoutOrder.id,
+          durationDays: membership.durationDays,
+          productName: membership.productName,
+          userId: checkoutOrder.userId,
+        });
+      } catch (error) {
+        console.error("Unable to grant Grimoire Guild membership after checkout.", error);
+      }
     }
 
     return NextResponse.json({

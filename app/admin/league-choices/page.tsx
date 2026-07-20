@@ -3,48 +3,63 @@ import Link from "next/link";
 import { updateLeagueLegalChoices } from "@/app/admin/league-choices/actions";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { DND_CLASSES } from "@/lib/character-options";
-import { requireAdminUser } from "@/lib/admin";
+import { requireLeagueChoicesAdminUser } from "@/lib/admin";
+import { isAdminEmail } from "@/lib/admin-access";
 import {
   getLeagueLegalBlessingOptions,
   getLeagueLegalBoonOptions,
   getLeagueLegalCharmOptions,
   getLeagueLegalConsumableOptions,
-  getLeagueLegalFeatOptions,
-  getLeagueLegalLanguageOptions,
+  getLeagueLegalFeatSections,
+  getLeagueLegalLanguageSections,
   getLeagueLegalMagicItemOptions,
+  getLeagueLegalMinorPropertyOptions,
   getLeagueLegalSubclassOptions,
-  getLeagueLegalToolOptions,
+  getLeagueLegalToolSections,
   MAGIC_ITEM_RARITIES,
+  type GroupedLeagueLegalChoiceSection,
 } from "@/lib/league-legal-choices";
+
+function serializeGroupedSectionsForTextarea(
+  sections: GroupedLeagueLegalChoiceSection[]
+) {
+  return sections
+    .map((section) =>
+      [`header: ${section.title}`, ...section.values].join("\n")
+    )
+    .join("\n\n");
+}
 
 export default async function AdminLeagueChoicesPage({
   searchParams,
 }: {
   searchParams: Promise<{ choices?: string }>;
 }) {
-  await requireAdminUser();
+  const currentUser = await requireLeagueChoicesAdminUser();
 
   const params = await searchParams;
   const [
     legalSubclassOptions,
     legalMagicItemOptions,
     legalConsumableOptions,
-    legalFeatOptions,
-    legalToolOptions,
-    legalLanguageOptions,
+    legalFeatSections,
+    legalToolSections,
+    legalLanguageSections,
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
+    legalMinorPropertyOptions,
   ] = await Promise.all([
     getLeagueLegalSubclassOptions(),
     getLeagueLegalMagicItemOptions(),
     getLeagueLegalConsumableOptions(),
-    getLeagueLegalFeatOptions(),
-    getLeagueLegalToolOptions(),
-    getLeagueLegalLanguageOptions(),
+    getLeagueLegalFeatSections(),
+    getLeagueLegalToolSections(),
+    getLeagueLegalLanguageSections(),
     getLeagueLegalBoonOptions(),
     getLeagueLegalBlessingOptions(),
     getLeagueLegalCharmOptions(),
+    getLeagueLegalMinorPropertyOptions(),
   ]);
 
   const choiceMessageMap: Record<string, string> = {
@@ -61,6 +76,11 @@ export default async function AdminLeagueChoicesPage({
 
         <AdminPageHeader
           description="Update the live legal subclass lists used by character creation and character log editing. Feats, tools, languages, boons, blessings, and charms all live here now."
+          navigationRole={
+            !isAdminEmail(currentUser.email) && currentUser.roles.includes("LEAGUE_ADMIN")
+              ? "LEAGUE_ADMIN"
+              : "ADMIN"
+          }
           title="League legal choices"
         />
 
@@ -151,17 +171,17 @@ export default async function AdminLeagueChoicesPage({
             <div>
               <h2 style={{ margin: 0 }}>Legal feats</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                Enter one legal feat per line in the shared list used by the feats
-                checklist on character forms.
+                Use one feat per line. Start a new source card with a line like
+                <code> header: Origin Feats</code>.
               </p>
             </div>
 
             <label className="league-choices-consumables-field">
               All feats
               <textarea
-                defaultValue={legalFeatOptions.join("\n")}
+                defaultValue={serializeGroupedSectionsForTextarea(legalFeatSections)}
                 name="feats"
-                rows={24}
+                rows={32}
               />
             </label>
 
@@ -174,17 +194,18 @@ export default async function AdminLeagueChoicesPage({
             <div>
               <h2 style={{ margin: 0 }}>Legal tools</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                Enter one legal tool proficiency per line in the shared list used by
-                the tools checklist on character forms.
+                Use one tool proficiency per line. Start a new source card with a line
+                like <code>header: Primordial Dialects</code> for languages or the same
+                <code>header:</code> format here for tools.
               </p>
             </div>
 
             <label className="league-choices-consumables-field">
               All tools
               <textarea
-                defaultValue={legalToolOptions.join("\n")}
+                defaultValue={serializeGroupedSectionsForTextarea(legalToolSections)}
                 name="tools"
-                rows={24}
+                rows={28}
               />
             </label>
 
@@ -197,17 +218,18 @@ export default async function AdminLeagueChoicesPage({
             <div>
               <h2 style={{ margin: 0 }}>Legal languages</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                Enter one legal language per line in the shared list used by the
-                languages checklist. Class-granted languages stay automatic.
+                Use one language per line. A line like <code>header: Primordial Dialects</code>
+                creates its own card in the character form display. Class-granted
+                languages stay automatic.
               </p>
             </div>
 
             <label className="league-choices-consumables-field">
               All languages
               <textarea
-                defaultValue={legalLanguageOptions.join("\n")}
+                defaultValue={serializeGroupedSectionsForTextarea(legalLanguageSections)}
                 name="languages"
-                rows={24}
+                rows={28}
               />
             </label>
 
@@ -277,6 +299,29 @@ export default async function AdminLeagueChoicesPage({
                 defaultValue={legalCharmOptions.join("\n")}
                 name="charms"
                 rows={18}
+              />
+            </label>
+
+            <img
+              alt="League legal minor properties divider"
+              className="ggcon-table-divider"
+              src="/divider4.png"
+            />
+
+            <div>
+              <h2 style={{ margin: 0 }}>Minor properties</h2>
+              <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                Enter one minor property per line. These options are used for Common
+                and Uncommon magic item slot upgrades on character logsheets.
+              </p>
+            </div>
+
+            <label className="league-choices-consumables-field">
+              All minor properties
+              <textarea
+                defaultValue={legalMinorPropertyOptions.join("\n")}
+                name="minorProperties"
+                rows={12}
               />
             </label>
 

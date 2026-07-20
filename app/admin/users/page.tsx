@@ -7,11 +7,13 @@ import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import {
   addProDmToRoster,
   addEventAdminRole,
+  addLeagueAdminRole,
   addPatronRole,
   createAdminNotification,
   deleteProDmReview,
   removeDmFromRoster,
   removeEventAdminRole,
+  removeLeagueAdminRole,
   removePatronRole,
   removeProDmFromRoster,
   updateProDmRating,
@@ -65,6 +67,7 @@ export default async function AdminUsersPage({
     notification?: string;
     dmRoster?: string;
     eventAdmin?: string;
+    leagueAdmin?: string;
     patron?: string;
   }>;
 }) {
@@ -152,6 +155,14 @@ export default async function AdminUsersPage({
   const eventAdminMessage = params.eventAdmin
     ? eventAdminMessageMap[params.eventAdmin]
     : "";
+  const leagueAdminMessageMap: Record<string, string> = {
+    added: "League Admin role granted.",
+    removed: "League Admin role removed.",
+    invalid: "The requested League Admin change could not be completed.",
+  };
+  const leagueAdminMessage = params.leagueAdmin
+    ? leagueAdminMessageMap[params.leagueAdmin]
+    : "";
   const patronMessageMap: Record<string, string> = {
     added: "Patron role granted.",
     removed: "Patron role removed.",
@@ -176,6 +187,9 @@ export default async function AdminUsersPage({
         ) : null}
         {eventAdminMessage ? (
           <p style={{ color: "#ffffff", margin: 0 }}>{eventAdminMessage}</p>
+        ) : null}
+        {leagueAdminMessage ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>{leagueAdminMessage}</p>
         ) : null}
         {patronMessage ? (
           <p style={{ color: "#ffffff", margin: 0 }}>{patronMessage}</p>
@@ -493,6 +507,7 @@ export default async function AdminUsersPage({
                   <th>Discord Handle</th>
                   <th>Roles</th>
                   <th>Event Admin</th>
+                  <th>League Admin</th>
                   <th>Patron</th>
                   <th>Pro DM</th>
                   <th>Joined</th>
@@ -514,6 +529,11 @@ export default async function AdminUsersPage({
                     </td>
                     <td>
                       {user.roles.some((role: AdminUserRow["roles"][number]) => role.role === "EVENT_ADMIN")
+                        ? "Yes"
+                        : "No"}
+                    </td>
+                    <td>
+                      {user.roles.some((role: AdminUserRow["roles"][number]) => role.role === "LEAGUE_ADMIN")
                         ? "Yes"
                         : "No"}
                     </td>
@@ -549,6 +569,29 @@ export default async function AdminUsersPage({
                                 message={`Grant Event Admin access to ${user.name}? This will allow access to Grimoire moderation.`}
                               >
                                 Make Event Admin
+                              </ConfirmSubmitButton>
+                            </form>
+                          )}
+                          {user.roles.some(
+                            (role: AdminUserRow["roles"][number]) => role.role === "LEAGUE_ADMIN"
+                          ) ? (
+                            <form action={removeLeagueAdminRole}>
+                              <input name="targetUserId" type="hidden" value={user.id} />
+                              <ConfirmSubmitButton
+                                className="button-danger button-small"
+                                message={`Remove League Admin access from ${user.name}? This will remove access to the League legal choices page.`}
+                              >
+                                Remove League Admin
+                              </ConfirmSubmitButton>
+                            </form>
+                          ) : (
+                            <form action={addLeagueAdminRole}>
+                              <input name="targetUserId" type="hidden" value={user.id} />
+                              <ConfirmSubmitButton
+                                className="button-secondary button-small"
+                                message={`Grant League Admin access to ${user.name}? This only allows access to the League legal choices page.`}
+                              >
+                                Make League Admin
                               </ConfirmSubmitButton>
                             </form>
                           )}

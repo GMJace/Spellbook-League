@@ -62,7 +62,13 @@ export default async function PlayerDashboardPage({
 
   const gamesPlayedCount = new Set(
     characters.flatMap((character) =>
-      character.participants.map((participant) => participant.game.id)
+      character.participants
+        .filter(
+          (participant) =>
+            participant.game.status === "COMPLETED" &&
+            participant.logStatus === "APPROVED"
+        )
+        .map((participant) => participant.game.id)
     )
   ).size;
   const characterLimit = getCharacterLimitForRoles(user.roles);
@@ -71,11 +77,20 @@ export default async function PlayerDashboardPage({
   return (
     <main className="stack">
       {resolvedSearchParams?.characterLimit === "reached" ? (
-        <p style={{ color: "#ffffff", margin: 0 }}>
-          {`You have reached your character limit of ${
-            Number(resolvedSearchParams.limit) || characterLimit
-          }.`}
-        </p>
+        <div className="stack" style={{ gap: "0.4rem" }}>
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            {`You have reached your character limit of ${
+              Number(resolvedSearchParams.limit) || characterLimit
+            }.`}
+          </p>
+          {!user.roles.includes("PATRON") ? (
+            <p className="muted" style={{ margin: 0 }}>
+              Upgrade with{" "}
+              <Link href="/league/cart?membership=1">Grimoire Guild membership</Link>{" "}
+              to unlock up to 100 character logs for one year.
+            </p>
+          ) : null}
+        </div>
       ) : null}
       <section className="card ledger-panel stack">
         <div
@@ -152,7 +167,9 @@ export default async function PlayerDashboardPage({
               Create character logsheet
             </Link>
           ) : (
-            <span className="pill">Character limit reached</span>
+            <span className="pill" style={{ border: "none" }}>
+              Character limit reached
+            </span>
           )}
         </div>
 
@@ -173,6 +190,11 @@ export default async function PlayerDashboardPage({
               <tbody>
                 {characters.map((character) => {
                   const totalLevel = getCharacterTotalLevel(character);
+                  const loggedGameCount = character.participants.filter(
+                    (participant) =>
+                      participant.game.status === "COMPLETED" &&
+                      participant.logStatus === "APPROVED"
+                  ).length;
                   const pendingReviewCount = character.participants.filter(
                     (participant) =>
                       participant.game.status === "COMPLETED" &&
@@ -218,7 +240,7 @@ export default async function PlayerDashboardPage({
                       </td>
                       <td>Tier {getCharacterTier(totalLevel)}</td>
                       <td>{character.totalGold}</td>
-                      <td>{character.participants.length}</td>
+                      <td>{loggedGameCount}</td>
                       <td>{character._count.achievementAwards}</td>
                       <td>
                         <Link

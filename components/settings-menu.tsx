@@ -5,11 +5,15 @@ import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 
 export function SettingsMenu({
+  adminHref = "/admin/users",
   showEventAdminLink = false,
+  showLeagueAdminLink = false,
   userName,
   showAdminLink = false,
 }: {
+  adminHref?: string;
   showEventAdminLink?: boolean;
+  showLeagueAdminLink?: boolean;
   userName: string;
   showAdminLink?: boolean;
 }) {
@@ -71,8 +75,17 @@ export function SettingsMenu({
             Account
           </Link>
           {showAdminLink ? (
-            <Link href="/admin/users" className="settings-item" onClick={() => setOpen(false)}>
+            <Link href={adminHref} className="settings-item" onClick={() => setOpen(false)}>
               Admin
+            </Link>
+          ) : null}
+          {!showAdminLink && showLeagueAdminLink ? (
+            <Link
+              href="/admin/league-choices"
+              className="settings-item"
+              onClick={() => setOpen(false)}
+            >
+              League Choices
             </Link>
           ) : null}
           {!showAdminLink && showEventAdminLink ? (

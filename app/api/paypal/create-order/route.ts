@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getNextGrimoireEvent, getCuratedGamesForEvent } from "@/lib/grimoire-server";
+import { getGrimoireGuildMembershipSettings } from "@/lib/grimoire-guild-membership";
 import { formatPayPalAmount, paypalRequest } from "@/lib/paypal";
 import type { PayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
 import { prisma } from "@/lib/prisma";
@@ -25,7 +26,8 @@ const grimoireItemSchema = z.object({
 const checkoutPayloadSchema = z.discriminatedUnion("checkoutType", [
   z.object({
     checkoutType: z.literal("LEAGUE"),
-    items: z.array(leagueItemSchema).min(1),
+    membershipQuantity: z.number().int().min(0).max(1).default(0),
+    items: z.array(leagueItemSchema),
   }),
   z.object({
     checkoutType: z.literal("GRIMOIRE"),
@@ -161,6 +163,10 @@ async function buildLeagueCheckout(
   }
 
   const gamesById = new Map(games.map((game) => [game.id, game]));
+  const membershipSettings =
+    payload.membershipQuantity > 0
+      ? await getGrimoireGuildMembershipSettings()
+      : null;
   const paypalItems: CanonicalCheckout["purchaseUnits"][number]["items"] = [];
   const serializedItems: Array<{
     characterId: string;
@@ -171,6 +177,25 @@ async function buildLeagueCheckout(
   }> = [];
   const summaryParts: string[] = [];
   let amountUsd = 0;
+
+  if (payload.membershipQuantity > 0) {
+    if (!membershipSettings?.isActive) {
+      throw new Error("Grimoire Guild membership is not available right now.");
+    }
+
+    amountUsd += membershipSettings.priceUsd * payload.membershipQuantity;
+    paypalItems.push({
+      name: membershipSettings.productName.slice(0, 120),
+      quantity: String(payload.membershipQuantity),
+      unit_amount: {
+        currency_code: "USD",
+        value: formatPayPalAmount(membershipSettings.priceUsd),
+      },
+    });
+    summaryParts.push(
+      `${membershipSettings.productName} x${payload.membershipQuantity} (${formatPayPalAmount(membershipSettings.priceUsd)} USD)`,
+    );
+  }
 
   for (const item of payload.items) {
     const game = gamesById.get(item.gameId);
@@ -225,13 +250,24 @@ async function buildLeagueCheckout(
   }
 
   if (!amountUsd) {
-    throw new Error("Select at least one paid league ticket before checkout.");
+    throw new Error("Select a paid league ticket or the Grimoire Guild membership before checkout.");
   }
 
   return {
     amountUsd,
     checkoutType: "LEAGUE",
-    itemDataJson: JSON.stringify(serializeLeagueItems(serializedItems, gamesById)),
+    itemDataJson: JSON.stringify({
+      games: serializeLeagueItems(serializedItems, gamesById),
+      membership:
+        payload.membershipQuantity > 0 && membershipSettings
+          ? {
+              durationDays: membershipSettings.durationDays,
+              priceUsd: membershipSettings.priceUsd,
+              productName: membershipSettings.productName,
+              quantity: payload.membershipQuantity,
+            }
+          : null,
+    }),
     purchaseUnits: [
       {
         amount: {
@@ -244,7 +280,10 @@ async function buildLeagueCheckout(
           currency_code: "USD",
           value: formatPayPalAmount(amountUsd),
         },
-        description: "SPELLBOOK League tickets",
+        description:
+          payload.membershipQuantity > 0
+            ? "SPELLBOOK League tickets and memberships"
+            : "SPELLBOOK League tickets",
         items: paypalItems,
       },
     ],

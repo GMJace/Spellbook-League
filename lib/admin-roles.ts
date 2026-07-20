@@ -5,6 +5,7 @@ export const AUTOMATIC_ADMIN_ROLES = [
   "PLAYER",
   "DM",
   "EVENT_ADMIN",
+  "LEAGUE_ADMIN",
   "PATRON",
 ] as const;
 

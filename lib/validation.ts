@@ -5,6 +5,7 @@ import {
 } from "@/lib/character-options";
 import {
   getClassGrantedLanguages,
+  LEGACY_FEAT_COMPATIBILITY_OPTIONS,
   MAX_CHARM_SLOT_COUNT,
   MAX_CONSUMABLE_SLOT_COUNT,
   parseToggleSelections,
@@ -132,7 +133,13 @@ export const characterSchema = z
     backstory: z.string().trim().max(4000).optional().or(z.literal("")),
     totalGold: z.coerce.number().int().min(0),
     magicItems: z.array(z.string().trim().min(1).max(80)).max(10),
+    magicItemMinorProperties: z
+      .array(z.string().trim().max(80))
+      .max(10),
     commonMagicItems: z.array(z.string().trim().min(1).max(80)).max(5),
+    commonMagicItemMinorProperties: z
+      .array(z.string().trim().max(80))
+      .max(5),
     consumables: z
       .array(z.string().trim().min(1).max(80))
       .max(MAX_CONSUMABLE_SLOT_COUNT),
@@ -172,7 +179,9 @@ const characterFieldErrorMessages: Partial<Record<keyof CharacterFormData, strin
   backstory: "Character backstory must be 4000 characters or fewer.",
   totalGold: "Total gold must be a whole number of 0 or more.",
   magicItems: "Each current build magic item must be 80 characters or fewer.",
+  magicItemMinorProperties: "Each current build magic item minor property must be 80 characters or fewer.",
   commonMagicItems: "Each common magic item must be 80 characters or fewer.",
+  commonMagicItemMinorProperties: "Each common magic item minor property must be 80 characters or fewer.",
   consumables: "Each consumable must be 80 characters or fewer.",
   boon: "Boon must be 80 characters or fewer.",
   blessing: "Blessing must be 80 characters or fewer.",
@@ -214,6 +223,9 @@ export function validateCharacterChoices(
   const issues: string[] = [];
   const messages: string[] = [];
   const legalFeatSet = new Set(options.legalFeatOptions);
+  for (const feat of LEGACY_FEAT_COMPATIBILITY_OPTIONS) {
+    legalFeatSet.add(feat);
+  }
   const legalToolSet = new Set(options.legalToolOptions);
   const legalLanguageSet = new Set(options.legalLanguageOptions);
   const legalBoonSet = new Set(options.legalBoonOptions);

@@ -13,6 +13,16 @@ export async function requireAdminUser() {
   return user;
 }
 
+export async function requireLeagueChoicesAdminUser() {
+  const user = await requireUser();
+
+  if (!isAdminEmail(user.email) && !user.roles.includes("LEAGUE_ADMIN")) {
+    redirect("/");
+  }
+
+  return user;
+}
+
 export async function requireGrimoireAdminUser() {
   const user = await requireUser();
 

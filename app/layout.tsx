@@ -71,6 +71,8 @@ export default async function RootLayout({
         getUnreadNotificationCount(user.id),
       ])
     : [[], 0];
+  const isFullAdmin = isAdminEmail(user?.email);
+  const isLeagueAdmin = Boolean(user?.roles.includes("LEAGUE_ADMIN"));
 
   return (
     <html lang="en">
@@ -107,8 +109,10 @@ export default async function RootLayout({
                   />
                   <SettingsMenu
                     showEventAdminLink={user.roles.includes("EVENT_ADMIN")}
+                    showLeagueAdminLink={isLeagueAdmin}
                     userName={user.name ?? user.email ?? "Account"}
-                    showAdminLink={isAdminEmail(user.email)}
+                    showAdminLink={isFullAdmin}
+                    adminHref={isFullAdmin ? "/admin/users" : "/admin/league-choices"}
                   />
                   <Link
                     className="game-signups-button"

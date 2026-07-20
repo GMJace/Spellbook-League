@@ -11,6 +11,7 @@ enum Role {
   PLAYER
   DM
   EVENT_ADMIN
+  LEAGUE_ADMIN
   PATRON
 }
 
@@ -99,6 +100,7 @@ model User {
   createdNotifications Notification[] @relation("NotificationCreatedBy")
   siteHealthChecksTriggered SiteHealthCheck[]
   checkoutOrders CheckoutOrder[]
+  patronMemberships PatronMembership[]
 }
 
 model UserRole {
@@ -136,7 +138,9 @@ model Character {
   backstory    String            @default("")
   totalGold    Int               @default(0)
   magicItems   String            @default("[]")
+  magicItemMinorProperties String @default("[]")
   commonMagicItems String        @default("[]")
+  commonMagicItemMinorProperties String @default("[]")
   consumables  String            @default("[]")
   boon         String            @default("")
   blessing     String            @default("")
@@ -287,6 +291,17 @@ model SpellbookMonthlySubscriber {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   lastSubscribedAt DateTime @default(now())
+}
+
+model GrimoireGuildMembershipSettings {
+  id          String   @id
+  productName String
+  description String
+  priceUsd    Float
+  durationDays Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model LeagueLegalChoiceList {
@@ -449,7 +464,25 @@ model CheckoutOrder {
   updatedAt         DateTime       @updatedAt
   capturedAt        DateTime?
   user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  patronMembership  PatronMembership?
 
   @@index([status, createdAt(sort: Desc)])
   @@index([checkoutType, createdAt(sort: Desc)])
+}
+
+model PatronMembership {
+  id              String         @id @default(cuid())
+  userId          String
+  checkoutOrderId String?        @unique
+  source          String         @default("LEAGUE_CART")
+  productName     String         @default("Grimoire Guild membership")
+  startedAt       DateTime
+  expiresAt       DateTime
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkoutOrder   CheckoutOrder? @relation(fields: [checkoutOrderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, startedAt, expiresAt])
+  @@index([expiresAt])
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createCharacter } from "@/app/player/characters/new/actions";
 import { ConfirmCheckbox } from "@/components/confirm-checkbox";
@@ -18,12 +18,16 @@ import {
   getCharmSlotCount,
   getClassGrantedLanguages,
   getCharacterTier,
+  LEGACY_FEAT_COMPATIBILITY_OPTIONS,
   getConsumableItemLimit,
   getLegalFeatGroups,
   getLegalLanguageGroups,
   getLegalToolGroups,
   getMagicItemLimit,
   hasBoonSlot,
+  type LegalFeatGroup,
+  type LegalLanguageGroup,
+  type LegalToolGroup,
   parseMagicItems,
   parseSkillSelections,
   parseToggleSelections,
@@ -35,6 +39,7 @@ import {
   getDefaultLegalCharmOptions,
   getDefaultLegalFeatOptions,
   getDefaultLegalLanguageOptions,
+  getDefaultLegalMinorPropertyOptions,
   getDefaultLegalToolOptions,
 } from "@/lib/league-legal-choices";
 
@@ -65,7 +70,9 @@ type CharacterFormValues = {
   backstory: string | null;
   totalGold: number;
   magicItems: string;
+  magicItemMinorProperties: string;
   commonMagicItems: string;
+  commonMagicItemMinorProperties: string;
   consumables: string;
   boon: string | null;
   blessing: string | null;
@@ -132,28 +139,38 @@ export function CharacterForm({
   submitLabel = "Create character",
   initialValues,
   legalBuildMagicItemOptions = [],
+  legalUncommonMagicItemOptions = [],
   legalCommonMagicItemOptions = [],
+  legalMinorPropertyOptions = getDefaultLegalMinorPropertyOptions(),
   legalConsumableOptions = [],
   legalBoonOptions = getDefaultLegalBoonOptions(),
   legalBlessingOptions = getDefaultLegalBlessingOptions(),
   legalCharmOptions = getDefaultLegalCharmOptions(),
   legalFeatOptions = getDefaultLegalFeatOptions(),
+  legalFeatGroups,
   legalToolOptions = getDefaultLegalToolOptions(),
+  legalToolGroups,
   legalLanguageOptions = getDefaultLegalLanguageOptions(),
+  legalLanguageGroups,
   legalSubclassOptions = getDefaultLegalSubclassOptions(),
 }: {
   action?: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
   initialValues?: CharacterFormValues;
   legalBuildMagicItemOptions?: string[];
+  legalUncommonMagicItemOptions?: string[];
   legalCommonMagicItemOptions?: string[];
+  legalMinorPropertyOptions?: string[];
   legalConsumableOptions?: string[];
   legalBoonOptions?: string[];
   legalBlessingOptions?: string[];
   legalCharmOptions?: string[];
   legalFeatOptions?: string[];
+  legalFeatGroups?: LegalFeatGroup[];
   legalToolOptions?: string[];
+  legalToolGroups?: LegalToolGroup[];
   legalLanguageOptions?: string[];
+  legalLanguageGroups?: LegalLanguageGroup[];
   legalSubclassOptions?: LegalSubclassOptionsMap;
 }) {
   const [class1Name, setClass1Name] = useState<string>(initialValues?.class1Name ?? "");
@@ -171,10 +188,14 @@ export function CharacterForm({
   const [class1Level, setClass1Level] = useState<number>(initialValues?.class1Level ?? 1);
   const [class2Level, setClass2Level] = useState<number>(initialValues?.class2Level ?? 0);
   const [class3Level, setClass3Level] = useState<number>(initialValues?.class3Level ?? 0);
+  const allowedFeatOptions = useMemo(
+    () => [...legalFeatOptions, ...LEGACY_FEAT_COMPATIBILITY_OPTIONS],
+    [legalFeatOptions]
+  );
   const [featSelections, setFeatSelections] = useState(() =>
     filterBooleanSelections(
       parseToggleSelections(initialValues?.feats ?? ""),
-      legalFeatOptions
+      allowedFeatOptions
     )
   );
   const [skillSelections, setSkillSelections] = useState(() =>
@@ -198,11 +219,25 @@ export function CharacterForm({
       legalBuildMagicItemOptions
     )
   );
+  const [magicItemMinorProperties, setMagicItemMinorProperties] = useState(() =>
+    ensureSelectableItemSlots(
+      parseMagicItems(initialValues?.magicItemMinorProperties ?? ""),
+      1,
+      legalMinorPropertyOptions
+    )
+  );
   const [commonMagicItems, setCommonMagicItems] = useState(() =>
     ensureSelectableItemSlots(
       parseMagicItems(initialValues?.commonMagicItems ?? ""),
       COMMON_MAGIC_ITEM_SLOT_COUNT,
       legalCommonMagicItemOptions
+    )
+  );
+  const [commonMagicItemMinorProperties, setCommonMagicItemMinorProperties] = useState(() =>
+    ensureSelectableItemSlots(
+      parseMagicItems(initialValues?.commonMagicItemMinorProperties ?? ""),
+      COMMON_MAGIC_ITEM_SLOT_COUNT,
+      legalMinorPropertyOptions
     )
   );
   const [consumables, setConsumables] = useState(() =>
@@ -260,15 +295,23 @@ export function CharacterForm({
     { className: class3Name, level: class3Level },
   ]);
   const classGrantedLanguageSet = new Set(classGrantedLanguages);
+  const legalMinorPropertySet = useMemo(
+    () => new Set(legalMinorPropertyOptions),
+    [legalMinorPropertyOptions]
+  );
+  const legalUncommonMagicItemSet = useMemo(
+    () => new Set(legalUncommonMagicItemOptions),
+    [legalUncommonMagicItemOptions]
+  );
   const skillGroups = Array.from({ length: 3 }, (_, index) =>
     DND_SKILLS.slice(
       index * Math.ceil(DND_SKILLS.length / 3),
       (index + 1) * Math.ceil(DND_SKILLS.length / 3)
     )
   ).filter((group) => group.length > 0);
-  const toolGroups = getLegalToolGroups(legalToolOptions);
-  const languageGroups = getLegalLanguageGroups(legalLanguageOptions);
-  const featGroups = getLegalFeatGroups(legalFeatOptions);
+  const toolGroups = legalToolGroups ?? getLegalToolGroups(legalToolOptions);
+  const languageGroups = legalLanguageGroups ?? getLegalLanguageGroups(legalLanguageOptions);
+  const featGroups = legalFeatGroups ?? getLegalFeatGroups(legalFeatOptions);
   const submittedLanguageSelections = { ...languageSelections } as Record<string, true>;
   const targetAction = action ?? createCharacter;
 
@@ -308,7 +351,7 @@ export function CharacterForm({
     setFeatSelections(
       filterBooleanSelections(
         parseToggleSelections(initialValues?.feats ?? ""),
-        legalFeatOptions
+        allowedFeatOptions
       )
     );
     setSkillSelections(parseSkillSelections(initialValues?.proficiencies ?? ""));
@@ -330,11 +373,25 @@ export function CharacterForm({
         legalBuildMagicItemOptions
       )
     );
+    setMagicItemMinorProperties(
+      ensureSelectableItemSlots(
+        parseMagicItems(initialValues?.magicItemMinorProperties ?? ""),
+        nextMagicItemLimit,
+        legalMinorPropertyOptions
+      )
+    );
     setCommonMagicItems(
       ensureSelectableItemSlots(
         parseMagicItems(initialValues?.commonMagicItems ?? ""),
         COMMON_MAGIC_ITEM_SLOT_COUNT,
         legalCommonMagicItemOptions
+      )
+    );
+    setCommonMagicItemMinorProperties(
+      ensureSelectableItemSlots(
+        parseMagicItems(initialValues?.commonMagicItemMinorProperties ?? ""),
+        COMMON_MAGIC_ITEM_SLOT_COUNT,
+        legalMinorPropertyOptions
       )
     );
     setConsumables(
@@ -369,18 +426,21 @@ export function CharacterForm({
   }, [
     initialValues,
     initialValues?.magicItems,
+    initialValues?.magicItemMinorProperties,
     initialValues?.commonMagicItems,
+    initialValues?.commonMagicItemMinorProperties,
     initialValues?.consumables,
     initialValues?.boon,
     initialValues?.blessing,
     initialValues?.charms,
     legalBuildMagicItemOptions,
     legalCommonMagicItemOptions,
+    legalMinorPropertyOptions,
     legalConsumableOptions,
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
-    legalFeatOptions,
+    allowedFeatOptions,
     legalToolOptions,
     legalLanguageOptions,
   ]);
@@ -390,6 +450,36 @@ export function CharacterForm({
       ensureSelectableItemSlots(current, magicItemLimit, legalBuildMagicItemOptions)
     );
   }, [legalBuildMagicItemOptions, magicItemLimit]);
+
+  useEffect(() => {
+    setMagicItemMinorProperties((current) =>
+      Array.from({ length: magicItems.length }, (_, index) => {
+        const item = magicItems[index] ?? "";
+        const minorProperty = current[index] ?? "";
+
+        if (!item || !legalUncommonMagicItemSet.has(item)) {
+          return "";
+        }
+
+        return legalMinorPropertySet.has(minorProperty) ? minorProperty : "";
+      })
+    );
+  }, [legalMinorPropertySet, legalUncommonMagicItemSet, magicItems]);
+
+  useEffect(() => {
+    setCommonMagicItemMinorProperties((current) =>
+      Array.from({ length: commonMagicItems.length }, (_, index) => {
+        const item = commonMagicItems[index] ?? "";
+        const minorProperty = current[index] ?? "";
+
+        if (!item) {
+          return "";
+        }
+
+        return legalMinorPropertySet.has(minorProperty) ? minorProperty : "";
+      })
+    );
+  }, [commonMagicItems, legalMinorPropertySet]);
 
   useEffect(() => {
     setConsumables((current) => ensureItemSlots(current, consumableItemLimit));
@@ -408,8 +498,8 @@ export function CharacterForm({
   }, [blessing, legalBlessingOptions]);
 
   useEffect(() => {
-    setFeatSelections((current) => filterBooleanSelections(current, legalFeatOptions));
-  }, [legalFeatOptions]);
+    setFeatSelections((current) => filterBooleanSelections(current, allowedFeatOptions));
+  }, [allowedFeatOptions]);
 
   useEffect(() => {
     setToolSelections((current) =>
@@ -573,6 +663,26 @@ export function CharacterForm({
         type="hidden"
         value={serializeToggleSelections(toolSelections)}
       />
+      {magicItemMinorProperties.map((minorProperty, index) => (
+        <input
+          key={`magic-item-minor-property-${index}`}
+          name="magicItemMinorProperties"
+          type="hidden"
+          value={
+            magicItems[index] && legalUncommonMagicItemSet.has(magicItems[index])
+              ? minorProperty
+              : ""
+          }
+        />
+      ))}
+      {commonMagicItemMinorProperties.map((minorProperty, index) => (
+        <input
+          key={`common-magic-item-minor-property-${index}`}
+          name="commonMagicItemMinorProperties"
+          type="hidden"
+          value={commonMagicItems[index] ? minorProperty : ""}
+        />
+      ))}
 
       <label>
         Character name
@@ -832,26 +942,58 @@ export function CharacterForm({
         <strong>Current build magic items (Uncommon+)</strong>
         <div className="form-grid">
           {magicItems.map((item, index) => (
-            <label key={index}>
-              Magic item slot {index + 1}
-              {index < 3 ? " (attunement)" : ""}
-              <select
-                name="magicItems"
-                value={item}
-                onChange={(event) => {
-                  const next = [...magicItems];
-                  next[index] = event.target.value;
-                  setMagicItems(next);
-                }}
-              >
-                <option value="">Select an Uncommon+ magic item</option>
-                {legalBuildMagicItemOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="stack" key={index} style={{ gap: "0.45rem" }}>
+              <label>
+                Magic item slot {index + 1}
+                {index < 3 ? " (attunement)" : ""}
+                <select
+                  name="magicItems"
+                  value={item}
+                  onChange={(event) => {
+                    const nextItem = event.target.value;
+                    const next = [...magicItems];
+                    next[index] = nextItem;
+                    setMagicItems(next);
+                    setMagicItemMinorProperties((current) => {
+                      const nextProperties = [...current];
+
+                      if (!nextItem || !legalUncommonMagicItemSet.has(nextItem)) {
+                        nextProperties[index] = "";
+                      }
+
+                      return nextProperties;
+                    });
+                  }}
+                >
+                  <option value="">Select an Uncommon+ magic item</option>
+                  {legalBuildMagicItemOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {item && legalUncommonMagicItemSet.has(item) ? (
+                <label>
+                  Minor property
+                  <select
+                    value={magicItemMinorProperties[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...magicItemMinorProperties];
+                      next[index] = event.target.value;
+                      setMagicItemMinorProperties(next);
+                    }}
+                  >
+                    <option value="">No minor property</option>
+                    {legalMinorPropertyOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
           ))}
         </div>
 
@@ -859,25 +1001,57 @@ export function CharacterForm({
         <strong>Common magic items</strong>
         <div className="form-grid">
           {commonMagicItems.map((item, index) => (
-            <label key={`common-${index}`}>
-              Common Magic Item Slot {index + 1}
-              <select
-                name="commonMagicItems"
-                value={item}
-                onChange={(event) => {
-                  const next = [...commonMagicItems];
-                  next[index] = event.target.value;
-                  setCommonMagicItems(next);
-                }}
-              >
-                <option value="">Select a common magic item</option>
-                {legalCommonMagicItemOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="stack" key={`common-${index}`} style={{ gap: "0.45rem" }}>
+              <label>
+                Common Magic Item Slot {index + 1}
+                <select
+                  name="commonMagicItems"
+                  value={item}
+                  onChange={(event) => {
+                    const nextItem = event.target.value;
+                    const next = [...commonMagicItems];
+                    next[index] = nextItem;
+                    setCommonMagicItems(next);
+                    setCommonMagicItemMinorProperties((current) => {
+                      const nextProperties = [...current];
+
+                      if (!nextItem) {
+                        nextProperties[index] = "";
+                      }
+
+                      return nextProperties;
+                    });
+                  }}
+                >
+                  <option value="">Select a common magic item</option>
+                  {legalCommonMagicItemOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {item ? (
+                <label>
+                  Minor property
+                  <select
+                    value={commonMagicItemMinorProperties[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...commonMagicItemMinorProperties];
+                      next[index] = event.target.value;
+                      setCommonMagicItemMinorProperties(next);
+                    }}
+                  >
+                    <option value="">No minor property</option>
+                    {legalMinorPropertyOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
           ))}
         </div>
 

@@ -7,10 +7,14 @@ import {
   getLeagueLegalCharmOptions,
   getCharacterBuildMagicItemOptions,
   getLeagueLegalConsumableOptions,
+  getLeagueLegalFeatGroups,
   getLeagueLegalFeatOptions,
+  getLeagueLegalLanguageGroups,
   getLeagueLegalLanguageOptions,
   getLeagueLegalMagicItemOptions,
+  getLeagueLegalMinorPropertyOptions,
   getLeagueLegalSubclassOptions,
+  getLeagueLegalToolGroups,
   getLeagueLegalToolOptions,
 } from "@/lib/league-legal-choices";
 import { requireRole } from "@/lib/auth";
@@ -31,15 +35,19 @@ export default async function NewCharacterPage({
   });
 
   if (existingCharacterCount >= characterLimit) {
-    redirect("/player?characterLimit=reached");
+    redirect(`/player?characterLimit=reached&limit=${characterLimit}`);
   }
 
   const [
     legalSubclassOptions,
     legalMagicItemOptions,
+    legalMinorPropertyOptions,
     legalConsumableOptions,
+    legalFeatGroups,
     legalFeatOptions,
+    legalToolGroups,
     legalToolOptions,
+    legalLanguageGroups,
     legalLanguageOptions,
     legalBoonOptions,
     legalBlessingOptions,
@@ -47,9 +55,13 @@ export default async function NewCharacterPage({
   ] = await Promise.all([
     getLeagueLegalSubclassOptions(),
     getLeagueLegalMagicItemOptions(),
+    getLeagueLegalMinorPropertyOptions(),
     getLeagueLegalConsumableOptions(),
+    getLeagueLegalFeatGroups(),
     getLeagueLegalFeatOptions(),
+    getLeagueLegalToolGroups(),
     getLeagueLegalToolOptions(),
+    getLeagueLegalLanguageGroups(),
     getLeagueLegalLanguageOptions(),
     getLeagueLegalBoonOptions(),
     getLeagueLegalBlessingOptions(),
@@ -73,13 +85,18 @@ export default async function NewCharacterPage({
       ) : null}
       <CharacterForm
         legalBuildMagicItemOptions={getCharacterBuildMagicItemOptions(legalMagicItemOptions)}
+        legalUncommonMagicItemOptions={legalMagicItemOptions.Uncommon}
         legalCommonMagicItemOptions={legalMagicItemOptions.Common}
+        legalMinorPropertyOptions={legalMinorPropertyOptions}
         legalConsumableOptions={legalConsumableOptions}
         legalBoonOptions={legalBoonOptions}
         legalBlessingOptions={legalBlessingOptions}
         legalCharmOptions={legalCharmOptions}
+        legalFeatGroups={legalFeatGroups}
         legalFeatOptions={legalFeatOptions}
+        legalToolGroups={legalToolGroups}
         legalToolOptions={legalToolOptions}
+        legalLanguageGroups={legalLanguageGroups}
         legalLanguageOptions={legalLanguageOptions}
         legalSubclassOptions={legalSubclassOptions}
       />

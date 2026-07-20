@@ -8,30 +8,88 @@ import {
   type LegalSubclassOptionsMap,
   normalizeLeagueChoiceValues,
 } from "@/lib/character-options";
-import { requireAdminUser } from "@/lib/admin";
+import { requireLeagueChoicesAdminUser } from "@/lib/admin";
 import {
   MAGIC_ITEM_RARITIES,
   type LegalBlessingOptions,
   type LegalBoonOptions,
   type LegalCharmOptions,
   type LegalConsumableOptions,
-  type LegalFeatOptions,
-  type LegalLanguageOptions,
   type LegalMagicItemOptionsMap,
-  type LegalToolOptions,
+  type LegalMinorPropertyOptions,
+  getLeagueLegalFeatSections,
+  getLeagueLegalLanguageSections,
+  getLeagueLegalToolSections,
   updateLeagueLegalBlessingOptions,
   updateLeagueLegalBoonOptions,
   updateLeagueLegalCharmOptions,
   updateLeagueLegalConsumableOptions,
-  updateLeagueLegalFeatOptions,
-  updateLeagueLegalLanguageOptions,
+  updateLeagueLegalFeatSections,
+  updateLeagueLegalLanguageSections,
   updateLeagueLegalMagicItemOptions,
+  updateLeagueLegalMinorPropertyOptions,
   updateLeagueLegalSubclassOptions,
-  updateLeagueLegalToolOptions,
+  updateLeagueLegalToolSections,
 } from "@/lib/league-legal-choices";
 
+function parseHeaderTextareaSections(value: string) {
+  const parsedSections: Array<{ title?: string; values: string[] }> = [];
+  let currentSection: { title?: string; values: string[] } | null = null;
+
+  for (const rawLine of value.split(/\r?\n/)) {
+    const line = rawLine.trim();
+
+    if (!line) {
+      continue;
+    }
+
+    if (line.toLowerCase().startsWith("header:")) {
+      if (currentSection) {
+        parsedSections.push(currentSection);
+      }
+
+      currentSection = {
+        title: line.slice("header:".length).trim(),
+        values: [],
+      };
+      continue;
+    }
+
+    if (!currentSection) {
+      currentSection = {
+        values: [],
+      };
+    }
+
+    currentSection.values.push(line);
+  }
+
+  if (currentSection) {
+    parsedSections.push(currentSection);
+  }
+
+  return parsedSections;
+}
+
+function mergeParsedSectionsIntoTemplate<
+  TSection extends {
+    key: string;
+    title: string;
+    note?: string;
+    values: string[];
+  },
+>(templateSections: TSection[], value: string) {
+  const parsedSections = parseHeaderTextareaSections(value);
+
+  return templateSections.map((section, index) => ({
+    ...section,
+    title: parsedSections[index]?.title?.trim() || section.title,
+    values: normalizeLeagueChoiceValues(parsedSections[index]?.values ?? []),
+  }));
+}
+
 export async function updateLeagueLegalChoices(formData: FormData) {
-  await requireAdminUser();
+  await requireLeagueChoicesAdminUser();
 
   const nextOptions = Object.fromEntries(
     DND_CLASSES.map((className) => [
@@ -58,20 +116,27 @@ export async function updateLeagueLegalChoices(formData: FormData) {
       .split(/\r?\n/)
   ) as LegalConsumableOptions;
 
-  const nextFeatOptions = normalizeLeagueChoiceValues(
+  const [currentFeatSections, currentToolSections, currentLanguageSections] =
+    await Promise.all([
+      getLeagueLegalFeatSections(),
+      getLeagueLegalToolSections(),
+      getLeagueLegalLanguageSections(),
+    ]);
+
+  const nextFeatSections = mergeParsedSectionsIntoTemplate(
+    currentFeatSections,
     String(formData.get("feats") ?? "")
-      .split(/\r?\n/)
-  ) as LegalFeatOptions;
+  );
 
-  const nextToolOptions = normalizeLeagueChoiceValues(
+  const nextToolSections = mergeParsedSectionsIntoTemplate(
+    currentToolSections,
     String(formData.get("tools") ?? "")
-      .split(/\r?\n/)
-  ) as LegalToolOptions;
+  );
 
-  const nextLanguageOptions = normalizeLeagueChoiceValues(
+  const nextLanguageSections = mergeParsedSectionsIntoTemplate(
+    currentLanguageSections,
     String(formData.get("languages") ?? "")
-      .split(/\r?\n/)
-  ) as LegalLanguageOptions;
+  );
 
   const nextBoonOptions = normalizeLeagueChoiceValues(
     String(formData.get("boons") ?? "")
@@ -88,15 +153,21 @@ export async function updateLeagueLegalChoices(formData: FormData) {
       .split(/\r?\n/)
   ) as LegalCharmOptions;
 
+  const nextMinorPropertyOptions = normalizeLeagueChoiceValues(
+    String(formData.get("minorProperties") ?? "")
+      .split(/\r?\n/)
+  ) as LegalMinorPropertyOptions;
+
   await updateLeagueLegalSubclassOptions(nextOptions);
   await updateLeagueLegalMagicItemOptions(nextMagicItemOptions);
   await updateLeagueLegalConsumableOptions(nextConsumableOptions);
-  await updateLeagueLegalFeatOptions(nextFeatOptions);
-  await updateLeagueLegalToolOptions(nextToolOptions);
-  await updateLeagueLegalLanguageOptions(nextLanguageOptions);
+  await updateLeagueLegalFeatSections(nextFeatSections);
+  await updateLeagueLegalToolSections(nextToolSections);
+  await updateLeagueLegalLanguageSections(nextLanguageSections);
   await updateLeagueLegalBoonOptions(nextBoonOptions);
   await updateLeagueLegalBlessingOptions(nextBlessingOptions);
   await updateLeagueLegalCharmOptions(nextCharmOptions);
+  await updateLeagueLegalMinorPropertyOptions(nextMinorPropertyOptions);
 
   revalidatePath("/admin/league-choices");
   revalidatePath("/admin/users");
