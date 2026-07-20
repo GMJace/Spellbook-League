@@ -21,6 +21,8 @@ type GrimoireCartBuilderProps = {
   paypalClientId: string | null;
 };
 
+const FLYING_CARPET_BADGE_MULTIPLIER = 2;
+
 function getConflictingGames(games: GrimoireGame[]) {
   const byStartAt = new Map<string, GrimoireGame[]>();
 
@@ -48,9 +50,19 @@ export function GrimoireCartBuilder({
     ) as Record<string, number>,
   );
   const [badgeQuantity, setBadgeQuantity] = useState(initialBadgeQuantity);
+  const [badgeType, setBadgeType] = useState<"REGULAR" | "FLYING_CARPET">("REGULAR");
   const [conflictAcknowledged, setConflictAcknowledged] = useState(false);
   const [isGiftPurchase, setIsGiftPurchase] = useState(false);
   const [receiverEmails, setReceiverEmails] = useState<string[]>([""]);
+  const regularBadgeLabel = nextEvent.ticketLabel;
+  const regularBadgePriceUsd = nextEvent.ticketPriceUsd;
+  const flyingCarpetBadgeLabel = "Flying Carpet Badge";
+  const flyingCarpetBadgePriceUsd = nextEvent.ticketPriceUsd * FLYING_CARPET_BADGE_MULTIPLIER;
+  const selectedBadgeLabel =
+    badgeType === "FLYING_CARPET" ? flyingCarpetBadgeLabel : regularBadgeLabel;
+  const selectedBadgePriceUsd =
+    badgeType === "FLYING_CARPET" ? flyingCarpetBadgePriceUsd : regularBadgePriceUsd;
+  const selectedBadgePriceText = formatUsd(selectedBadgePriceUsd);
 
   useEffect(() => {
     const desiredCount = Math.max(badgeQuantity, 1);
@@ -77,7 +89,7 @@ export function GrimoireCartBuilder({
     [selectedGames],
   );
   const subtotal =
-    badgeQuantity * nextEvent.ticketPriceUsd +
+    badgeQuantity * selectedBadgePriceUsd +
     selectedGames.reduce(
       (total, game) =>
         total + game.ticketPriceUsd * (selectedGameQuantities[game.slug] ?? 0),
@@ -92,7 +104,7 @@ export function GrimoireCartBuilder({
     .filter(Boolean);
   const checkoutSummary = [
     badgeQuantity > 0
-      ? `${nextEvent.ticketLabel} x${badgeQuantity} (${nextEvent.ticketPrice})`
+      ? `${selectedBadgeLabel} x${badgeQuantity} (${selectedBadgePriceText})`
       : null,
     ...selectedGames.map(
       (game) =>
@@ -109,6 +121,7 @@ export function GrimoireCartBuilder({
   const checkoutPayload: GrimoirePayPalCheckoutPayload = {
     checkoutType: "GRIMOIRE",
     badgeQuantity,
+    badgeType,
     isGiftPurchase,
     receiverEmails: receiverEmails.map((email) => email.trim()).filter(Boolean),
     items: selectedGames.map((game) => ({
@@ -143,11 +156,27 @@ export function GrimoireCartBuilder({
             </p>
             <label className="ggcon-checkbox-row">
               <span>
-                {nextEvent.ticketLabel} for {nextEvent.displayDate}
+                {selectedBadgeLabel} for {nextEvent.displayDate}
               </span>
-              <span className="pill">{nextEvent.ticketPrice}</span>
+              <span className="pill">{selectedBadgePriceText}</span>
             </label>
             <div className="search-row">
+              <label className="stack" style={{ gap: "0.35rem", flex: 1 }}>
+                <span className="muted">Badge classification</span>
+                <select
+                  value={badgeType}
+                  onChange={(event) =>
+                    setBadgeType(event.target.value as "REGULAR" | "FLYING_CARPET")
+                  }
+                >
+                  <option value="REGULAR">
+                    {regularBadgeLabel} ({formatUsd(regularBadgePriceUsd)})
+                  </option>
+                  <option value="FLYING_CARPET">
+                    {flyingCarpetBadgeLabel} ({formatUsd(flyingCarpetBadgePriceUsd)})
+                  </option>
+                </select>
+              </label>
               <label className="stack" style={{ gap: "0.35rem", flex: 1 }}>
                 <span className="muted">Badge quantity</span>
                 <select
@@ -180,9 +209,9 @@ export function GrimoireCartBuilder({
                   ? [
                       <div className="ggcon-summary-line" key="badge-summary">
                         <span>
-                          {nextEvent.ticketLabel} x{badgeQuantity}
+                          {selectedBadgeLabel} x{badgeQuantity}
                         </span>
-                        <strong>{formatUsd(nextEvent.ticketPriceUsd * badgeQuantity)}</strong>
+                        <strong>{formatUsd(selectedBadgePriceUsd * badgeQuantity)}</strong>
                       </div>,
                     ]
                   : []),

@@ -1,6 +1,3 @@
-import { constants as fsConstants } from "fs";
-import { access, mkdir } from "fs/promises";
-import path from "path";
 import type { PrismaClient } from "@prisma/client";
 import {
   buildHealthSummary,
@@ -194,28 +191,14 @@ export async function runSiteHealthCheck(
       : [],
   });
 
-  const publicDirectory = path.join(process.cwd(), "public");
-  const uploadsDirectory = path.join(publicDirectory, "uploads");
-
-  try {
-    await access(publicDirectory, fsConstants.W_OK);
-    await mkdir(uploadsDirectory, { recursive: true });
-
-    checks.push({
-      name: "Upload storage",
-      status: "PASS",
-      message: "Public uploads directory is writable.",
-      details: [uploadsDirectory],
-    });
-  } catch (error) {
-    const details = extractErrorDetails(error);
-    checks.push({
-      name: "Upload storage",
-      status: "FAIL",
-      message: details.message,
-      details: [publicDirectory, ...details.details],
-    });
-  }
+  checks.push({
+    name: "Image upload mode",
+    status: "PASS",
+    message: "Image uploads are stored inline and do not rely on server-local public files.",
+    details: [
+      "Profile pictures, tokens, badges, and cover images no longer require a writable public/uploads directory.",
+    ],
+  });
 
   const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
   let recentErrorCount24h = 0;

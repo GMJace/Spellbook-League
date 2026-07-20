@@ -1,6 +1,6 @@
-import { randomUUID } from "crypto";
-import { mkdir, unlink, writeFile } from "fs/promises";
+import { unlink } from "fs/promises";
 import path from "path";
+import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 
 const TOKEN_UPLOAD_DIRECTORY = path.join(
   process.cwd(),
@@ -43,18 +43,9 @@ export async function saveTokenImageUpload(
   previousTokenImagePath?: string | null
 ) {
   validateTokenImageUpload(file);
-
-  await mkdir(TOKEN_UPLOAD_DIRECTORY, { recursive: true });
-
-  const extension = tokenMimeTypeExtensions[file.type];
-  const fileName = `${randomUUID()}${extension}`;
-  const outputPath = path.join(TOKEN_UPLOAD_DIRECTORY, fileName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await writeFile(outputPath, buffer);
   await removeTokenImageUpload(previousTokenImagePath);
 
-  return `${TOKEN_PUBLIC_PATH_PREFIX}${fileName}`;
+  return convertImageFileToDataUrl(file);
 }
 
 export async function removeTokenImageUpload(

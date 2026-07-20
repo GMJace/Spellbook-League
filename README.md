@@ -81,6 +81,7 @@ npm run dev
 - Player only: `player@example.com` / `password123`
 - DM only: `dm@example.com` / `password123`
 - Player + DM: `dual@example.com` / `password123`
+- Test account (Player + DM): `testy@example.com` / `password123`
 
 ## Main routes
 

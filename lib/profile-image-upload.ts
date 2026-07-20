@@ -1,6 +1,6 @@
-import { randomUUID } from "crypto";
-import { mkdir, unlink, writeFile } from "fs/promises";
+import { unlink } from "fs/promises";
 import path from "path";
+import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 
 const PROFILE_IMAGE_UPLOAD_DIRECTORY = path.join(
   process.cwd(),
@@ -40,17 +40,7 @@ export function validateProfileImageUpload(file: File) {
 
 export async function saveProfileImageUpload(file: File) {
   validateProfileImageUpload(file);
-
-  await mkdir(PROFILE_IMAGE_UPLOAD_DIRECTORY, { recursive: true });
-
-  const extension = profileImageMimeTypeExtensions[file.type];
-  const fileName = `${randomUUID()}${extension}`;
-  const outputPath = path.join(PROFILE_IMAGE_UPLOAD_DIRECTORY, fileName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await writeFile(outputPath, buffer);
-
-  return `${PROFILE_IMAGE_PUBLIC_PATH_PREFIX}${fileName}`;
+  return convertImageFileToDataUrl(file);
 }
 
 export async function removeProfileImageUpload(

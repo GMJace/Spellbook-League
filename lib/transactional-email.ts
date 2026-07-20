@@ -33,6 +33,29 @@ type GrimoireSubmissionStatusEmailInput = {
   actionPath?: string | null;
 };
 
+type LeagueRefundRequestEmailInput = {
+  characterName: string;
+  gameAdventureCode: string;
+  gameDateTime: string;
+  gamePath?: string | null;
+  gameTier: string;
+  gameTitle: string;
+  matchingOrderSummaries: string[];
+  playerEmail: string;
+  playerName: string | null | undefined;
+  to: string;
+};
+
+type LeagueRefundRequestConfirmationEmailInput = {
+  gameAdventureCode: string;
+  gameDateTime: string;
+  gamePath?: string | null;
+  gameTitle: string;
+  supportEmail: string;
+  to: string;
+  playerName: string | null | undefined;
+};
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -339,6 +362,118 @@ export async function sendGrimoireSubmissionStatusEmail({
     `<strong>Start time:</strong> ${escapedSlotDateTime}` +
     "</p>" +
     htmlAction;
+
+  await sendTransactionalEmail({
+    to,
+    subject,
+    text,
+    html,
+  });
+}
+
+export async function sendLeagueRefundRequestEmail({
+  characterName,
+  gameAdventureCode,
+  gameDateTime,
+  gamePath,
+  gameTier,
+  gameTitle,
+  matchingOrderSummaries,
+  playerEmail,
+  playerName,
+  to,
+}: LeagueRefundRequestEmailInput) {
+  const recipientName = escapeHtml(getRecipientName(playerName));
+  const escapedCharacterName = escapeHtml(characterName);
+  const escapedGameTitle = escapeHtml(gameTitle);
+  const escapedGameAdventureCode = escapeHtml(gameAdventureCode);
+  const escapedGameDateTime = escapeHtml(gameDateTime);
+  const escapedGameTier = escapeHtml(gameTier);
+  const escapedPlayerEmail = escapeHtml(playerEmail);
+  const gameUrl = gamePath?.trim() ? buildAppUrl(gamePath.trim()) : "";
+  const escapedGameUrl = gameUrl ? escapeHtml(gameUrl) : "";
+  const orderLines = matchingOrderSummaries.length
+    ? matchingOrderSummaries
+    : ["No matching completed checkout order was linked automatically. Please review manually."];
+  const escapedOrderLines = orderLines.map((line) => escapeHtml(line));
+  const subject = `Refund request started: ${gameTitle}`;
+  const text = [
+    "A player left a paid SPELLBOOK game and requested refund review.",
+    "",
+    `Player: ${getRecipientName(playerName)}`,
+    `Player email: ${playerEmail}`,
+    `Character: ${characterName}`,
+    `Game: ${gameTitle}`,
+    `Adventure code: ${gameAdventureCode}`,
+    `Tier: ${gameTier}`,
+    `Scheduled time: ${gameDateTime}`,
+    ...(gameUrl ? [`Game link: ${gameUrl}`] : []),
+    "",
+    "Completed checkout history linked to this request:",
+    ...orderLines.map((line) => `- ${line}`),
+  ].join("\n");
+  const html =
+    "<p>A player left a paid SPELLBOOK game and requested refund review.</p>" +
+    "<p>" +
+    `<strong>Player:</strong> ${recipientName}<br />` +
+    `<strong>Player email:</strong> ${escapedPlayerEmail}<br />` +
+    `<strong>Character:</strong> ${escapedCharacterName}<br />` +
+    `<strong>Game:</strong> ${escapedGameTitle}<br />` +
+    `<strong>Adventure code:</strong> ${escapedGameAdventureCode}<br />` +
+    `<strong>Tier:</strong> ${escapedGameTier}<br />` +
+    `<strong>Scheduled time:</strong> ${escapedGameDateTime}` +
+    "</p>" +
+    (gameUrl ? `<p><a href="${escapedGameUrl}">Open game listing</a></p>` : "") +
+    "<p><strong>Completed checkout history linked to this request:</strong></p>" +
+    `<ul>${escapedOrderLines.map((line) => `<li>${line}</li>`).join("")}</ul>`;
+
+  await sendTransactionalEmail({
+    to,
+    replyTo: playerEmail,
+    subject,
+    text,
+    html,
+  });
+}
+
+export async function sendLeagueRefundRequestConfirmationEmail({
+  gameAdventureCode,
+  gameDateTime,
+  gamePath,
+  gameTitle,
+  playerName,
+  supportEmail,
+  to,
+}: LeagueRefundRequestConfirmationEmailInput) {
+  const recipientName = escapeHtml(getRecipientName(playerName));
+  const escapedGameTitle = escapeHtml(gameTitle);
+  const escapedGameAdventureCode = escapeHtml(gameAdventureCode);
+  const escapedGameDateTime = escapeHtml(gameDateTime);
+  const escapedSupportEmail = escapeHtml(supportEmail);
+  const gameUrl = gamePath?.trim() ? buildAppUrl(gamePath.trim()) : "";
+  const escapedGameUrl = gameUrl ? escapeHtml(gameUrl) : "";
+  const subject = `Refund request received: ${gameTitle}`;
+  const text = [
+    `Hi ${getRecipientName(playerName)},`,
+    "",
+    `You have been removed from ${gameTitle}.`,
+    "SPELLBOOK staff has been emailed to begin reviewing any refund tied to this game signup.",
+    "",
+    `Adventure code: ${gameAdventureCode}`,
+    `Scheduled time: ${gameDateTime}`,
+    `Support contact: ${supportEmail}`,
+    ...(gameUrl ? [`Game link: ${gameUrl}`] : []),
+  ].join("\n");
+  const html =
+    `<p>Hi ${recipientName},</p>` +
+    `<p>You have been removed from <strong>${escapedGameTitle}</strong>.</p>` +
+    "<p>SPELLBOOK staff has been emailed to begin reviewing any refund tied to this game signup.</p>" +
+    "<p>" +
+    `<strong>Adventure code:</strong> ${escapedGameAdventureCode}<br />` +
+    `<strong>Scheduled time:</strong> ${escapedGameDateTime}<br />` +
+    `<strong>Support contact:</strong> ${escapedSupportEmail}` +
+    "</p>" +
+    (gameUrl ? `<p><a href="${escapedGameUrl}">Open game listing</a></p>` : "");
 
   await sendTransactionalEmail({
     to,

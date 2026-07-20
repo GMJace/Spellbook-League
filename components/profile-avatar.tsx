@@ -1,4 +1,7 @@
+"use client";
+
 import type { CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 type ProfileAvatarProps = {
   name: string;
@@ -25,6 +28,12 @@ export function ProfileAvatar({
   src,
   size = 96,
 }: ProfileAvatarProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [src]);
+
   const sharedStyle = {
     width: `${size}px`,
     height: `${size}px`,
@@ -33,10 +42,11 @@ export function ProfileAvatar({
     flexShrink: 0,
   } satisfies CSSProperties;
 
-  if (src) {
+  if (src && !imageFailed) {
     return (
       <img
         alt={`${name} profile picture`}
+        onError={() => setImageFailed(true)}
         src={src}
         style={{
           ...sharedStyle,

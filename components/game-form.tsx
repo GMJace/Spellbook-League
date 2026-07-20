@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 
 import { BulletTextarea } from "@/components/bullet-textarea";
 import { DatePickerField } from "@/components/date-picker-field";
+import { GameRewardFields } from "@/components/game-reward-fields";
 
 type Player = {
   id: string;
@@ -40,11 +41,43 @@ export type GameFormInitialValues = {
 
 type GameFormProps = {
   initialValues?: GameFormInitialValues;
+  legalBlessingOptions?: string[];
+  legalBoonOptions?: string[];
+  legalBuildMagicItemOptions?: string[];
+  legalCharmOptions?: string[];
+  legalCommonMagicItemOptions?: string[];
+  legalConsumableOptions?: string[];
   pendingLabel?: string;
   players: Player[];
-  submitGame: (formData: FormData) => Promise<{ error?: string } | void>;
+  submitGame: (
+    formData: FormData
+  ) => Promise<
+    | {
+        error?: string;
+        fieldErrors?: Partial<Record<GameFormFieldName, string>>;
+      }
+    | void
+  >;
   submitLabel?: string;
 };
+
+type GameFormFieldName =
+  | "title"
+  | "adventureCode"
+  | "gameSummary"
+  | "ticketPrice"
+  | "datePlayed"
+  | "tier"
+  | "seatCapacity"
+  | "serviceHours"
+  | "downtimeDaysAwarded"
+  | "rewardsSummary"
+  | "magicItemsAwarded"
+  | "consumablesAwarded"
+  | "sessionNotes"
+  | "status"
+  | "participants"
+  | "adventureImage";
 
 const tiers = [
   { value: "TIER_1", label: "Tier 1" },
@@ -124,6 +157,12 @@ async function resizeAdventureImage(file: File) {
 
 export function GameForm({
   initialValues,
+  legalBlessingOptions = [],
+  legalBoonOptions = [],
+  legalBuildMagicItemOptions = [],
+  legalCharmOptions = [],
+  legalCommonMagicItemOptions = [],
+  legalConsumableOptions = [],
   pendingLabel = "Saving game...",
   players,
   submitGame,
@@ -136,7 +175,27 @@ export function GameForm({
     initialValues?.participants ?? [],
   );
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<GameFormFieldName, string>>>({});
   const [isPending, startTransition] = useTransition();
+
+  const errorTextStyle = { color: "#8f341b", margin: 0 };
+  const fieldBlockStyle = { gap: "0.35rem" };
+
+  function getFieldError(name: GameFormFieldName) {
+    return fieldErrors[name] ?? "";
+  }
+
+  function clearFieldError(name: GameFormFieldName) {
+    setFieldErrors((current) => {
+      if (!current[name]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[name];
+      return next;
+    });
+  }
 
   const filteredPlayers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -158,6 +217,7 @@ export function GameForm({
       onSubmit={(event) => {
         event.preventDefault();
         setError("");
+        setFieldErrors({});
 
         startTransition(async () => {
           try {
@@ -172,6 +232,10 @@ export function GameForm({
             }
 
             const result = await submitGame(formData);
+
+            if (result?.fieldErrors) {
+              setFieldErrors(result.fieldErrors);
+            }
 
             if (result?.error) {
               setError(result.error);
@@ -198,66 +262,115 @@ export function GameForm({
       ) : null}
 
       <div className="form-grid">
-        <label>
-          Game title
-          <input defaultValue={initialValues?.title ?? ""} name="title" type="text" required />
-        </label>
-        <label>
-          Adventure code
-          <input
-            defaultValue={initialValues?.adventureCode ?? ""}
-            name="adventureCode"
-            type="text"
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Game title
+            <input
+              aria-invalid={Boolean(getFieldError("title"))}
+              defaultValue={initialValues?.title ?? ""}
+              name="title"
+              type="text"
+              required
+            />
+          </label>
+          {getFieldError("title") ? <p style={errorTextStyle}>{getFieldError("title")}</p> : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Adventure code
+            <input
+              aria-invalid={Boolean(getFieldError("adventureCode"))}
+              defaultValue={initialValues?.adventureCode ?? ""}
+              name="adventureCode"
+              type="text"
+              required
+            />
+          </label>
+          {getFieldError("adventureCode") ? (
+            <p style={errorTextStyle}>{getFieldError("adventureCode")}</p>
+          ) : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Price
+            <input
+              aria-invalid={Boolean(getFieldError("ticketPrice"))}
+              defaultValue={initialValues?.ticketPrice ?? "Free"}
+              name="ticketPrice"
+              placeholder="Free"
+              type="text"
+              required
+            />
+          </label>
+          {getFieldError("ticketPrice") ? (
+            <p style={errorTextStyle}>{getFieldError("ticketPrice")}</p>
+          ) : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <DatePickerField
+            aria-invalid={Boolean(getFieldError("datePlayed"))}
+            defaultValue={initialValues?.datePlayed ?? ""}
+            label="Date and time"
+            name="datePlayed"
             required
+            type="datetime-local"
           />
-        </label>
-        <label>
-          Price
-          <input
-            defaultValue={initialValues?.ticketPrice ?? "Free"}
-            name="ticketPrice"
-            placeholder="Free"
-            type="text"
-            required
-          />
-        </label>
-        <DatePickerField
-          defaultValue={initialValues?.datePlayed ?? ""}
-          label="Date and time"
-          name="datePlayed"
-          required
-          type="datetime-local"
-        />
-        <label>
-          Tier
-          <select name="tier" defaultValue={initialValues?.tier ?? "TIER_1"}>
-            {tiers.map((tier) => (
-              <option key={tier.value} value={tier.value}>
-                {tier.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Player capacity
-          <input
-            defaultValue={initialValues?.seatCapacity ?? "6"}
-            max="12"
-            min="1"
-            name="seatCapacity"
-            type="number"
-          />
-        </label>
-        <label>
-          Status
-          <select name="status" defaultValue={initialValues?.status ?? "SCHEDULED"}>
-            {statuses.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          {getFieldError("datePlayed") ? (
+            <p style={errorTextStyle}>{getFieldError("datePlayed")}</p>
+          ) : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Tier
+            <select
+              aria-invalid={Boolean(getFieldError("tier"))}
+              name="tier"
+              defaultValue={initialValues?.tier ?? "TIER_1"}
+            >
+              {tiers.map((tier) => (
+                <option key={tier.value} value={tier.value}>
+                  {tier.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {getFieldError("tier") ? <p style={errorTextStyle}>{getFieldError("tier")}</p> : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Player capacity
+            <input
+              aria-invalid={Boolean(getFieldError("seatCapacity"))}
+              defaultValue={initialValues?.seatCapacity ?? "6"}
+              max="12"
+              min="1"
+              name="seatCapacity"
+              type="number"
+            />
+          </label>
+          {getFieldError("seatCapacity") ? (
+            <p style={errorTextStyle}>{getFieldError("seatCapacity")}</p>
+          ) : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Status
+            <select
+              aria-invalid={Boolean(getFieldError("status"))}
+              name="status"
+              defaultValue={initialValues?.status ?? "SCHEDULED"}
+            >
+              {statuses.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {getFieldError("status") ? (
+            <p style={errorTextStyle}>{getFieldError("status")}</p>
+          ) : null}
+        </div>
         <div className="metric">
           <div className="metric-label">Number of players</div>
           <div className="metric-value">{participants.length}</div>
@@ -266,8 +379,16 @@ export function GameForm({
 
       <label>
         Adventure cover / badge
-        <input accept="image/*" name="adventureImage" type="file" />
+        <input
+          accept="image/*"
+          aria-invalid={Boolean(getFieldError("adventureImage"))}
+          name="adventureImage"
+          type="file"
+        />
       </label>
+      {getFieldError("adventureImage") ? (
+        <p style={errorTextStyle}>{getFieldError("adventureImage")}</p>
+      ) : null}
       {initialValues?.adventureImagePath ? (
         <div className="list-card stack" style={{ gap: "0.6rem" }}>
           <span className="muted">Current cover / badge</span>
@@ -284,8 +405,15 @@ export function GameForm({
 
       <label>
         Game summary (Include themes and content advisories)
-        <textarea defaultValue={initialValues?.gameSummary ?? ""} name="gameSummary" />
+        <textarea
+          aria-invalid={Boolean(getFieldError("gameSummary"))}
+          defaultValue={initialValues?.gameSummary ?? ""}
+          name="gameSummary"
+        />
       </label>
+      {getFieldError("gameSummary") ? (
+        <p style={errorTextStyle}>{getFieldError("gameSummary")}</p>
+      ) : null}
       <p className="muted" style={{ margin: 0 }}>
         Each line is a bullet point.
       </p>
@@ -293,6 +421,7 @@ export function GameForm({
       <label>
         Service hours (AL DM rewards)
         <input
+          aria-invalid={Boolean(getFieldError("serviceHours"))}
           defaultValue={initialValues?.serviceHours ?? ""}
           inputMode="decimal"
           name="serviceHours"
@@ -300,57 +429,75 @@ export function GameForm({
           type="text"
         />
       </label>
+      {getFieldError("serviceHours") ? (
+        <p style={errorTextStyle}>{getFieldError("serviceHours")}</p>
+      ) : null}
       <p className="muted" style={{ margin: 0 }}>
         Optional. Enter the Adventurers League service hours earned for running
         this game. Decimals like 2.5 are fine.
       </p>
 
       <div className="form-grid">
-        <label>
-          Downtime days awarded
-          <input
-            defaultValue={initialValues?.downtimeDaysAwarded ?? "0"}
-            inputMode="numeric"
-            min="0"
-            name="downtimeDaysAwarded"
-            placeholder="0"
-            type="number"
-          />
-        </label>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Downtime days awarded
+            <input
+              aria-invalid={Boolean(getFieldError("downtimeDaysAwarded"))}
+              defaultValue={initialValues?.downtimeDaysAwarded ?? "0"}
+              inputMode="numeric"
+              min="0"
+              name="downtimeDaysAwarded"
+              placeholder="0"
+              type="number"
+            />
+          </label>
+          {getFieldError("downtimeDaysAwarded") ? (
+            <p style={errorTextStyle}>{getFieldError("downtimeDaysAwarded")}</p>
+          ) : null}
+        </div>
 
-        <label>
-          Awarded Gold (Total in GP)
-          <input
-            defaultValue={initialValues?.rewardsSummary ?? ""}
-            name="rewardsSummary"
-            type="text"
-          />
-        </label>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Awarded Gold (Total in GP)
+            <input
+              aria-invalid={Boolean(getFieldError("rewardsSummary"))}
+              defaultValue={initialValues?.rewardsSummary ?? ""}
+              name="rewardsSummary"
+              type="text"
+            />
+          </label>
+          {getFieldError("rewardsSummary") ? (
+            <p style={errorTextStyle}>{getFieldError("rewardsSummary")}</p>
+          ) : null}
+        </div>
       </div>
-      <label>
-        Magic items awarded
-        <BulletTextarea
-          defaultValue={initialValues?.magicItemsAwarded ?? ""}
-          name="magicItemsAwarded"
-        />
-      </label>
-      <p className="muted" style={{ margin: 0 }}>
-        Each line is a bullet point.
-      </p>
-      <label>
-        Consumables awarded
-        <BulletTextarea
-          defaultValue={initialValues?.consumablesAwarded ?? ""}
-          name="consumablesAwarded"
-        />
-      </label>
-      <p className="muted" style={{ margin: 0 }}>
-        Each line is a bullet point.
-      </p>
+      <GameRewardFields
+        initialConsumablesAwarded={initialValues?.consumablesAwarded ?? ""}
+        initialMagicItemsAwarded={initialValues?.magicItemsAwarded ?? ""}
+        legalBlessingOptions={legalBlessingOptions}
+        legalBoonOptions={legalBoonOptions}
+        legalBuildMagicItemOptions={legalBuildMagicItemOptions}
+        legalCharmOptions={legalCharmOptions}
+        legalCommonMagicItemOptions={legalCommonMagicItemOptions}
+        legalConsumableOptions={legalConsumableOptions}
+      />
+      {getFieldError("magicItemsAwarded") ? (
+        <p style={errorTextStyle}>{getFieldError("magicItemsAwarded")}</p>
+      ) : null}
+      {getFieldError("consumablesAwarded") ? (
+        <p style={errorTextStyle}>{getFieldError("consumablesAwarded")}</p>
+      ) : null}
       <label>
         Session notes/Story Awards
-        <BulletTextarea defaultValue={initialValues?.sessionNotes ?? ""} name="sessionNotes" />
+        <BulletTextarea
+          aria-invalid={Boolean(getFieldError("sessionNotes"))}
+          defaultValue={initialValues?.sessionNotes ?? ""}
+          name="sessionNotes"
+        />
       </label>
+      {getFieldError("sessionNotes") ? (
+        <p style={errorTextStyle}>{getFieldError("sessionNotes")}</p>
+      ) : null}
       <p className="muted" style={{ margin: 0 }}>
         Each line is a bullet point.
       </p>
@@ -362,6 +509,9 @@ export function GameForm({
             Search league players, then select one of their characters before
             adding them to the game.
           </p>
+          {getFieldError("participants") ? (
+            <p style={errorTextStyle}>{getFieldError("participants")}</p>
+          ) : null}
         </div>
         <div className="form-grid">
           <label>
@@ -371,6 +521,7 @@ export function GameForm({
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
+                clearFieldError("participants");
               }}
               placeholder="Search by player name"
             />
@@ -382,6 +533,7 @@ export function GameForm({
               onChange={(event) => {
                 setSelectedUserId(event.target.value);
                 setSelectedCharacterId("");
+                clearFieldError("participants");
               }}
             >
               {filteredPlayers.map((player) => (
@@ -397,6 +549,7 @@ export function GameForm({
               value={selectedCharacterId}
               onChange={(event) => {
                 setSelectedCharacterId(event.target.value);
+                clearFieldError("participants");
               }}
             >
               <option value="">Select a character</option>
@@ -412,6 +565,10 @@ export function GameForm({
               type="button"
               onClick={() => {
                 if (!selectedPlayer || !selectedCharacterId) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    participants: "Choose a player and one of their characters.",
+                  }));
                   setError("Choose a player and one of their characters.");
                   return;
                 }
@@ -421,6 +578,10 @@ export function GameForm({
                 );
 
                 if (!character) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    participants: "The selected character was not found.",
+                  }));
                   setError("The selected character was not found.");
                   return;
                 }
@@ -430,6 +591,10 @@ export function GameForm({
                 );
 
                 if (exists) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    participants: "A character cannot be added to the same game twice.",
+                  }));
                   setError("A character cannot be added to the same game twice.");
                   return;
                 }
@@ -445,6 +610,7 @@ export function GameForm({
                 ]);
                 setSelectedCharacterId("");
                 setError("");
+                clearFieldError("participants");
               }}
             >
               Add participant
@@ -478,6 +644,7 @@ export function GameForm({
                           (entry) => entry.characterId !== participant.characterId
                         )
                       );
+                      clearFieldError("participants");
                     }}
                   >
                     Remove
@@ -491,7 +658,7 @@ export function GameForm({
         </div>
       </div>
 
-      {error ? <p style={{ color: "#8f341b" }}>{error}</p> : null}
+      {error ? <p style={errorTextStyle}>{error}</p> : null}
 
       <button type="submit" disabled={isPending}>
         {isPending ? pendingLabel : submitLabel}

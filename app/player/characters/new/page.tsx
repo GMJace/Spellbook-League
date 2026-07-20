@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { CharacterForm } from "@/components/character-form";
+import { getCharacterLimitForRoles } from "@/lib/character-limits";
 import {
   getLeagueLegalBlessingOptions,
   getLeagueLegalBoonOptions,
@@ -11,6 +13,8 @@ import {
   getLeagueLegalSubclassOptions,
   getLeagueLegalToolOptions,
 } from "@/lib/league-legal-choices";
+import { requireRole } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export default async function NewCharacterPage({
   searchParams,
@@ -18,6 +22,18 @@ export default async function NewCharacterPage({
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const query = await searchParams;
+  const user = await requireRole("PLAYER");
+  const characterLimit = getCharacterLimitForRoles(user.roles);
+  const existingCharacterCount = await prisma.character.count({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  if (existingCharacterCount >= characterLimit) {
+    redirect("/player?characterLimit=reached");
+  }
+
   const [
     legalSubclassOptions,
     legalMagicItemOptions,

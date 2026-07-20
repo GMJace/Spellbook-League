@@ -2,6 +2,7 @@
 import { DmGameCreationSwitcher } from "@/components/dm-game-creation-switcher";
 import { requireRole } from "@/lib/auth";
 import { getLeaguePlayers } from "@/lib/data";
+import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions } from "@/lib/league-legal-choices";
 import { getNextGrimoireEvent, getSeasonSchedule, getSlotsForEvent } from "@/lib/grimoire-server";
 import { prisma } from "@/lib/prisma";
 
@@ -25,15 +26,40 @@ export default async function NewGamePage({ searchParams }: PageProps) {
   const user = await requireRole("DM");
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const duplicateFrom = resolvedSearchParams?.duplicateFrom?.trim();
-  const players = await getLeaguePlayers();
-  const nextEvent = await getNextGrimoireEvent();
-  const publishedEvents = (await getSeasonSchedule()).filter(
+  const [
+    players,
+    nextEvent,
+    seasonSchedule,
+    legalMagicItemOptions,
+    legalConsumableOptions,
+    legalBoonOptions,
+    legalBlessingOptions,
+    legalCharmOptions,
+  ] = await Promise.all([
+    getLeaguePlayers(),
+    getNextGrimoireEvent(),
+    getSeasonSchedule(),
+    getLeagueLegalMagicItemOptions(),
+    getLeagueLegalConsumableOptions(),
+    getLeagueLegalBoonOptions(),
+    getLeagueLegalBlessingOptions(),
+    getLeagueLegalCharmOptions(),
+  ]);
+  const publishedEvents = seasonSchedule.filter(
     (event) => new Date(event.date).getTime() >= Date.now()
   );
   const slotPairs = await Promise.all(
     publishedEvents.map(async (event) => [event.id, await getSlotsForEvent(event.id)] as const)
   );
   const slotsByEvent = Object.fromEntries(slotPairs);
+  const legalRewardsJson = JSON.stringify({
+    legalBuildMagicItemOptions: getCharacterBuildMagicItemOptions(legalMagicItemOptions),
+    legalCommonMagicItemOptions: legalMagicItemOptions.Common,
+    legalConsumableOptions,
+    legalBoonOptions,
+    legalBlessingOptions,
+    legalCharmOptions,
+  });
   const duplicatedGame =
     duplicateFrom
       ? await prisma.game.findFirst({
@@ -102,6 +128,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
           eventOptions={publishedEvents}
           initialGameValues={initialGameValues}
           initialEventId={nextEvent?.id}
+          legalRewardsJson={legalRewardsJson}
           playersJson={JSON.stringify(playersForForm)}
           slotsByEvent={slotsByEvent}
         />

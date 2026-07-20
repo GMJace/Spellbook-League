@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { EditGameForm } from "@/components/edit-game-form";
 import { getLeaguePlayers } from "@/lib/data";
+import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +49,15 @@ export default async function EditGamePage({ params }: PageProps) {
 
   const { id } = await params;
 
-  const [players, game] = await Promise.all([
+  const [
+    players,
+    game,
+    legalMagicItemOptions,
+    legalConsumableOptions,
+    legalBoonOptions,
+    legalBlessingOptions,
+    legalCharmOptions,
+  ] = await Promise.all([
     getLeaguePlayers(),
     prisma.game.findUnique({
       where: { id },
@@ -62,6 +71,11 @@ export default async function EditGamePage({ params }: PageProps) {
         },
       },
     }),
+    getLeagueLegalMagicItemOptions(),
+    getLeagueLegalConsumableOptions(),
+    getLeagueLegalBoonOptions(),
+    getLeagueLegalBlessingOptions(),
+    getLeagueLegalCharmOptions(),
   ]);
 
   if (!game) {
@@ -105,6 +119,14 @@ export default async function EditGamePage({ params }: PageProps) {
       name: character.name,
     })),
   }));
+  const legalRewardsJson = JSON.stringify({
+    legalBuildMagicItemOptions: getCharacterBuildMagicItemOptions(legalMagicItemOptions),
+    legalCommonMagicItemOptions: legalMagicItemOptions.Common,
+    legalConsumableOptions,
+    legalBoonOptions,
+    legalBlessingOptions,
+    legalCharmOptions,
+  });
 
   return (
     <main className="stack">
@@ -112,6 +134,7 @@ export default async function EditGamePage({ params }: PageProps) {
         <p className="eyebrow" style={{ margin: 0 }}>Edit game</p>
         <EditGameForm
           initialValuesJson={JSON.stringify(initialValues)}
+          legalRewardsJson={legalRewardsJson}
           playersJson={JSON.stringify(playersForForm)}
         />
       </section>

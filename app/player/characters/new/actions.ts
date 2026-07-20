@@ -10,6 +10,9 @@ import {
 } from "@/lib/character";
 import { requireRole } from "@/lib/auth";
 import {
+  getCharacterLimitForRoles,
+} from "@/lib/character-limits";
+import {
   getLeagueLegalBlessingOptions,
   getLeagueLegalBoonOptions,
   getLeagueLegalCharmOptions,
@@ -45,6 +48,17 @@ export async function createCharacter(
   formData: FormData
 ) {
   const user = await requireRole("PLAYER");
+  const characterLimit = getCharacterLimitForRoles(user.roles);
+  const existingCharacterCount = await prisma.character.count({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  if (existingCharacterCount >= characterLimit) {
+    redirect(`/player?characterLimit=reached&limit=${characterLimit}`);
+  }
+
   const tokenImageFile = getTokenImageUpload(formData.get("tokenImage"));
   const [
     legalSubclassOptions,

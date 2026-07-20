@@ -1,10 +1,9 @@
 // @ts-nocheck
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
+import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
 
@@ -19,15 +18,7 @@ async function saveAdventureImage(file: File) {
     return { error: "Adventure art must be 5 MB or smaller." } as const;
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const extension = path.extname(file.name) || ".png";
-  const directory = path.join(process.cwd(), "public", "uploads", "game-covers");
-  const filename = `${crypto.randomUUID()}${extension.toLowerCase()}`;
-
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, filename), bytes);
-
-  return { path: `/uploads/game-covers/${filename}` } as const;
+  return { path: await convertImageFileToDataUrl(file) } as const;
 }
 
 export async function createGame(formData: FormData) {

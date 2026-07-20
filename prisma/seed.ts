@@ -639,6 +639,7 @@ async function main() {
     player: addDays(now, -72),
     dm: addDays(now, -68),
     dual: addDays(now, -63),
+    testy: addDays(now, -58),
     rosterDm: addDays(now, -52),
     waitlistDm: addDays(now, -46),
     scout: addDays(now, -39),
@@ -650,6 +651,7 @@ async function main() {
     playerUser,
     dmUser,
     dualUser,
+    testyUser,
     rosterDmUser,
     waitlistDmUser,
     scoutUser,
@@ -698,6 +700,18 @@ async function main() {
         email: "dual@example.com",
         passwordHash,
         createdAt: userCreatedAt.dual,
+        roles: {
+          create: [{ role: "PLAYER" }, { role: "DM" }],
+        },
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Testy",
+        discordHandle: "@testy",
+        email: "testy@example.com",
+        passwordHash,
+        createdAt: userCreatedAt.testy,
         roles: {
           create: [{ role: "PLAYER" }, { role: "DM" }],
         },

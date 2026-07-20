@@ -101,7 +101,6 @@ export default async function RootLayout({
             <div className="site-actions">
               {user ? (
                 <>
-                  <Link href="/store">STORE</Link>
                   <NotificationBell
                     notifications={notifications}
                     unreadCount={unreadNotificationCount}
@@ -111,14 +110,12 @@ export default async function RootLayout({
                     userName={user.name ?? user.email ?? "Account"}
                     showAdminLink={isAdminEmail(user.email)}
                   />
-                  <a
+                  <Link
                     className="game-signups-button"
-                    href="https://discord.com/channels/744348925414080592/1324788600851796080"
-                    rel="noreferrer"
-                    target="_blank"
+                    href="/store"
                   >
-                    GAME SIGNUPS
-                  </a>
+                    STORE
+                  </Link>
                 </>
               ) : (
                 <>

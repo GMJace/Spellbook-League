@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
+import {
+  buildStoredGameRewardStrings,
+  hasStructuredGameRewardSelectionFields,
+  readGameRewardSelectionsFromFormData,
+} from "@/lib/game-reward-selections";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -64,8 +69,9 @@ async function requireOwnedLoggedGame(characterId: string, gameId: string) {
       characterId,
       userId: user.id,
       gameId,
+      logStatus: "APPROVED",
       game: {
-        loggedByUserId: user.id,
+        status: "COMPLETED",
       },
     },
     include: {
@@ -92,6 +98,17 @@ function getApprovedParticipantUpdate(status: "SCHEDULED" | "COMPLETED" | "CANCE
   };
 }
 
+function getSubmittedRewardStrings(formData: FormData) {
+  if (!hasStructuredGameRewardSelectionFields(formData)) {
+    return {
+      magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
+      consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
+    };
+  }
+
+  return buildStoredGameRewardStrings(readGameRewardSelectionsFromFormData(formData));
+}
+
 export async function createPlayerGameLog(formData: FormData) {
   const characterId = String(formData.get("characterId") ?? "");
 
@@ -100,6 +117,7 @@ export async function createPlayerGameLog(formData: FormData) {
   }
 
   const { user, character } = await requireOwnedCharacter(characterId);
+  const rewardStrings = getSubmittedRewardStrings(formData);
 
   const parsed = playerGameLogSchema.safeParse({
     title: formData.get("title"),
@@ -108,8 +126,8 @@ export async function createPlayerGameLog(formData: FormData) {
     tier: formData.get("tier"),
     dmName: formData.get("dmName"),
     rewardsSummary: formData.get("rewardsSummary"),
-    magicItemsAwarded: formData.get("magicItemsAwarded") ?? "",
-    consumablesAwarded: formData.get("consumablesAwarded") ?? "",
+    magicItemsAwarded: rewardStrings.magicItemsAwarded,
+    consumablesAwarded: rewardStrings.consumablesAwarded,
     sessionNotes: formData.get("sessionNotes"),
     status: formData.get("status"),
   });
@@ -187,6 +205,7 @@ export async function updatePlayerGameLog(
   }
 
   const { participant } = await requireOwnedLoggedGame(characterId, gameId);
+  const rewardStrings = getSubmittedRewardStrings(formData);
 
   const parsed = playerGameLogSchema.safeParse({
     title: formData.get("title"),
@@ -195,8 +214,8 @@ export async function updatePlayerGameLog(
     tier: formData.get("tier"),
     dmName: formData.get("dmName"),
     rewardsSummary: formData.get("rewardsSummary"),
-    magicItemsAwarded: formData.get("magicItemsAwarded") ?? "",
-    consumablesAwarded: formData.get("consumablesAwarded") ?? "",
+    magicItemsAwarded: rewardStrings.magicItemsAwarded,
+    consumablesAwarded: rewardStrings.consumablesAwarded,
     sessionNotes: formData.get("sessionNotes"),
     status: formData.get("status"),
   });
@@ -207,35 +226,52 @@ export async function updatePlayerGameLog(
     );
   }
 
+  const isPlayerManagedLog = participant.game.loggedByUserId === participant.userId;
   const participantDefaults = getApprovedParticipantUpdate(parsed.data.status);
   const formattedDate = formatNotificationDate(parsed.data.datePlayed);
 
   await prisma.$transaction(async (tx) => {
-    await tx.game.update({
-      where: {
-        id: participant.gameId,
-      },
-      data: {
-        dmId: null,
-        dmName: parsed.data.dmName,
-        title: parsed.data.title,
-        adventureCode: parsed.data.adventureCode,
-        datePlayed: new Date(parsed.data.datePlayed),
-        tier: parsed.data.tier,
-        rewardsSummary: parsed.data.rewardsSummary,
-        magicItemsAwarded: parsed.data.magicItemsAwarded,
-        consumablesAwarded: parsed.data.consumablesAwarded,
-        sessionNotes: parsed.data.sessionNotes,
-        status: parsed.data.status,
-      },
-    });
+    if (isPlayerManagedLog) {
+      await tx.game.update({
+        where: {
+          id: participant.gameId,
+        },
+        data: {
+          dmId: null,
+          dmName: parsed.data.dmName,
+          title: parsed.data.title,
+          adventureCode: parsed.data.adventureCode,
+          datePlayed: new Date(parsed.data.datePlayed),
+          tier: parsed.data.tier,
+          rewardsSummary: parsed.data.rewardsSummary,
+          magicItemsAwarded: parsed.data.magicItemsAwarded,
+          consumablesAwarded: parsed.data.consumablesAwarded,
+          sessionNotes: parsed.data.sessionNotes,
+          status: parsed.data.status,
+        },
+      });
 
-    await tx.gameParticipant.update({
-      where: {
-        id: participant.id,
-      },
-      data: participantDefaults,
-    });
+      await tx.gameParticipant.update({
+        where: {
+          id: participant.id,
+        },
+        data: participantDefaults,
+      });
+    } else {
+      await tx.gameParticipant.update({
+        where: {
+          id: participant.id,
+        },
+        data: {
+          logStatus: "APPROVED",
+          approvedAt: participant.approvedAt ?? new Date(),
+          logRewardsSummary: parsed.data.rewardsSummary,
+          logMagicItemsAwarded: parsed.data.magicItemsAwarded,
+          logConsumablesAwarded: parsed.data.consumablesAwarded,
+          logSessionNotes: parsed.data.sessionNotes,
+        },
+      });
+    }
 
     await createNotification(tx, {
       userId: participant.userId,
@@ -257,6 +293,7 @@ export async function updatePlayerGameLog(
   revalidatePath("/player");
   revalidatePath(`/player/characters/${characterId}`);
   revalidatePath(`/player/characters/${characterId}/games/${gameId}/edit`);
+  revalidatePath(`/dm/games/${gameId}`);
 
   redirect(`/player/characters/${characterId}?updatedLog=1`);
 }

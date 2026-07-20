@@ -1,13 +1,17 @@
 // @ts-nocheck
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { createNotifications } from "@/lib/notifications";
 import { requireRole } from "@/lib/auth";
+import {
+  buildStoredGameRewardStrings,
+  hasStructuredGameRewardSelectionFields,
+  readGameRewardSelectionsFromFormData,
+} from "@/lib/game-reward-selections";
+import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
 
@@ -40,9 +44,52 @@ const GAME_FIELD_LABELS: Record<string, string> = {
   status: "Status",
 };
 
-function buildGameValidationError(
+type GameFieldName =
+  | "title"
+  | "adventureCode"
+  | "gameSummary"
+  | "ticketPrice"
+  | "datePlayed"
+  | "tier"
+  | "seatCapacity"
+  | "serviceHours"
+  | "downtimeDaysAwarded"
+  | "rewardsSummary"
+  | "magicItemsAwarded"
+  | "consumablesAwarded"
+  | "sessionNotes"
+  | "status"
+  | "participants"
+  | "adventureImage";
+
+type GameActionErrorResult = {
+  error: string;
+  fieldErrors?: Partial<Record<GameFieldName, string>>;
+};
+
+const GAME_FIELD_ERROR_MESSAGES: Record<GameFieldName, string> = {
+  title: "Enter a game title.",
+  adventureCode: "Enter an adventure code.",
+  gameSummary: "Game summary must be 1500 characters or fewer.",
+  ticketPrice: 'Enter a price such as "Free" or "$15 USD".',
+  datePlayed: "Choose a valid game date and time.",
+  tier: "Choose a valid tier.",
+  seatCapacity: "Player capacity must be between 1 and 12.",
+  serviceHours: "Service hours must be a number between 0 and 999.",
+  downtimeDaysAwarded: "Downtime days awarded must be a whole number between 0 and 999.",
+  rewardsSummary: "Enter the awarded gold total.",
+  magicItemsAwarded: "Magic items awarded must be 500 characters or fewer.",
+  consumablesAwarded: "Consumables awarded must be 500 characters or fewer.",
+  sessionNotes: "Enter the session notes or story awards.",
+  status: "Choose a valid game status.",
+  participants: "Review the participants list and try again.",
+  adventureImage: "Review the adventure cover image and try again.",
+};
+
+function buildGameValidationErrorResult(
   issues: Array<{ path?: Array<string | number>; message?: string }>
-) {
+) : GameActionErrorResult {
+  const fieldErrors: Partial<Record<GameFieldName, string>> = {};
   const fields = Array.from(
     new Set(
       issues
@@ -53,27 +100,48 @@ function buildGameValidationError(
             return null;
           }
 
+          const field = path as GameFieldName;
           const explicitMessage = issue.message?.trim();
 
           if (explicitMessage && Object.values(GAME_FIELD_LABELS).includes(explicitMessage)) {
+            if (!fieldErrors[field]) {
+              fieldErrors[field] = GAME_FIELD_ERROR_MESSAGES[field];
+            }
+
             return explicitMessage;
           }
 
-          return GAME_FIELD_LABELS[path] ?? null;
+          if (!fieldErrors[field]) {
+            fieldErrors[field] =
+              GAME_FIELD_ERROR_MESSAGES[field] ??
+              explicitMessage ??
+              `Review ${GAME_FIELD_LABELS[field] ?? "this field"} and try again.`;
+          }
+
+          return GAME_FIELD_LABELS[field] ?? null;
         })
         .filter((field): field is string => Boolean(field))
     )
   );
 
   if (fields.length === 1) {
-    return `Please complete this required field: ${fields[0]}.`;
+    return {
+      error: `Please fix this field: ${fields[0]}.`,
+      fieldErrors,
+    };
   }
 
   if (fields.length > 1) {
-    return `Please complete these required fields: ${fields.join(", ")}.`;
+    return {
+      error: `Please fix these fields: ${fields.join(", ")}.`,
+      fieldErrors,
+    };
   }
 
-  return "Please complete all required game fields.";
+  return {
+    error: "Please fix the highlighted game fields and try again.",
+    fieldErrors,
+  };
 }
 
 function buildParticipantSummaries(
@@ -176,31 +244,39 @@ async function saveAdventureImage(file: File) {
     return { error: "Adventure art must be 5 MB or smaller." } as const;
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const extension = path.extname(file.name) || ".png";
-  const directory = path.join(process.cwd(), "public", "uploads", "game-covers");
-  const filename = `${crypto.randomUUID()}${extension.toLowerCase()}`;
-
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, filename), bytes);
-
-  return { path: `/uploads/game-covers/${filename}` } as const;
+  return { path: await convertImageFileToDataUrl(file) } as const;
 }
 
 async function parseGameForm(formData: FormData) {
+  const rewardStrings = hasStructuredGameRewardSelectionFields(formData)
+    ? buildStoredGameRewardStrings(readGameRewardSelectionsFromFormData(formData))
+    : {
+        magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
+        consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
+      };
   const participantsRaw = String(formData.get("participants") ?? "[]");
   let parsedParticipantsSource: unknown = [];
 
   try {
     parsedParticipantsSource = JSON.parse(participantsRaw);
   } catch {
-    return { error: "Please complete all required game fields." } as const;
+    return {
+      error: "Please review the participants section and try again.",
+      fieldErrors: {
+        participants: GAME_FIELD_ERROR_MESSAGES.participants,
+      },
+    } as const;
   }
 
   const participantsResult = gameParticipantsSchema.safeParse(parsedParticipantsSource);
 
   if (!participantsResult.success) {
-    return { error: "Please complete all required game fields." } as const;
+    return {
+      error: "Please review the participants section and try again.",
+      fieldErrors: {
+        participants: GAME_FIELD_ERROR_MESSAGES.participants,
+      },
+    } as const;
   }
 
   const parsed = gameSchema.safeParse({
@@ -214,22 +290,27 @@ async function parseGameForm(formData: FormData) {
     serviceHours: String(formData.get("serviceHours") ?? ""),
     downtimeDaysAwarded: String(formData.get("downtimeDaysAwarded") ?? "0"),
     rewardsSummary: String(formData.get("rewardsSummary") ?? ""),
-    magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
-    consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
+    magicItemsAwarded: rewardStrings.magicItemsAwarded,
+    consumablesAwarded: rewardStrings.consumablesAwarded,
     sessionNotes: String(formData.get("sessionNotes") ?? ""),
     status: String(formData.get("status") ?? "SCHEDULED"),
     participants: participantsResult.data,
   });
 
   if (!parsed.success) {
-    return { error: buildGameValidationError(parsed.error.issues) } as const;
+    return buildGameValidationErrorResult(parsed.error.issues) as const;
   }
 
   const seenCharacterIds = new Set<string>();
 
   for (const participant of parsed.data.participants) {
     if (seenCharacterIds.has(participant.characterId)) {
-      return { error: "A character cannot be added to the same game twice." } as const;
+      return {
+        error: "A character cannot be added to the same game twice.",
+        fieldErrors: {
+          participants: "A character cannot be added to the same game twice.",
+        },
+      } as const;
     }
 
     seenCharacterIds.add(participant.characterId);
@@ -255,7 +336,12 @@ async function parseGameForm(formData: FormData) {
     );
 
     if (!selectedUser || !hasRole || !ownsCharacter) {
-      return { error: "One or more selected participants are invalid." } as const;
+      return {
+        error: "One or more selected participants are invalid.",
+        fieldErrors: {
+          participants: "One or more selected participants are invalid.",
+        },
+      } as const;
     }
   }
 
@@ -318,7 +404,12 @@ export async function createGame(formData: FormData) {
     const uploadResult = await saveAdventureImage(adventureImageFile);
 
     if ("error" in uploadResult) {
-      return { error: uploadResult.error };
+      return {
+        error: uploadResult.error,
+        fieldErrors: {
+          adventureImage: uploadResult.error,
+        },
+      };
     }
 
     adventureImagePath = uploadResult.path;
@@ -428,7 +519,12 @@ export async function updateGame(formData: FormData) {
     const uploadResult = await saveAdventureImage(adventureImageFile);
 
     if ("error" in uploadResult) {
-      return { error: uploadResult.error };
+      return {
+        error: uploadResult.error,
+        fieldErrors: {
+          adventureImage: uploadResult.error,
+        },
+      };
     }
 
     adventureImagePath = uploadResult.path;

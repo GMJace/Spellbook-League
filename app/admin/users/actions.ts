@@ -331,6 +331,109 @@ export async function removeEventAdminRole(formData: FormData) {
   redirect("/admin/users?eventAdmin=removed");
 }
 
+export async function addPatronRole(formData: FormData) {
+  const adminUser = await requireAdminUser();
+
+  const parsed = eventAdminRoleSchema.safeParse({
+    targetUserId: formData.get("targetUserId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?patron=invalid");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: parsed.data.targetUserId },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!targetUser) {
+    redirect("/admin/users?patron=invalid");
+  }
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_role: {
+        userId: targetUser.id,
+        role: "PATRON",
+      },
+    },
+    update: {},
+    create: {
+      userId: targetUser.id,
+      role: "PATRON",
+    },
+  });
+
+  await createNotifications(prisma, [
+    {
+      userId: targetUser.id,
+      createdByUserId: adminUser.id,
+      type: "ADMIN",
+      title: "Granted Patron access",
+      body: "Your account can now keep up to 100 character logsheets.",
+      actionLabel: "Open player dashboard",
+      actionHref: "/player",
+    },
+  ]);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/player");
+
+  redirect("/admin/users?patron=added");
+}
+
+export async function removePatronRole(formData: FormData) {
+  const adminUser = await requireAdminUser();
+
+  const parsed = eventAdminRoleSchema.safeParse({
+    targetUserId: formData.get("targetUserId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?patron=invalid");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: parsed.data.targetUserId },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!targetUser) {
+    redirect("/admin/users?patron=invalid");
+  }
+
+  await prisma.userRole.deleteMany({
+    where: {
+      userId: targetUser.id,
+      role: "PATRON",
+    },
+  });
+
+  await createNotifications(prisma, [
+    {
+      userId: targetUser.id,
+      createdByUserId: adminUser.id,
+      type: "ADMIN",
+      title: "Removed Patron access",
+      body: "Your account is back to the standard 3-character limit.",
+      actionLabel: "Open player dashboard",
+      actionHref: "/player",
+    },
+  ]);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/player");
+
+  redirect("/admin/users?patron=removed");
+}
+
 export async function deleteProDmReview(formData: FormData) {
   await requireAdminUser();
 

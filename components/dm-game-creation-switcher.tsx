@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CreateGameForm } from "@/components/create-game-form";
 import { GrimoireDmSubmissionForm } from "@/components/grimoire-dm-submission-form";
 import type { GameFormInitialValues } from "@/components/game-form";
+import type { LegalRewardOptions } from "@/lib/game-reward-selections";
 import type { GrimoireEventSlot, SeasonEvent } from "@/lib/grimoire";
 
 type DmGameCreationSwitcherProps = {
@@ -16,6 +17,7 @@ type DmGameCreationSwitcherProps = {
   eventOptions: SeasonEvent[];
   initialGameValues?: GameFormInitialValues;
   initialEventId?: string;
+  legalRewardsJson: string;
   playersJson: string;
   slotsByEvent: Record<string, GrimoireEventSlot[]>;
 };
@@ -27,6 +29,7 @@ export function DmGameCreationSwitcher({
   eventOptions,
   initialGameValues,
   initialEventId,
+  legalRewardsJson,
   playersJson,
   slotsByEvent,
 }: DmGameCreationSwitcherProps) {
@@ -66,6 +69,7 @@ export function DmGameCreationSwitcher({
             initialValuesJson={
               initialGameValues ? JSON.stringify(initialGameValues) : undefined
             }
+            legalRewardsJson={legalRewardsJson}
             playersJson={playersJson}
             submitLabel={initialGameValues ? "Create duplicated game" : undefined}
           />

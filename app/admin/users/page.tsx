@@ -7,10 +7,12 @@ import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import {
   addProDmToRoster,
   addEventAdminRole,
+  addPatronRole,
   createAdminNotification,
   deleteProDmReview,
   removeDmFromRoster,
   removeEventAdminRole,
+  removePatronRole,
   removeProDmFromRoster,
   updateProDmRating,
 } from "@/app/admin/users/actions";
@@ -63,6 +65,7 @@ export default async function AdminUsersPage({
     notification?: string;
     dmRoster?: string;
     eventAdmin?: string;
+    patron?: string;
   }>;
 }) {
   const adminUser = await requireAdminUser();
@@ -149,6 +152,12 @@ export default async function AdminUsersPage({
   const eventAdminMessage = params.eventAdmin
     ? eventAdminMessageMap[params.eventAdmin]
     : "";
+  const patronMessageMap: Record<string, string> = {
+    added: "Patron role granted.",
+    removed: "Patron role removed.",
+    invalid: "The requested Patron change could not be completed.",
+  };
+  const patronMessage = params.patron ? patronMessageMap[params.patron] : "";
 
   return (
     <main className="page-shell">
@@ -167,6 +176,9 @@ export default async function AdminUsersPage({
         ) : null}
         {eventAdminMessage ? (
           <p style={{ color: "#ffffff", margin: 0 }}>{eventAdminMessage}</p>
+        ) : null}
+        {patronMessage ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>{patronMessage}</p>
         ) : null}
 
         <AdminPageHeader
@@ -481,6 +493,7 @@ export default async function AdminUsersPage({
                   <th>Discord Handle</th>
                   <th>Roles</th>
                   <th>Event Admin</th>
+                  <th>Patron</th>
                   <th>Pro DM</th>
                   <th>Joined</th>
                   <th>Actions</th>
@@ -504,33 +517,65 @@ export default async function AdminUsersPage({
                         ? "Yes"
                         : "No"}
                     </td>
+                    <td>
+                      {user.roles.some((role: AdminUserRow["roles"][number]) => role.role === "PATRON")
+                        ? "Yes"
+                        : "No"}
+                    </td>
                     <td>{proDmRosterMap.get(user.id)?.isListed ? "Yes" : "No"}</td>
                     <td>{formatDate(user.createdAt)}</td>
                     <td>
                       {user.id === adminUser.id ? (
                         <span className="muted">Current account</span>
-                      ) : user.roles.some(
-                          (role: AdminUserRow["roles"][number]) => role.role === "EVENT_ADMIN"
-                        ) ? (
-                        <form action={removeEventAdminRole}>
-                          <input name="targetUserId" type="hidden" value={user.id} />
-                          <ConfirmSubmitButton
-                            className="button-danger button-small"
-                            message={`Remove Event Admin access from ${user.name}?`}
-                          >
-                            Remove Event Admin
-                          </ConfirmSubmitButton>
-                        </form>
                       ) : (
-                        <form action={addEventAdminRole}>
-                          <input name="targetUserId" type="hidden" value={user.id} />
-                          <ConfirmSubmitButton
-                            className="button-secondary button-small"
-                            message={`Grant Event Admin access to ${user.name}? This will allow access to Grimoire moderation.`}
-                          >
-                            Make Event Admin
-                          </ConfirmSubmitButton>
-                        </form>
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          {user.roles.some(
+                            (role: AdminUserRow["roles"][number]) => role.role === "EVENT_ADMIN"
+                          ) ? (
+                            <form action={removeEventAdminRole}>
+                              <input name="targetUserId" type="hidden" value={user.id} />
+                              <ConfirmSubmitButton
+                                className="button-danger button-small"
+                                message={`Remove Event Admin access from ${user.name}?`}
+                              >
+                                Remove Event Admin
+                              </ConfirmSubmitButton>
+                            </form>
+                          ) : (
+                            <form action={addEventAdminRole}>
+                              <input name="targetUserId" type="hidden" value={user.id} />
+                              <ConfirmSubmitButton
+                                className="button-secondary button-small"
+                                message={`Grant Event Admin access to ${user.name}? This will allow access to Grimoire moderation.`}
+                              >
+                                Make Event Admin
+                              </ConfirmSubmitButton>
+                            </form>
+                          )}
+                          {user.roles.some(
+                            (role: AdminUserRow["roles"][number]) => role.role === "PATRON"
+                          ) ? (
+                            <form action={removePatronRole}>
+                              <input name="targetUserId" type="hidden" value={user.id} />
+                              <ConfirmSubmitButton
+                                className="button-danger button-small"
+                                message={`Remove Patron access from ${user.name}? This will return the account to the standard 3-character limit.`}
+                              >
+                                Remove Patron
+                              </ConfirmSubmitButton>
+                            </form>
+                          ) : (
+                            <form action={addPatronRole}>
+                              <input name="targetUserId" type="hidden" value={user.id} />
+                              <ConfirmSubmitButton
+                                className="button-secondary button-small"
+                                message={`Grant Patron access to ${user.name}? This will raise the account character limit to 100.`}
+                              >
+                                Make Patron
+                              </ConfirmSubmitButton>
+                            </form>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

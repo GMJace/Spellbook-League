@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { LocalizedEventTime } from "@/components/localized-event-time";
+import { getCharacterTier, getCharacterTotalLevel } from "@/lib/character";
 import { prisma } from "@/lib/prisma";
 import { formatStatus, formatTier, isPaidTicketPrice, splitBulletLines } from "@/lib/utils";
-import { signupForFreeLeagueGame } from "./actions";
+import { leaveLeagueGame, signupForFreeLeagueGame } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ type PageProps = {
     id: string;
   }>;
   searchParams: Promise<{
+    leave?: string;
     signup?: string;
   }>;
 };
@@ -34,6 +36,25 @@ function renderSignupMessage(signupState: string | undefined) {
       return "Please choose one of your characters to sign up.";
     case "invalid-character":
       return "Please choose a valid character from your roster.";
+    case "wrong-tier":
+      return "Choose a character whose tier matches this game.";
+    default:
+      return null;
+  }
+}
+
+function renderLeaveMessage(leaveState: string | undefined, supportEmail: string) {
+  switch (leaveState) {
+    case "success":
+      return "You have been removed from this game.";
+    case "refund-requested":
+      return "You have been removed from this game. SPELLBOOK staff has been emailed to begin the refund review process.";
+    case "refund-contact-required":
+      return `You have been removed from this game, but the refund email could not be sent automatically. Please contact ${supportEmail} to begin the refund process.`;
+    case "not-signed-up":
+      return "You are not currently signed up for this game.";
+    case "closed":
+      return `This game is no longer open for online leave requests. Please contact ${supportEmail} for help.`;
     default:
       return null;
   }
@@ -43,6 +64,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
   const session = await auth();
+  const supportEmail = process.env.LEAGUE_SUPPORT_EMAIL?.trim() || "trevor@spellbookrpg.games";
 
   const [game, player] = await Promise.all([
     prisma.game.findUnique({
@@ -69,6 +91,9 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
               select: {
                 id: true,
                 name: true,
+                class1Level: true,
+                class2Level: true,
+                class3Level: true,
               },
               orderBy: {
                 name: "asc",
@@ -84,13 +109,20 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
   }
 
   const availableSpots = Math.max((game.seatCapacity ?? 0) - game.participants.length, 0);
-  const canAddToCart = isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
-  const canJoinForFree = !isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
+  const isSignupOpen = game.status === "SCHEDULED";
+  const canAddToCart = isSignupOpen && isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
+  const canJoinForFree = isSignupOpen && !isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
   const isPlayer = Boolean(player?.roles.some((role) => role.role === "PLAYER"));
   const playerSignup = player
     ? game.participants.find((participant) => participant.userId === player.id)
     : null;
+  const eligibleCharacters =
+    player?.characters.filter(
+      (character) =>
+        getCharacterTier(getCharacterTotalLevel(character)) === Number(game.tier.replace("TIER_", ""))
+    ) ?? [];
   const signupMessage = renderSignupMessage(resolvedSearchParams.signup);
+  const leaveMessage = renderLeaveMessage(resolvedSearchParams.leave, supportEmail);
   const gameSummaryLines = splitBulletLines(game.gameSummary);
 
   return (
@@ -183,7 +215,53 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 </div>
               </div>
 
-              {!isPaidTicketPrice(game.ticketPrice) ? (
+              {playerSignup && isPlayer ? (
+                <div className="list-card stack" style={{ gap: "0.75rem" }}>
+                  <div className="stack" style={{ gap: "0.35rem" }}>
+                    <strong>Your signup</strong>
+                    <p className="muted" style={{ margin: 0 }}>
+                      Signed up as <strong>{playerSignup.character.name}</strong>.
+                    </p>
+                  </div>
+
+                  {signupMessage ? <p style={{ margin: 0 }}>{signupMessage}</p> : null}
+                  {leaveMessage ? <p style={{ margin: 0 }}>{leaveMessage}</p> : null}
+
+                  {isSignupOpen ? (
+                    <>
+                      <p className="muted" style={{ margin: 0 }}>
+                        {isPaidTicketPrice(game.ticketPrice)
+                          ? "Leaving this game will remove your seat and email SPELLBOOK staff to begin refund review for any paid ticket tied to this signup."
+                          : "Leaving this game will remove your seat immediately."}
+                      </p>
+
+                      <div>
+                        <form action={leaveLeagueGame}>
+                          <input name="gameId" type="hidden" value={game.id} />
+                          <button className="button button-secondary" type="submit">
+                            Leave this game
+                          </button>
+                        </form>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="muted" style={{ margin: 0 }}>
+                      {game.status === "COMPLETED"
+                        ? "This game has already been completed, so online signup changes are closed."
+                        : "This game is no longer open for signup changes online."}
+                    </p>
+                  )}
+                </div>
+              ) : null}
+
+              {isPaidTicketPrice(game.ticketPrice) && leaveMessage ? (
+                <div className="list-card stack" style={{ gap: "0.75rem" }}>
+                  <strong>Game signup update</strong>
+                  <p style={{ margin: 0 }}>{leaveMessage}</p>
+                </div>
+              ) : null}
+
+              {!isPaidTicketPrice(game.ticketPrice) && !playerSignup ? (
                 <div className="list-card stack" style={{ gap: "0.75rem" }}>
                   <div className="stack" style={{ gap: "0.35rem" }}>
                     <strong>Free game signup</strong>
@@ -193,18 +271,15 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   </div>
 
                   {signupMessage ? <p style={{ margin: 0 }}>{signupMessage}</p> : null}
+                  {leaveMessage ? <p style={{ margin: 0 }}>{leaveMessage}</p> : null}
 
-                  {playerSignup ? (
-                    <p style={{ margin: 0 }}>
-                      Signed up as <strong>{playerSignup.character.name}</strong>.
-                    </p>
-                  ) : canJoinForFree && isPlayer && player?.characters.length ? (
+                  {canJoinForFree && isPlayer && eligibleCharacters.length ? (
                     <form action={signupForFreeLeagueGame} className="stack" style={{ gap: "0.75rem" }}>
                       <input name="gameId" type="hidden" value={game.id} />
                       <label>
                         Character
-                        <select defaultValue={player.characters[0]?.id ?? ""} name="characterId" required>
-                          {player.characters.map((character) => (
+                        <select defaultValue={eligibleCharacters[0]?.id ?? ""} name="characterId" required>
+                          {eligibleCharacters.map((character) => (
                             <option key={character.id} value={character.id}>
                               {character.name}
                             </option>
@@ -217,6 +292,10 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                         </button>
                       </div>
                     </form>
+                  ) : canJoinForFree && isPlayer && player?.characters.length ? (
+                    <p style={{ margin: 0 }}>
+                      You do not have a character in {formatTier(game.tier)} yet.
+                    </p>
                   ) : canJoinForFree && isPlayer ? (
                     <div className="stack" style={{ gap: "0.6rem" }}>
                       <p style={{ margin: 0 }}>

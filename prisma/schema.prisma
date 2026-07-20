@@ -11,6 +11,7 @@ enum Role {
   PLAYER
   DM
   EVENT_ADMIN
+  PATRON
 }
 
 enum GameStatus {

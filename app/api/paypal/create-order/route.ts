@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { getCharacterTier, getCharacterTotalLevel } from "@/lib/character";
 import type { CheckoutType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -7,9 +8,10 @@ import { getNextGrimoireEvent, getCuratedGamesForEvent } from "@/lib/grimoire-se
 import { formatPayPalAmount, paypalRequest } from "@/lib/paypal";
 import type { PayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
 import { prisma } from "@/lib/prisma";
-import { isPaidTicketPrice, parseTicketPriceUsd } from "@/lib/utils";
+import { getTierValue, isPaidTicketPrice, parseTicketPriceUsd } from "@/lib/utils";
 
 const leagueItemSchema = z.object({
+  characterId: z.string().trim().min(1),
   gameId: z.string().trim().min(1),
   quantity: z.number().int().min(1).max(12),
   guestEmails: z.array(z.string().email()).max(11),
@@ -28,6 +30,7 @@ const checkoutPayloadSchema = z.discriminatedUnion("checkoutType", [
   z.object({
     checkoutType: z.literal("GRIMOIRE"),
     badgeQuantity: z.number().int().min(0).max(12),
+    badgeType: z.enum(["REGULAR", "FLYING_CARPET"]),
     isGiftPurchase: z.boolean(),
     receiverEmails: z.array(z.string().email()).max(12),
     items: z.array(grimoireItemSchema),
@@ -73,7 +76,13 @@ function jsonError(message: string, status: number) {
 }
 
 function serializeLeagueItems(
-  items: Array<{ gameId: string; quantity: number; guestEmails: string[] }>,
+  items: Array<{
+    characterId: string;
+    characterName: string;
+    gameId: string;
+    guestEmails: string[];
+    quantity: number;
+  }>,
   gamesById: Map<
     string,
     {
@@ -87,6 +96,8 @@ function serializeLeagueItems(
     const game = gamesById.get(item.gameId);
 
     return {
+      characterId: item.characterId,
+      characterName: item.characterName,
       gameId: item.gameId,
       guestEmails: item.guestEmails,
       quantity: item.quantity,
@@ -99,6 +110,34 @@ function serializeLeagueItems(
 async function buildLeagueCheckout(
   payload: Extract<PayPalCheckoutPayload, { checkoutType: "LEAGUE" }>,
 ): Promise<CanonicalCheckout> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Sign in with a player account before checking out for a league game.");
+  }
+
+  const player = await prisma.user.findUnique({
+    where: {
+      id: session.user.id,
+    },
+    include: {
+      roles: true,
+      characters: {
+        select: {
+          id: true,
+          name: true,
+          class1Level: true,
+          class2Level: true,
+          class3Level: true,
+        },
+      },
+    },
+  });
+
+  if (!player || !player.roles.some((role) => role.role === "PLAYER")) {
+    throw new Error("A player account is required before checking out for a league game.");
+  }
+
   const gameIds = [...new Set(payload.items.map((item) => item.gameId))];
   const games = await prisma.game.findMany({
     where: {
@@ -123,18 +162,34 @@ async function buildLeagueCheckout(
 
   const gamesById = new Map(games.map((game) => [game.id, game]));
   const paypalItems: CanonicalCheckout["purchaseUnits"][number]["items"] = [];
+  const serializedItems: Array<{
+    characterId: string;
+    characterName: string;
+    gameId: string;
+    guestEmails: string[];
+    quantity: number;
+  }> = [];
   const summaryParts: string[] = [];
   let amountUsd = 0;
 
   for (const item of payload.items) {
     const game = gamesById.get(item.gameId);
+    const character = player.characters.find((entry) => entry.id === item.characterId);
 
     if (!game) {
       throw new Error("One or more selected league games are no longer available.");
     }
 
+    if (!character) {
+      throw new Error("Choose one of your characters for each league game before checkout.");
+    }
+
     if (!isPaidTicketPrice(game.ticketPrice)) {
       throw new Error(`${game.title} is not a paid checkout game.`);
+    }
+
+    if (getCharacterTier(getCharacterTotalLevel(character)) !== getTierValue(game.tier)) {
+      throw new Error(`${character.name} does not match the tier for ${game.title}.`);
     }
 
     const openSeats = Math.max(game.seatCapacity - game._count.participants, 0);
@@ -158,8 +213,15 @@ async function buildLeagueCheckout(
       ? `; Guest emails: ${item.guestEmails.join(", ")}`
       : "";
     summaryParts.push(
-      `${game.title} x${item.quantity} (${game.ticketPrice})${emailSummary}`,
+      `${game.title} x${item.quantity} (${game.ticketPrice}); Character: ${character.name}${emailSummary}`,
     );
+    serializedItems.push({
+      characterId: character.id,
+      characterName: character.name,
+      gameId: item.gameId,
+      guestEmails: item.guestEmails,
+      quantity: item.quantity,
+    });
   }
 
   if (!amountUsd) {
@@ -169,7 +231,7 @@ async function buildLeagueCheckout(
   return {
     amountUsd,
     checkoutType: "LEAGUE",
-    itemDataJson: JSON.stringify(serializeLeagueItems(payload.items, gamesById)),
+    itemDataJson: JSON.stringify(serializeLeagueItems(serializedItems, gamesById)),
     purchaseUnits: [
       {
         amount: {
@@ -214,20 +276,28 @@ async function buildGrimoireCheckout(
   const gamesBySlug = new Map(curatedGames.map((game) => [game.slug, game]));
   const paypalItems: CanonicalCheckout["purchaseUnits"][number]["items"] = [];
   const summaryParts: string[] = [];
+  const badgeUnitPriceUsd =
+    payload.badgeType === "FLYING_CARPET"
+      ? nextEvent.ticketPriceUsd * 2
+      : nextEvent.ticketPriceUsd;
+  const badgeLabel =
+    payload.badgeType === "FLYING_CARPET"
+      ? "Flying Carpet Badge"
+      : nextEvent.ticketLabel;
   let amountUsd = 0;
 
   if (payload.badgeQuantity > 0) {
-    amountUsd += nextEvent.ticketPriceUsd * payload.badgeQuantity;
+    amountUsd += badgeUnitPriceUsd * payload.badgeQuantity;
     paypalItems.push({
-      name: nextEvent.ticketLabel.slice(0, 120),
+      name: badgeLabel.slice(0, 120),
       quantity: String(payload.badgeQuantity),
       unit_amount: {
         currency_code: "USD",
-        value: formatPayPalAmount(nextEvent.ticketPriceUsd),
+        value: formatPayPalAmount(badgeUnitPriceUsd),
       },
     });
     summaryParts.push(
-      `${nextEvent.ticketLabel} x${payload.badgeQuantity} (${nextEvent.ticketPrice})`,
+      `${badgeLabel} x${payload.badgeQuantity} (${formatPayPalAmount(badgeUnitPriceUsd)} USD)`,
     );
   }
 
@@ -267,8 +337,11 @@ async function buildGrimoireCheckout(
     checkoutType: "GRIMOIRE",
     itemDataJson: JSON.stringify({
       badgeQuantity: payload.badgeQuantity,
+      badgeType: payload.badgeType,
+      badgeLabel,
+      badgeUnitPriceUsd,
       eventId: nextEvent.id,
-      eventLabel: nextEvent.ticketLabel,
+      eventLabel: badgeLabel,
       games: payload.items.map((item) => {
         const game = gamesBySlug.get(item.slug);
         return {

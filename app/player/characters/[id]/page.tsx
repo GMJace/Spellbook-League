@@ -217,6 +217,13 @@ export default async function CharacterLogsheetPage({
   const visibleCharms = getVisibleSlottedItems(charms, getCharmLabel);
   const visibleBoon = boonSlotEnabled ? character.boon.trim() : "";
   const visibleBlessing = character.blessing.trim();
+  const upcomingGameSignups = character.participants
+    .filter(
+      (participant) =>
+        participant.game.status === "SCHEDULED" &&
+        participant.game.datePlayed.getTime() >= Date.now()
+    )
+    .sort((left, right) => left.game.datePlayed.getTime() - right.game.datePlayed.getTime());
   const pendingLogReviews = character.participants
     .filter(
       (participant) =>
@@ -225,7 +232,7 @@ export default async function CharacterLogsheetPage({
     .sort((left, right) => right.game.datePlayed.getTime() - left.game.datePlayed.getTime());
   const visibleGameLog = character.participants.filter(
     (participant) =>
-      participant.game.status !== "COMPLETED" || participant.logStatus === "APPROVED"
+      participant.game.status === "COMPLETED" && participant.logStatus === "APPROVED"
   );
   const gameLog = [...visibleGameLog].sort((left, right) => {
     return right.game.datePlayed.getTime() - left.game.datePlayed.getTime();
@@ -450,112 +457,6 @@ export default async function CharacterLogsheetPage({
           </div>
 
         </div>
-
-        {isOwner && pendingLogReviews.length ? (
-          <div className="list-card stack">
-            <div className="section-heading">
-              <div>
-                <h2 style={{ margin: 0 }}>Pending log reviews</h2>
-                <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                  Completed games stay out of your adventure log until you approve
-                  or revise the details below.
-                </p>
-              </div>
-            </div>
-
-            {pendingLogReviews.map((participant) => (
-              <form
-                key={participant.id}
-                action={approvePendingGameLog.bind(null, character.id, participant.id)}
-                className="list-card form-stack"
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "1rem",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                  }}
-                >
-                  <div>
-                    <p className="muted" style={{ margin: 0 }}>
-                      Date
-                    </p>
-                    <p style={{ margin: "0.35rem 0 0" }}>
-                      {formatDate(participant.game.datePlayed)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="muted" style={{ margin: 0 }}>
-                      Code
-                    </p>
-                    <p style={{ margin: "0.35rem 0 0" }}>
-                      {participant.game.adventureCode}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="muted" style={{ margin: 0 }}>
-                      Title
-                    </p>
-                    <p style={{ margin: "0.35rem 0 0" }}>{participant.game.title}</p>
-                  </div>
-                  <div>
-                    <p className="muted" style={{ margin: 0 }}>
-                      DM
-                    </p>
-                    <p style={{ margin: "0.35rem 0 0" }}>
-                      {getGameDmName(participant.game)}
-                    </p>
-                  </div>
-                </div>
-
-                <label>
-                  Awarded Gold
-                  <textarea
-                    defaultValue={
-                      participant.logRewardsSummary ?? participant.game.rewardsSummary ?? ""
-                    }
-                    name="rewardsSummary"
-                    required
-                  />
-                </label>
-                <label>
-                  Magic Items Awarded
-                  <textarea
-                    defaultValue={
-                      participant.logMagicItemsAwarded ??
-                      participant.game.magicItemsAwarded ??
-                      ""
-                    }
-                    name="magicItemsAwarded"
-                  />
-                </label>
-                <label>
-                  Consumables Awarded
-                  <textarea
-                    defaultValue={
-                      participant.logConsumablesAwarded ??
-                      participant.game.consumablesAwarded ??
-                      ""
-                    }
-                    name="consumablesAwarded"
-                  />
-                </label>
-                <label>
-                  Session Notes/Story Awards
-                  <textarea
-                    defaultValue={
-                      participant.logSessionNotes ?? participant.game.sessionNotes ?? ""
-                    }
-                    name="sessionNotes"
-                  />
-                </label>
-
-                <button type="submit">Approve and add to log</button>
-              </form>
-            ))}
-          </div>
-        ) : null}
-
         <div className="list-card stack">
           <div
             aria-hidden="true"
@@ -866,16 +767,12 @@ export default async function CharacterLogsheetPage({
                       <td>{participant.game.tier.replaceAll("_", " ")}</td>
                       {isOwner ? (
                         <td>
-                          {participant.game.loggedByUserId === currentUser.id ? (
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
-                            >
-                              Edit log
-                            </Link>
-                          ) : (
-                            <span className="muted">DM managed</span>
-                          )}
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
+                          >
+                            Edit log
+                          </Link>
                         </td>
                       ) : null}
                     </tr>
@@ -891,6 +788,173 @@ export default async function CharacterLogsheetPage({
             </table>
           </div>
         </div>
+
+        {isOwner ? (
+          <div className="list-card stack">
+            <div className="section-heading">
+              <div>
+                <h2 style={{ margin: 0 }}>Upcoming signed-up games</h2>
+                <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                  Scheduled games currently tied to this character on the league
+                  schedule.
+                </p>
+              </div>
+            </div>
+
+            <div className="table-wrap">
+              <table className="ledger-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Code</th>
+                    <th>Title</th>
+                    <th>DM</th>
+                    <th>Tier</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcomingGameSignups.length ? (
+                    upcomingGameSignups.map((participant) => (
+                      <tr key={participant.id}>
+                        <td>{formatDate(participant.game.datePlayed)}</td>
+                        <td>{participant.game.adventureCode}</td>
+                        <td>{participant.game.title}</td>
+                        <td>{getGameDmName(participant.game)}</td>
+                        <td>{participant.game.tier.replaceAll("_", " ")}</td>
+                        <td>
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/league/games/${participant.game.id}`}
+                          >
+                            View game
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="muted" colSpan={6}>
+                        No upcoming scheduled games are tied to this character yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+
+        {isOwner ? (
+          <div className="list-card stack">
+            <div className="section-heading">
+              <div>
+                <h2 style={{ margin: 0 }}>Completed games awaiting approval</h2>
+                <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                  DM-created completed games stay out of your adventure log until
+                  you approve or revise the details below.
+                </p>
+              </div>
+            </div>
+
+            {pendingLogReviews.length ? (
+              pendingLogReviews.map((participant) => (
+                <form
+                  key={participant.id}
+                  action={approvePendingGameLog.bind(null, character.id, participant.id)}
+                  className="list-card form-stack"
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "1rem",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    }}
+                  >
+                    <div>
+                      <p className="muted" style={{ margin: 0 }}>
+                        Date
+                      </p>
+                      <p style={{ margin: "0.35rem 0 0" }}>
+                        {formatDate(participant.game.datePlayed)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="muted" style={{ margin: 0 }}>
+                        Code
+                      </p>
+                      <p style={{ margin: "0.35rem 0 0" }}>
+                        {participant.game.adventureCode}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="muted" style={{ margin: 0 }}>
+                        Title
+                      </p>
+                      <p style={{ margin: "0.35rem 0 0" }}>{participant.game.title}</p>
+                    </div>
+                    <div>
+                      <p className="muted" style={{ margin: 0 }}>
+                        DM
+                      </p>
+                      <p style={{ margin: "0.35rem 0 0" }}>
+                        {getGameDmName(participant.game)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <label>
+                    Awarded Gold
+                    <textarea
+                      defaultValue={
+                        participant.logRewardsSummary ?? participant.game.rewardsSummary ?? ""
+                      }
+                      name="rewardsSummary"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Magic Items Awarded
+                    <textarea
+                      defaultValue={
+                        participant.logMagicItemsAwarded ??
+                        participant.game.magicItemsAwarded ??
+                        ""
+                      }
+                      name="magicItemsAwarded"
+                    />
+                  </label>
+                  <label>
+                    Consumables Awarded
+                    <textarea
+                      defaultValue={
+                        participant.logConsumablesAwarded ??
+                        participant.game.consumablesAwarded ??
+                        ""
+                      }
+                      name="consumablesAwarded"
+                    />
+                  </label>
+                  <label>
+                    Session Notes/Story Awards
+                    <textarea
+                      defaultValue={
+                        participant.logSessionNotes ?? participant.game.sessionNotes ?? ""
+                      }
+                      name="sessionNotes"
+                    />
+                  </label>
+
+                  <button type="submit">Approve and add to log</button>
+                </form>
+              ))
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                No completed DM-created games are waiting for approval.
+              </p>
+            )}
+          </div>
+        ) : null}
       </section>
     </main>
   );

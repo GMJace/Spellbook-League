@@ -1,5 +1,5 @@
 type GameStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
-type Tier = "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
+export type Tier = "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
 
 export function formatDate(value: Date | string) {
   const date = typeof value === "string" ? new Date(value) : value;
@@ -25,6 +25,19 @@ export function formatDateTime(value: Date | string) {
 
 export function formatTier(tier: Tier) {
   return tier.replace("_", " ").replace("TIER", "Tier");
+}
+
+export function getTierValue(tier: Tier) {
+  switch (tier) {
+    case "TIER_4":
+      return 4;
+    case "TIER_3":
+      return 3;
+    case "TIER_2":
+      return 2;
+    default:
+      return 1;
+  }
 }
 
 export function formatStatus(status: GameStatus) {

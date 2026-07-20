@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { PlayerGameLogForm } from "@/components/player-game-log-form";
 import { requireRole } from "@/lib/auth";
+import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -16,16 +17,30 @@ export default async function NewPlayerGameLogPage({
   const { id } = await params;
   const query = await searchParams;
 
-  const character = await prisma.character.findFirst({
-    where: {
-      id,
-      userId: user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
+  const [
+    character,
+    legalMagicItemOptions,
+    legalConsumableOptions,
+    legalBoonOptions,
+    legalBlessingOptions,
+    legalCharmOptions,
+  ] = await Promise.all([
+    prisma.character.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    }),
+    getLeagueLegalMagicItemOptions(),
+    getLeagueLegalConsumableOptions(),
+    getLeagueLegalBoonOptions(),
+    getLeagueLegalBlessingOptions(),
+    getLeagueLegalCharmOptions(),
+  ]);
 
   if (!character) {
     notFound();
@@ -33,7 +48,7 @@ export default async function NewPlayerGameLogPage({
 
   return (
     <main className="stack">
-      <section className="panel ledger-panel stack">
+      <section className="panel stack">
         <div>
           <p className="eyebrow">Character logsheet</p>
           <h1>Log a game for {character.name}</h1>
@@ -41,9 +56,6 @@ export default async function NewPlayerGameLogPage({
             Add a player-managed game entry for this character.
           </p>
         </div>
-      </section>
-
-      <section className="card ledger-panel stack">
         {query.error === "invalid" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             Please complete the game details.
@@ -51,6 +63,12 @@ export default async function NewPlayerGameLogPage({
         ) : null}
         <PlayerGameLogForm
           characterId={character.id}
+          legalBlessingOptions={legalBlessingOptions}
+          legalBoonOptions={legalBoonOptions}
+          legalBuildMagicItemOptions={getCharacterBuildMagicItemOptions(legalMagicItemOptions)}
+          legalCharmOptions={legalCharmOptions}
+          legalCommonMagicItemOptions={legalMagicItemOptions.Common}
+          legalConsumableOptions={legalConsumableOptions}
           submitLabel="Save log entry"
         />
       </section>

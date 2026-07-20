@@ -1,13 +1,12 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireGrimoireAdminUser } from "@/lib/admin";
+import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { sendGrimoireSubmissionStatusEmail } from "@/lib/transactional-email";
@@ -98,15 +97,7 @@ async function saveGrimoireAdventureImage(file: File) {
     return { error: "Adventure cover must be 5 MB or smaller." } as const;
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const extension = path.extname(file.name) || ".png";
-  const directory = path.join(process.cwd(), "public", "uploads", "grimoire-covers");
-  const filename = `${crypto.randomUUID()}${extension.toLowerCase()}`;
-
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, filename), bytes);
-
-  return { path: `/uploads/grimoire-covers/${filename}` } as const;
+  return { path: await convertImageFileToDataUrl(file) } as const;
 }
 
 function parseTextareaLines(value: string) {

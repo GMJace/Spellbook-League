@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { ProfileAvatar } from "@/components/profile-avatar";
+import { getCharacterLimitForRoles } from "@/lib/character-limits";
 import {
   getCharacterTier,
   getCharacterTotalLevel,
@@ -8,16 +10,14 @@ import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 
-export default async function PlayerDashboardPage() {
+export default async function PlayerDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ characterLimit?: string; limit?: string }>;
+}) {
   const user = await requireRole("PLAYER");
   const playerName = user.name ?? user.email ?? "Player";
-  const playerInitials = playerName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "?";
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   const [characters, openLeagueGames] = await Promise.all([
     prisma.character.findMany({
@@ -65,9 +65,18 @@ export default async function PlayerDashboardPage() {
       character.participants.map((participant) => participant.game.id)
     )
   ).size;
+  const characterLimit = getCharacterLimitForRoles(user.roles);
+  const canCreateCharacter = characters.length < characterLimit;
 
   return (
     <main className="stack">
+      {resolvedSearchParams?.characterLimit === "reached" ? (
+        <p style={{ color: "#ffffff", margin: 0 }}>
+          {`You have reached your character limit of ${
+            Number(resolvedSearchParams.limit) || characterLimit
+          }.`}
+        </p>
+      ) : null}
       <section className="card ledger-panel stack">
         <div
           style={{
@@ -77,44 +86,11 @@ export default async function PlayerDashboardPage() {
             flexWrap: "wrap",
           }}
         >
-          {user.profileImagePath ? (
-            <img
-              alt={`${playerName} profile picture`}
-              src={user.profileImagePath}
-              style={{
-                width: "96px",
-                height: "96px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
-                objectFit: "cover",
-                flexShrink: 0,
-              }}
-            />
-          ) : (
-            <div
-              aria-label={`${playerName} profile picture placeholder`}
-              role="img"
-              style={{
-                width: "96px",
-                height: "96px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background:
-                  "radial-gradient(circle at top, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04))",
-                color: "#ffffff",
-                fontFamily: '"Trebuchet MS", "Segoe UI", Verdana, sans-serif',
-                fontSize: "32px",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                flexShrink: 0,
-              }}
-            >
-              {playerInitials}
-            </div>
-          )}
+          <ProfileAvatar
+            name={playerName}
+            src={user.profileImagePath}
+            size={96}
+          />
           <div className="stack" style={{ gap: "0.35rem", flex: "1 1 320px" }}>
             <div>
               <p className="eyebrow">Player Account</p>
@@ -163,10 +139,21 @@ export default async function PlayerDashboardPage() {
           src="/divider4.png"
         />
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>Character roster</h2>
-          <Link href="/player/characters/new" className="button">
-            Create character logsheet
-          </Link>
+          <div className="stack" style={{ gap: "0.25rem" }}>
+            <h2 style={{ margin: 0 }}>Character roster</h2>
+            <p className="muted" style={{ margin: 0 }}>
+              {user.roles.includes("PATRON")
+                ? `Patron accounts can keep up to ${characterLimit} characters.`
+                : `Standard player accounts can keep up to ${characterLimit} characters.`}
+            </p>
+          </div>
+          {canCreateCharacter ? (
+            <Link href="/player/characters/new" className="button">
+              Create character logsheet
+            </Link>
+          ) : (
+            <span className="pill">Character limit reached</span>
+          )}
         </div>
 
         {characters.length ? (

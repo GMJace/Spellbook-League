@@ -1,6 +1,6 @@
-import { randomUUID } from "crypto";
-import { mkdir, unlink, writeFile } from "fs/promises";
+import { unlink } from "fs/promises";
 import path from "path";
+import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 
 const ACHIEVEMENT_BADGE_UPLOAD_DIRECTORY = path.join(
   process.cwd(),
@@ -40,17 +40,7 @@ export function validateAchievementBadgeUpload(file: File) {
 
 export async function saveAchievementBadgeUpload(file: File) {
   validateAchievementBadgeUpload(file);
-
-  await mkdir(ACHIEVEMENT_BADGE_UPLOAD_DIRECTORY, { recursive: true });
-
-  const extension = achievementBadgeMimeTypeExtensions[file.type];
-  const fileName = `${randomUUID()}${extension}`;
-  const outputPath = path.join(ACHIEVEMENT_BADGE_UPLOAD_DIRECTORY, fileName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await writeFile(outputPath, buffer);
-
-  return `${ACHIEVEMENT_BADGE_PUBLIC_PATH_PREFIX}${fileName}`;
+  return convertImageFileToDataUrl(file);
 }
 
 export async function removeAchievementBadgeUpload(

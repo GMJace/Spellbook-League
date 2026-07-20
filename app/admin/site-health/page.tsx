@@ -201,7 +201,7 @@ export default async function AdminSiteHealthPage({
               <h2 style={{ margin: 0 }}>Latest health report</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
                 Manual health checks verify core database access, auth configuration,
-                upload storage, and recent error volume.
+                image upload mode, and recent error volume.
               </p>
             </div>
           </div>
