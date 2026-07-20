@@ -13,7 +13,7 @@ type AutomaticAdminRole = (typeof AUTOMATIC_ADMIN_ROLES)[number];
 type RoleCapableClient = {
   userRole: {
     findMany: (...args: any[]) => Promise<Array<{ role: Role }>>;
-    createMany: (...args: any[]) => Promise<unknown>;
+    upsert: (...args: any[]) => Promise<unknown>;
   };
 };
 
@@ -52,13 +52,23 @@ export async function ensureAutomaticAdminRoles(
   const missingRoles = automaticRoles.filter((role) => !currentRoles.includes(role));
 
   if (missingRoles.length) {
-    await client.userRole.createMany({
-      data: missingRoles.map((role) => ({
-        userId,
-        role,
-      })),
-      skipDuplicates: true,
-    });
+    await Promise.all(
+      missingRoles.map((role) =>
+        client.userRole.upsert({
+          where: {
+            userId_role: {
+              userId,
+              role,
+            },
+          },
+          update: {},
+          create: {
+            userId,
+            role,
+          },
+        })
+      )
+    );
   }
 
   return [...new Set([...currentRoles, ...automaticRoles])];
