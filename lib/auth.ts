@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import type { Role } from "@prisma/client";
 import { auth } from "@/auth";
+import { ensureAutomaticAdminRoles } from "@/lib/admin-roles";
 import { prisma } from "@/lib/prisma";
 
 type RequireUserOptions = {
@@ -22,7 +24,12 @@ export async function requireUser(options: RequireUserOptions = {}) {
     redirect("/login?session=stale");
   }
 
-  const roles = dbUser.roles.map((role: { role: string }) => role.role);
+  const roles = await ensureAutomaticAdminRoles(
+    prisma,
+    dbUser.id,
+    dbUser.email,
+    dbUser.roles.map((role: { role: Role }) => role.role)
+  );
   const missingDiscordHandle =
     roles.some((role) => role === "PLAYER" || role === "DM") &&
     !dbUser.discordHandle?.trim();

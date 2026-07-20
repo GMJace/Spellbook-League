@@ -3,6 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import Discord from "next-auth/providers/discord";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import type { Role } from "@prisma/client";
+import { ensureAutomaticAdminRoles } from "@/lib/admin-roles";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin-access";
 import { loginSchema } from "@/lib/validation";
@@ -33,10 +35,17 @@ async function syncTokenWithDatabase(token: {
     return token;
   }
 
+  const roles = await ensureAutomaticAdminRoles(
+    prisma,
+    dbUser.id,
+    dbUser.email,
+    dbUser.roles.map((role: { role: Role }) => role.role)
+  );
+
   token.sub = dbUser.id;
   token.name = dbUser.name;
   token.email = dbUser.email;
-  token.roles = dbUser.roles.map((role: { role: string }) => role.role);
+  token.roles = roles;
 
   return token;
 }
@@ -175,21 +184,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async authorized({ auth: session, request }) {
       const pathname = request.nextUrl.pathname;
       const roles = session?.user?.roles ?? [];
+      const isAdmin = isAdminEmail(session?.user?.email);
 
       if (pathname.startsWith("/admin/grimoire-gathering")) {
-        return isAdminEmail(session?.user?.email) || roles.includes("EVENT_ADMIN");
+        return isAdmin || roles.includes("EVENT_ADMIN");
       }
 
       if (pathname.startsWith("/admin")) {
-        return isAdminEmail(session?.user?.email);
+        return isAdmin;
       }
 
       if (pathname.startsWith("/player")) {
-        return roles.includes("PLAYER");
+        return isAdmin || roles.includes("PLAYER");
       }
 
       if (pathname.startsWith("/dm")) {
-        return roles.includes("DM");
+        return isAdmin || roles.includes("DM");
       }
 
       return true;

@@ -1,7 +1,9 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import type { Role } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { mergeAutomaticAdminRoles } from "@/lib/admin-roles";
 import {
   getProfileImageUpload,
   removeProfileImageUpload,
@@ -41,6 +43,10 @@ export async function registerUser(
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   const profileImage = getProfileImageUpload(formData.get("profileImage"));
+  const roles = mergeAutomaticAdminRoles(
+    parsed.data.email,
+    parsed.data.roles as Role[]
+  );
   let uploadedProfileImagePath: string | null = null;
 
   try {
@@ -56,7 +62,7 @@ export async function registerUser(
         profileImagePath: uploadedProfileImagePath,
         passwordHash,
         roles: {
-          create: parsed.data.roles.map((role: "PLAYER" | "DM") => ({ role })),
+          create: roles.map((role) => ({ role })),
         },
       },
     });

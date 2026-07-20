@@ -1,7 +1,9 @@
 "use server";
 
+import type { Role } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { mergeAutomaticAdminRoles } from "@/lib/admin-roles";
 import {
   getProfileImageUpload,
   removeProfileImageUpload,
@@ -24,6 +26,8 @@ export async function completeOAuthRegistration(formData: FormData) {
       error: parsed.error.issues[0]?.message ?? "Choose at least one role to continue.",
     };
   }
+
+  const roles = mergeAutomaticAdminRoles(user.email, parsed.data.roles as Role[]);
 
   let uploadedProfileImagePath: string | null = null;
 
@@ -56,7 +60,7 @@ export async function completeOAuthRegistration(formData: FormData) {
       });
 
       await tx.userRole.createMany({
-        data: parsed.data.roles.map((role: "PLAYER" | "DM") => ({
+        data: roles.map((role) => ({
           userId: user.id,
           role,
         })),
@@ -78,6 +82,6 @@ export async function completeOAuthRegistration(formData: FormData) {
     await removeProfileImageUpload(user.profileImagePath);
   }
 
-  const redirectTo = parsed.data.roles.includes("PLAYER") ? "/player" : "/dm";
+  const redirectTo = roles.includes("PLAYER") ? "/player" : "/dm";
   redirect(redirectTo);
 }
