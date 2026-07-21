@@ -78,7 +78,7 @@ const GAME_FIELD_ERROR_MESSAGES: Record<GameFieldName, string> = {
   serviceHours: "Service hours must be a number between 0 and 999.",
   downtimeDaysAwarded: "Downtime days awarded must be a whole number between 0 and 999.",
   rewardsSummary: "Enter the awarded gold total.",
-  magicItemsAwarded: "Magic items awarded must be 500 characters or fewer.",
+  magicItemsAwarded: "Magic items awarded must be 1500 characters or fewer.",
   consumablesAwarded: "Consumables awarded must be 500 characters or fewer.",
   sessionNotes: "Enter the session notes or story awards.",
   status: "Choose a valid game status.",

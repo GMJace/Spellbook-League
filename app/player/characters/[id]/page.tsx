@@ -88,22 +88,27 @@ function getCharmLabel(index: number) {
 
 function getVisibleSlottedItems(
   items: string[],
-  details: string[],
+  minorProperties: string[],
+  flavors: string[],
   getLabel: (index: number) => string,
 ) {
   return items
     .map((item, index) => ({
       label: getLabel(index),
       value: item.trim(),
-      detail: (details[index] ?? "").trim(),
+      minorProperty: (minorProperties[index] ?? "").trim(),
+      flavor: (flavors[index] ?? "").trim(),
     }))
     .filter((item) => item.value);
 }
 
-function formatMagicItemDisplay(value: string, minorProperty: string) {
-  return minorProperty
-    ? `${value} (Minor Property: ${minorProperty})`
-    : value;
+function formatMagicItemDisplay(value: string, minorProperty: string, flavor: string) {
+  const details = [
+    minorProperty ? `Minor Property: ${minorProperty}` : "",
+    flavor ? `Flavor: ${flavor}` : "",
+  ].filter(Boolean);
+
+  return details.length ? `${value} (${details.join(" | ")})` : value;
 }
 
 function formatDate(date: Date) {
@@ -214,6 +219,7 @@ export default async function CharacterLogsheetPage({
     character.magicItemMinorProperties,
     magicItemSlots
   );
+  const magicItemFlavors = parseMagicItems(character.magicItemFlavors, magicItemSlots);
   const commonMagicItems = parseMagicItems(
     character.commonMagicItems,
     COMMON_MAGIC_ITEM_SLOT_COUNT
@@ -222,20 +228,26 @@ export default async function CharacterLogsheetPage({
     character.commonMagicItemMinorProperties,
     COMMON_MAGIC_ITEM_SLOT_COUNT
   );
+  const commonMagicItemFlavors = parseMagicItems(
+    character.commonMagicItemFlavors,
+    COMMON_MAGIC_ITEM_SLOT_COUNT
+  );
   const consumables = parseMagicItems(character.consumables, consumableSlots);
   const charms = parseMagicItems(character.charms, charmSlots);
   const visibleMagicItems = getVisibleSlottedItems(
     magicItems,
     magicItemMinorProperties,
+    magicItemFlavors,
     getMagicItemLabel
   );
   const visibleCommonMagicItems = getVisibleSlottedItems(
     commonMagicItems,
     commonMagicItemMinorProperties,
+    commonMagicItemFlavors,
     getCommonMagicItemLabel,
   );
-  const visibleConsumables = getVisibleSlottedItems(consumables, [], getConsumableLabel);
-  const visibleCharms = getVisibleSlottedItems(charms, [], getCharmLabel);
+  const visibleConsumables = getVisibleSlottedItems(consumables, [], [], getConsumableLabel);
+  const visibleCharms = getVisibleSlottedItems(charms, [], [], getCharmLabel);
   const visibleBoon = boonSlotEnabled ? character.boon.trim() : "";
   const visibleBlessing = character.blessing.trim();
   const upcomingGameSignups = character.participants
@@ -575,7 +587,7 @@ export default async function CharacterLogsheetPage({
                   {item.label}
                 </p>
                 <p style={{ margin: "0.35rem 0 0" }}>
-                  {formatMagicItemDisplay(item.value, item.detail)}
+                  {formatMagicItemDisplay(item.value, item.minorProperty, item.flavor)}
                 </p>
               </div>
             ))}
@@ -607,7 +619,7 @@ export default async function CharacterLogsheetPage({
                   {item.label}
                 </p>
                 <p style={{ margin: "0.35rem 0 0" }}>
-                  {formatMagicItemDisplay(item.value, item.detail)}
+                  {formatMagicItemDisplay(item.value, item.minorProperty, item.flavor)}
                 </p>
               </div>
             ))}

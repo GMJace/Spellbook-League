@@ -4,7 +4,7 @@ import {
   type PlayerGameLogInitialValues,
 } from "@/components/player-game-log-form";
 import { requireRole } from "@/lib/auth";
-import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions } from "@/lib/league-legal-choices";
+import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions, getLeagueLegalMinorPropertyOptions } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +31,7 @@ export default async function EditPlayerGameLogPage({
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
+    legalMinorPropertyOptions,
   ] = await Promise.all([
     prisma.gameParticipant.findFirst({
       where: {
@@ -57,6 +58,7 @@ export default async function EditPlayerGameLogPage({
     getLeagueLegalBoonOptions(),
     getLeagueLegalBlessingOptions(),
     getLeagueLegalCharmOptions(),
+    getLeagueLegalMinorPropertyOptions(),
   ]);
 
   if (!participant) {
@@ -110,6 +112,7 @@ export default async function EditPlayerGameLogPage({
           legalCharmOptions={legalCharmOptions}
           legalCommonMagicItemOptions={legalMagicItemOptions.Common}
           legalConsumableOptions={legalConsumableOptions}
+          legalMinorPropertyOptions={legalMinorPropertyOptions}
           metadataLocked={isDmManagedLog}
           showTierField={false}
           submitLabel="Save changes"

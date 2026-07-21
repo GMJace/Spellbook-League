@@ -136,9 +136,15 @@ export const characterSchema = z
     magicItemMinorProperties: z
       .array(z.string().trim().max(80))
       .max(10),
+    magicItemFlavors: z
+      .array(z.string().trim().max(160))
+      .max(10),
     commonMagicItems: z.array(z.string().trim().min(1).max(80)).max(5),
     commonMagicItemMinorProperties: z
       .array(z.string().trim().max(80))
+      .max(5),
+    commonMagicItemFlavors: z
+      .array(z.string().trim().max(160))
       .max(5),
     consumables: z
       .array(z.string().trim().min(1).max(80))
@@ -180,8 +186,10 @@ const characterFieldErrorMessages: Partial<Record<keyof CharacterFormData, strin
   totalGold: "Total gold must be a whole number of 0 or more.",
   magicItems: "Each current build magic item must be 80 characters or fewer.",
   magicItemMinorProperties: "Each current build magic item minor property must be 80 characters or fewer.",
+  magicItemFlavors: "Each current build magic item flavor note must be 160 characters or fewer.",
   commonMagicItems: "Each common magic item must be 80 characters or fewer.",
   commonMagicItemMinorProperties: "Each common magic item minor property must be 80 characters or fewer.",
+  commonMagicItemFlavors: "Each common magic item flavor note must be 160 characters or fewer.",
   consumables: "Each consumable must be 80 characters or fewer.",
   boon: "Boon must be 80 characters or fewer.",
   blessing: "Blessing must be 80 characters or fewer.",
@@ -362,7 +370,7 @@ export const gameSchema = z.object({
     z.number().int().min(0).max(999)
   ),
   rewardsSummary: z.string().trim().min(1, "Awarded Gold"),
-  magicItemsAwarded: z.string().max(500).default(""),
+  magicItemsAwarded: z.string().max(1500).default(""),
   consumablesAwarded: z.string().max(500).default(""),
   sessionNotes: z.string().trim().min(1, "Session notes/Story Awards"),
   status: z.enum(["SCHEDULED", "COMPLETED", "CANCELLED"]),

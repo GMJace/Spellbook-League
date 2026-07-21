@@ -36,6 +36,7 @@ export function CreateGameForm({
       legalCharmOptions={legalRewards.legalCharmOptions}
       legalCommonMagicItemOptions={legalRewards.legalCommonMagicItemOptions}
       legalConsumableOptions={legalRewards.legalConsumableOptions}
+      legalMinorPropertyOptions={legalRewards.legalMinorPropertyOptions}
       players={players}
       submitGame={createGame}
       submitLabel={submitLabel}

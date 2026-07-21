@@ -2,7 +2,7 @@
 import { DmGameCreationSwitcher } from "@/components/dm-game-creation-switcher";
 import { requireRole } from "@/lib/auth";
 import { getLeaguePlayers } from "@/lib/data";
-import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions } from "@/lib/league-legal-choices";
+import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions, getLeagueLegalMinorPropertyOptions } from "@/lib/league-legal-choices";
 import { getNextGrimoireEvent, getSeasonSchedule, getSlotsForEvent } from "@/lib/grimoire-server";
 import { prisma } from "@/lib/prisma";
 
@@ -35,6 +35,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
+    legalMinorPropertyOptions,
   ] = await Promise.all([
     getLeaguePlayers(),
     getNextGrimoireEvent(),
@@ -44,6 +45,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
     getLeagueLegalBoonOptions(),
     getLeagueLegalBlessingOptions(),
     getLeagueLegalCharmOptions(),
+    getLeagueLegalMinorPropertyOptions(),
   ]);
   const publishedEvents = seasonSchedule.filter(
     (event) => new Date(event.date).getTime() >= Date.now()
@@ -59,6 +61,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
+    legalMinorPropertyOptions,
   });
   const duplicatedGame =
     duplicateFrom

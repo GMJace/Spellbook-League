@@ -137,10 +137,6 @@ export default async function PlayerDashboardPage({
             <strong>{user.discordHandle || "Not provided"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Roles</span>
-            <strong>{user.roles.join(", ")}</strong>
-          </div>
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
             <span className="muted">Games played</span>
             <strong>{gamesPlayedCount}</strong>
           </div>

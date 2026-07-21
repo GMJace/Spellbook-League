@@ -45,6 +45,7 @@ export function PlayerGameLogForm({
   legalCharmOptions = [],
   legalCommonMagicItemOptions = [],
   legalConsumableOptions = [],
+  legalMinorPropertyOptions = [],
   metadataLocked = false,
   showTierField = true,
   submitLabel,
@@ -58,6 +59,7 @@ export function PlayerGameLogForm({
   legalCharmOptions?: string[];
   legalCommonMagicItemOptions?: string[];
   legalConsumableOptions?: string[];
+  legalMinorPropertyOptions?: string[];
   metadataLocked?: boolean;
   showTierField?: boolean;
   submitLabel: string;
@@ -170,6 +172,7 @@ export function PlayerGameLogForm({
         legalCharmOptions={legalCharmOptions}
         legalCommonMagicItemOptions={legalCommonMagicItemOptions}
         legalConsumableOptions={legalConsumableOptions}
+        legalMinorPropertyOptions={legalMinorPropertyOptions}
       />
 
       <label>

@@ -32,6 +32,7 @@ export function EditGameForm({
       legalCharmOptions={legalRewards.legalCharmOptions}
       legalCommonMagicItemOptions={legalRewards.legalCommonMagicItemOptions}
       legalConsumableOptions={legalRewards.legalConsumableOptions}
+      legalMinorPropertyOptions={legalRewards.legalMinorPropertyOptions}
       pendingLabel="Saving changes..."
       players={players}
       submitGame={updateGame}

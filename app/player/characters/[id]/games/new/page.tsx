@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { PlayerGameLogForm } from "@/components/player-game-log-form";
 import { requireRole } from "@/lib/auth";
-import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions } from "@/lib/league-legal-choices";
+import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions, getLeagueLegalMinorPropertyOptions } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +24,7 @@ export default async function NewPlayerGameLogPage({
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
+    legalMinorPropertyOptions,
   ] = await Promise.all([
     prisma.character.findFirst({
       where: {
@@ -40,6 +41,7 @@ export default async function NewPlayerGameLogPage({
     getLeagueLegalBoonOptions(),
     getLeagueLegalBlessingOptions(),
     getLeagueLegalCharmOptions(),
+    getLeagueLegalMinorPropertyOptions(),
   ]);
 
   if (!character) {
@@ -69,6 +71,7 @@ export default async function NewPlayerGameLogPage({
           legalCharmOptions={legalCharmOptions}
           legalCommonMagicItemOptions={legalMagicItemOptions.Common}
           legalConsumableOptions={legalConsumableOptions}
+          legalMinorPropertyOptions={legalMinorPropertyOptions}
           submitLabel="Save log entry"
         />
       </section>

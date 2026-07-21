@@ -2,11 +2,16 @@ import Link from "next/link";
 
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { LocalizedEventTime } from "@/components/localized-event-time";
+import { ProfileAvatar } from "@/components/profile-avatar";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { getHomepageData } from "@/lib/data";
 import { getProDmRatingSummaryMap, getProDmReviews } from "@/lib/pro-dm-reviews";
 import { getProDmRosterEntries } from "@/lib/pro-dm-roster";
-import { getSeasonSchedule } from "@/lib/grimoire-server";
+import {
+  getMergedGamesForEvent,
+  getSeasonSchedule,
+  getSlotsForEvent,
+} from "@/lib/grimoire-server";
 import { prisma } from "@/lib/prisma";
 import { formatTier, isPaidTicketPrice } from "@/lib/utils";
 
@@ -14,19 +19,87 @@ export const dynamic = "force-dynamic";
 
 const publishingStoreUrl = "https://www.spellbookpublishing.com/";
 
+function parseCompletedGrimoireCheckoutSummary(value: string) {
+  try {
+    const parsed = JSON.parse(value) as {
+      badgeQuantity?: number;
+      eventId?: string;
+    };
+
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      typeof parsed.eventId !== "string" ||
+      typeof parsed.badgeQuantity !== "number" ||
+      parsed.badgeQuantity < 1
+    ) {
+      return null;
+    }
+
+    return {
+      badgeQuantity: parsed.badgeQuantity,
+      eventId: parsed.eventId,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default async function StorePage() {
   const now = new Date();
-  const [seasonSchedule, homepageData, proDmRosterEntries, proDmReviews] =
+  const [seasonSchedule, homepageData, proDmRosterEntries, proDmReviews, completedGrimoireOrders] =
     await Promise.all([
       getSeasonSchedule(),
       getHomepageData(),
       getProDmRosterEntries(),
       getProDmReviews(),
+      prisma.checkoutOrder.findMany({
+        where: {
+          checkoutType: "GRIMOIRE",
+          status: "COMPLETED",
+        },
+        select: {
+          itemDataJson: true,
+        },
+      }),
     ]);
 
   const upcomingEvents = seasonSchedule
     .filter((event) => new Date(event.date).getTime() >= now.getTime())
     .slice(0, 3);
+
+  const grimoirePlayersByEvent = new Map<string, number>();
+
+  for (const order of completedGrimoireOrders) {
+    const summary = parseCompletedGrimoireCheckoutSummary(order.itemDataJson);
+
+    if (!summary) {
+      continue;
+    }
+
+    grimoirePlayersByEvent.set(
+      summary.eventId,
+      (grimoirePlayersByEvent.get(summary.eventId) ?? 0) + summary.badgeQuantity
+    );
+  }
+
+  const upcomingEventCards = await Promise.all(
+    upcomingEvents.map(async (event) => {
+      const [slots, games] = await Promise.all([
+        getSlotsForEvent(event.id),
+        getMergedGamesForEvent(event.id),
+      ]);
+
+      return {
+        ...event,
+        gameCount: games.length,
+        playerCount: grimoirePlayersByEvent.get(event.id) ?? 0,
+        slots: [...slots].sort(
+          (left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()
+        ),
+      };
+    })
+  );
 
   const ticketedLeagueGames = homepageData.openLeagueGames.filter((game) =>
     isPaidTicketPrice(game.ticketPrice),
@@ -74,6 +147,7 @@ export default async function StorePage() {
       return {
         id: dm.id,
         name: dm.name,
+        profileImagePath: dm.profileImagePath,
         headline: rosterEntry?.headline,
         specialties: rosterEntry?.specialties,
         rating: ratingSummary?.rating ?? rosterEntry?.rating ?? 5,
@@ -102,7 +176,18 @@ export default async function StorePage() {
           <Link className="button secondary" href="/league/cart">
             Open league cart
           </Link>
-          <a className="button" href={publishingStoreUrl} rel="noreferrer" target="_blank">
+          <a
+            className="game-signups-button store-publishing-button"
+            href={publishingStoreUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <img
+              alt=""
+              aria-hidden="true"
+              className="store-publishing-button-logo"
+              src="/SB_Logo.png"
+            />
             Visit SPELLBOOK Publishing
           </a>
         </div>
@@ -125,30 +210,71 @@ export default async function StorePage() {
 
         {upcomingEvents.length ? (
           <div className="store-card-grid">
-            {upcomingEvents.map((event) => (
-              <article key={event.id} className="store-card stack">
-                <div className="stack" style={{ gap: "0.45rem" }}>
-                  <h3 style={{ margin: 0 }}>{event.subtitle}</h3>
-                  <p className="muted" style={{ margin: 0 }}>
-                    {event.displayDate}
+            {upcomingEventCards.map((event) => (
+              <article key={event.id} className="store-card store-grimoire-card">
+                <div className="store-grimoire-card-content stack">
+                  <div className="stack" style={{ gap: "0.45rem" }}>
+                    <h3 className="store-grimoire-card-title" style={{ margin: 0 }}>
+                      {event.subtitle}
+                    </h3>
+                    <p className="muted" style={{ margin: 0 }}>
+                      {event.displayDate}
+                    </p>
+                  </div>
+                  <p style={{ margin: 0 }}>
+                    <strong>Theme:</strong> {event.theme}
                   </p>
+                  <p className="muted" style={{ margin: 0 }}>
+                    {event.focus}
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    <strong>Badge:</strong> {event.ticketPrice}
+                  </p>
+                  <div className="inline-actions" style={{ flexWrap: "wrap" }}>
+                    <Link className="button secondary" href={`/grimoire-gathering/events/${event.id}`}>
+                      Event pack
+                    </Link>
+                    <Link className="button secondary" href="/grimoire-gathering/cart">
+                      Buy tickets
+                    </Link>
+                  </div>
+                  <div className="store-grimoire-event-meta">
+                    <div className="store-grimoire-event-stat">
+                      <strong>Game slots</strong>
+                      {event.slots.length ? (
+                        <div className="store-grimoire-slot-list">
+                          {event.slots.map((slot) => (
+                            <div className="store-grimoire-slot-item" key={`${event.id}-${slot.startAt}`}>
+                              <span>{slot.label}</span>
+                              <LocalizedEventTime
+                                className="muted"
+                                isoString={slot.startAt}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="muted">No game slots posted yet.</span>
+                      )}
+                    </div>
+                    <div className="store-grimoire-event-stats-row">
+                      <div className="store-grimoire-event-stat">
+                        <strong>Games in event</strong>
+                        <span className="muted">{event.gameCount}</span>
+                      </div>
+                      <div className="store-grimoire-event-stat">
+                        <strong>Players signed up</strong>
+                        <span className="muted">{event.playerCount}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p style={{ margin: 0 }}>
-                  <strong>Theme:</strong> {event.theme}
-                </p>
-                <p className="muted" style={{ margin: 0 }}>
-                  {event.focus}
-                </p>
-                <p style={{ margin: 0 }}>
-                  <strong>Badge:</strong> {event.ticketPrice}
-                </p>
-                <div className="inline-actions" style={{ flexWrap: "wrap" }}>
-                  <Link className="button secondary" href={`/grimoire-gathering/events/${event.id}`}>
-                    Event pack
-                  </Link>
-                  <Link className="button secondary" href="/grimoire-gathering/cart">
-                    Buy tickets
-                  </Link>
+                <div className="store-grimoire-card-logo-wrap">
+                  <img
+                    alt="Grimoire Gathering logo"
+                    className="store-grimoire-card-logo"
+                    src="/grimoire-gathering-banner.png"
+                  />
                 </div>
               </article>
             ))}
@@ -182,6 +308,13 @@ export default async function StorePage() {
 
               return (
                 <article key={game.id} className="store-card stack">
+                  {game.adventureImagePath ? (
+                    <img
+                      alt={`${game.title} adventure art`}
+                      className="store-league-card-image"
+                      src={game.adventureImagePath}
+                    />
+                  ) : null}
                   <div className="stack" style={{ gap: "0.45rem" }}>
                     <h3 style={{ margin: 0 }}>{game.title}</h3>
                     <p className="muted" style={{ margin: 0 }}>
@@ -244,17 +377,30 @@ export default async function StorePage() {
         </div>
 
         {featuredProDms.length ? (
-          <div className="store-card-grid store-card-grid-compact">
+          <div className="store-card-grid store-pro-dm-grid">
             {featuredProDms.map((dm) => (
               <article key={dm.id} className="store-card stack">
-                <div className="stack" style={{ gap: "0.35rem" }}>
-                  <h3 style={{ margin: 0 }}>{dm.name}</h3>
-                  {dm.headline ? <p className="muted" style={{ margin: 0 }}>{dm.headline}</p> : null}
+                <div className="store-pro-dm-card-top">
+                  <div className="store-pro-dm-card-copy stack" style={{ gap: "0.35rem" }}>
+                    <h3 style={{ margin: 0 }}>{dm.name}</h3>
+                    {dm.headline ? (
+                      <p className="muted" style={{ margin: 0 }}>
+                        {dm.headline}
+                      </p>
+                    ) : null}
+                    <p style={{ margin: 0 }}>
+                      <strong>Rating:</strong> {dm.rating.toFixed(1)}/5
+                      {dm.reviewCount
+                        ? ` from ${dm.reviewCount} review${dm.reviewCount === 1 ? "" : "s"}`
+                        : ""}
+                    </p>
+                  </div>
+                  <ProfileAvatar
+                    name={dm.name}
+                    size={88}
+                    src={dm.profileImagePath}
+                  />
                 </div>
-                <p style={{ margin: 0 }}>
-                  <strong>Rating:</strong> {dm.rating.toFixed(1)}/5
-                  {dm.reviewCount ? ` from ${dm.reviewCount} review${dm.reviewCount === 1 ? "" : "s"}` : ""}
-                </p>
                 {dm.specialties ? (
                   <p style={{ margin: 0 }}>
                     <strong>Specialties:</strong> {dm.specialties}

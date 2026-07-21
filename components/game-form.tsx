@@ -47,6 +47,7 @@ type GameFormProps = {
   legalCharmOptions?: string[];
   legalCommonMagicItemOptions?: string[];
   legalConsumableOptions?: string[];
+  legalMinorPropertyOptions?: string[];
   pendingLabel?: string;
   players: Player[];
   submitGame: (
@@ -90,6 +91,14 @@ const statuses = [
   { value: "SCHEDULED", label: "Scheduled" },
   { value: "COMPLETED", label: "Completed" },
   { value: "CANCELLED", label: "Cancelled" },
+];
+
+const ticketPriceOptions = [
+  { value: "Free", label: "Free" },
+  { value: "$5 USD", label: "$5 USD" },
+  { value: "$10 USD", label: "$10 USD" },
+  { value: "$15 USD", label: "$15 USD" },
+  { value: "$20 USD", label: "$20 USD" },
 ];
 
 const GAME_CARD_IMAGE_WIDTH = 960;
@@ -163,6 +172,7 @@ export function GameForm({
   legalCharmOptions = [],
   legalCommonMagicItemOptions = [],
   legalConsumableOptions = [],
+  legalMinorPropertyOptions = [],
   pendingLabel = "Saving game...",
   players,
   submitGame,
@@ -177,6 +187,10 @@ export function GameForm({
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<GameFormFieldName, string>>>({});
   const [isPending, startTransition] = useTransition();
+  const resolvedTicketPrice = initialValues?.ticketPrice ?? "Free";
+  const hasCustomTicketPrice = !ticketPriceOptions.some(
+    (option) => option.value === resolvedTicketPrice,
+  );
 
   const errorTextStyle = { color: "#8f341b", margin: 0 };
   const fieldBlockStyle = { gap: "0.35rem" };
@@ -293,14 +307,21 @@ export function GameForm({
         <div className="stack" style={fieldBlockStyle}>
           <label>
             Price
-            <input
+            <select
               aria-invalid={Boolean(getFieldError("ticketPrice"))}
-              defaultValue={initialValues?.ticketPrice ?? "Free"}
+              defaultValue={resolvedTicketPrice}
               name="ticketPrice"
-              placeholder="Free"
-              type="text"
               required
-            />
+            >
+              {hasCustomTicketPrice ? (
+                <option value={resolvedTicketPrice}>{resolvedTicketPrice}</option>
+              ) : null}
+              {ticketPriceOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
           {getFieldError("ticketPrice") ? (
             <p style={errorTextStyle}>{getFieldError("ticketPrice")}</p>
@@ -480,6 +501,7 @@ export function GameForm({
         legalCharmOptions={legalCharmOptions}
         legalCommonMagicItemOptions={legalCommonMagicItemOptions}
         legalConsumableOptions={legalConsumableOptions}
+        legalMinorPropertyOptions={legalMinorPropertyOptions}
       />
       {getFieldError("magicItemsAwarded") ? (
         <p style={errorTextStyle}>{getFieldError("magicItemsAwarded")}</p>

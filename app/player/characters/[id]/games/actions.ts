@@ -19,7 +19,7 @@ const playerGameLogSchema = z.object({
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   dmName: z.string().trim().min(2).max(80),
   rewardsSummary: z.string().trim(),
-  magicItemsAwarded: z.string().trim().max(500).default(""),
+  magicItemsAwarded: z.string().trim().max(1500).default(""),
   consumablesAwarded: z.string().trim().max(500).default(""),
   sessionNotes: z.string().trim(),
   status: z.literal("COMPLETED"),

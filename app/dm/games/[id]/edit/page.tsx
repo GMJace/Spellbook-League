@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { EditGameForm } from "@/components/edit-game-form";
 import { getLeaguePlayers } from "@/lib/data";
-import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions } from "@/lib/league-legal-choices";
+import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions, getLeagueLegalMinorPropertyOptions } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +57,7 @@ export default async function EditGamePage({ params }: PageProps) {
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
+    legalMinorPropertyOptions,
   ] = await Promise.all([
     getLeaguePlayers(),
     prisma.game.findUnique({
@@ -76,6 +77,7 @@ export default async function EditGamePage({ params }: PageProps) {
     getLeagueLegalBoonOptions(),
     getLeagueLegalBlessingOptions(),
     getLeagueLegalCharmOptions(),
+    getLeagueLegalMinorPropertyOptions(),
   ]);
 
   if (!game) {
@@ -126,6 +128,7 @@ export default async function EditGamePage({ params }: PageProps) {
     legalBoonOptions,
     legalBlessingOptions,
     legalCharmOptions,
+    legalMinorPropertyOptions,
   });
 
   return (
