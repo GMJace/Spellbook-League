@@ -77,46 +77,31 @@ export async function getHomepageData() {
         a.characterName.localeCompare(b.characterName)
     );
 
-  const dmActivityGames = await prisma.game.groupBy({
-    by: ["dmId"],
-    _count: { id: true },
-    orderBy: {
+  const dmUsers = await prisma.user.findMany({
+    where: {
+      roles: {
+        some: {
+          role: "DM",
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
       _count: {
-        id: "desc",
+        select: {
+          gamesCreated: true,
+        },
       },
     },
   });
-  const dmIds = dmActivityGames
-    .map((entry) => entry.dmId)
-    .filter((dmId): dmId is string => Boolean(dmId));
 
-  const dmUsers = await prisma.user.findMany({
-    where: {
-      id: { in: dmIds },
-    },
-  });
-
-  const dmUserMap = new Map(dmUsers.map((user) => [user.id, user]));
-
-  const dmRoster = dmActivityGames
-    .map((entry) => {
-      if (!entry.dmId) {
-        return null;
-      }
-
-      const dm = dmUserMap.get(entry.dmId);
-
-      if (!dm) {
-        return null;
-      }
-
-      return {
-        id: dm.id,
-        name: dm.name,
-        gamesLogged: entry._count.id,
-      };
-    })
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+  const dmRoster = dmUsers
+    .map((dm) => ({
+      id: dm.id,
+      name: dm.name,
+      gamesLogged: dm._count.gamesCreated,
+    }))
     .sort((a, b) => b.gamesLogged - a.gamesLogged || a.name.localeCompare(b.name));
 
   const openLeagueGames = await prisma.game.findMany({

@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { auth } from "@/auth";
-import { ProfileAvatar } from "@/components/profile-avatar";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
-import { isAdminEmail } from "@/lib/admin-access";
 import { getProDmRatingSummary, getProDmReviews } from "@/lib/pro-dm-reviews";
 import { getProDmRosterEntry } from "@/lib/pro-dm-roster";
 import { prisma } from "@/lib/prisma";
@@ -35,51 +32,34 @@ function splitSpecialties(value: string | null) {
 
 export default async function HireADmProfilePage({ params }: PageProps) {
   const { id } = await params;
-  const session = await auth();
-  const dmProfile = await getProDmRosterEntry(id);
-  const proDmReviews = await getProDmReviews();
-  const isOwnerPreview = session?.user?.id === id;
-  const isAdminPreview = isAdminEmail(session?.user?.email);
-  const canPreviewUnlistedProfile = Boolean(isOwnerPreview || isAdminPreview);
-  const isPreview = !dmProfile?.isListed;
-  const profile = dmProfile ?? {
-    userId: id,
-    isListed: false,
-    rating: 5,
-    headline: null,
-    specialties: null,
-    bio: null,
-    updatedAt: "",
-  };
-
-  if (isPreview && !canPreviewUnlistedProfile) {
-    notFound();
-  }
-
-  const dm = await prisma.user.findFirst({
-    where: {
-      id,
-      roles: {
-        some: {
-          role: "DM",
-        },
-      },
-    },
-    include: {
-      gamesCreated: {
-        include: {
-          _count: {
-            select: {
-              participants: true,
-            },
+  const [dm, dmProfile, proDmReviews] = await Promise.all([
+    prisma.user.findFirst({
+      where: {
+        id,
+        roles: {
+          some: {
+            role: "DM",
           },
         },
-        orderBy: {
-          datePlayed: "desc",
+      },
+      include: {
+        gamesCreated: {
+          include: {
+            _count: {
+              select: {
+                participants: true,
+              },
+            },
+          },
+          orderBy: {
+            datePlayed: "desc",
+          },
         },
       },
-    },
-  });
+    }),
+    getProDmRosterEntry(id),
+    getProDmReviews(),
+  ]);
 
   if (!dm) {
     notFound();
@@ -97,6 +77,16 @@ export default async function HireADmProfilePage({ params }: PageProps) {
       participants: number;
     };
   }>;
+  const profile = dmProfile ?? {
+    userId: id,
+    isListed: false,
+    rating: 5,
+    headline: null,
+    specialties: null,
+    bio: null,
+    updatedAt: "",
+  };
+  const isListed = Boolean(dmProfile?.isListed);
   const totalPlayersHosted = games.reduce((sum, game) => sum + game._count.participants, 0);
   const totalServiceHours = games.reduce((sum, game) => sum + (game.serviceHours ?? 0), 0);
   const specialties = splitSpecialties(profile.specialties);
@@ -107,36 +97,26 @@ export default async function HireADmProfilePage({ params }: PageProps) {
       <section className="stack">
         <div className="list-card stack">
           <div className="section-heading">
-            <div
-              style={{
-                display: "flex",
-                gap: "1rem",
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <ProfileAvatar
-                name={dm.name}
-                src={dm.profileImagePath}
-                size={112}
-              />
-              <div>
-                <p className="eyebrow">
-                  {isPreview ? "Hire a DM preview" : <>Professional <RainbowSpellbook /> DM</>}
-                </p>
-                <h1 style={{ margin: "0.35rem 0 0" }}>{dm.name}</h1>
-                <p className="muted" style={{ margin: "0.5rem 0 0", maxWidth: "62ch" }}>
-                  {profile.headline ||
+            <div className="stack" style={{ gap: "0.45rem" }}>
+              <p className="eyebrow">{isListed ? <>Professional <RainbowSpellbook /> DM</> : <><RainbowSpellbook /> DM</>}</p>
+              <h1 style={{ margin: 0 }}>{dm.name}</h1>
+              <p className="muted" style={{ margin: 0, maxWidth: "62ch" }}>
+                {profile.headline ||
+                  (isListed ? (
                     <>
-                      Professional <RainbowSpellbook /> Dungeon Master available
-                      for public bookings.
-                    </>}
-                </p>
-              </div>
+                      Professional <RainbowSpellbook /> Dungeon Master available for public
+                      bookings.
+                    </>
+                  ) : (
+                    <>
+                      <RainbowSpellbook /> Dungeon Master roster profile.
+                    </>
+                  ))}
+              </p>
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              {isPreview ? null : (
+              {isListed ? (
                 <>
                   <Link className="button" href={`/hire-a-dm/${dm.id}/hire`}>
                     Hire DM
@@ -145,22 +125,13 @@ export default async function HireADmProfilePage({ params }: PageProps) {
                     Rate DM
                   </Link>
                 </>
-              )}
+              ) : null}
               <Link className="button button-secondary" href="/hire-a-dm">
                 Back to roster
               </Link>
             </div>
           </div>
         </div>
-
-        {isPreview ? (
-          <div className="list-card stack">
-            <p style={{ margin: 0 }}>
-              This preview is only visible to you and admins until the account is added to the
-              public Hire a DM roster.
-            </p>
-          </div>
-        ) : null}
 
         <div className="list-card stack">
           <div

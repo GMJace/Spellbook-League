@@ -121,7 +121,6 @@ export default async function LeaguePage() {
                 {openLeagueGames.length ? (
                   openLeagueGames.map((game) => {
                     const signedUpCount = game._count.participants;
-                    const openSpots = Math.max(game.seatCapacity - signedUpCount, 0);
 
                     return (
                       <tr key={game.id}>
@@ -135,7 +134,7 @@ export default async function LeaguePage() {
                         <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
                         <td>{formatTier(game.tier)}</td>
                         <td>{game.ticketPrice}</td>
-                        <td>{signedUpCount}/{openSpots}</td>
+                        <td>{signedUpCount}/{game.seatCapacity}</td>
                         <td>
                           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                             <Link

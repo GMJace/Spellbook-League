@@ -10,6 +10,7 @@ export type HireDmRosterRow = {
   id: string;
   name: string;
   email: string;
+  isListed: boolean;
   rating: number;
   specialties: string | null;
   headline: string | null;
@@ -40,10 +41,10 @@ export function HireDmRosterTable({ roster }: { roster: HireDmRosterRow[] }) {
     <div className="stack" style={{ gap: "0.8rem" }}>
       <div className="stack" style={{ gap: "0.45rem" }}>
         <strong>
-          Professional <RainbowSpellbook /> DMs
+          <RainbowSpellbook /> DMs
         </strong>
         <input
-          aria-label="Search professional dungeon masters"
+          aria-label="Search dungeon masters"
           className="input"
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search by DM name or specialty"
@@ -68,7 +69,7 @@ export function HireDmRosterTable({ roster }: { roster: HireDmRosterRow[] }) {
             {roster.length === 0 ? (
               <tr>
                 <td className="muted" colSpan={6}>
-                  The Professional <RainbowSpellbook /> DMs roster is empty right now.
+                  The <RainbowSpellbook /> DM roster is empty right now.
                 </td>
               </tr>
             ) : filteredRoster.length ? (
@@ -88,27 +89,35 @@ export function HireDmRosterTable({ roster }: { roster: HireDmRosterRow[] }) {
                     </Link>
                   </td>
                   <td>
-                    <Link
-                      className="button button-small"
-                      href={`/hire-a-dm/${dm.id}/hire`}
-                    >
-                      Hire DM
-                    </Link>
+                    {dm.isListed ? (
+                      <Link
+                        className="button button-small"
+                        href={`/hire-a-dm/${dm.id}/hire`}
+                      >
+                        Hire DM
+                      </Link>
+                    ) : (
+                      <span className="muted">Not listed</span>
+                    )}
                   </td>
                   <td>
-                    <Link
-                      className="button button-secondary button-small"
-                      href={`/hire-a-dm/${dm.id}/rate`}
-                    >
-                      Rate DM
-                    </Link>
+                    {dm.isListed ? (
+                      <Link
+                        className="button button-secondary button-small"
+                        href={`/hire-a-dm/${dm.id}/rate`}
+                      >
+                        Rate DM
+                      </Link>
+                    ) : (
+                      <span className="muted">Not listed</span>
+                    )}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td className="muted" colSpan={6}>
-                  No professional DMs match that search.
+                  No DMs match that search.
                 </td>
               </tr>
             )}

@@ -78,6 +78,28 @@ enum CheckoutStatus {
   FAILED
 }
 
+enum TicketSaleSourceType {
+  LEAGUE_GAME
+  GRIMOIRE_BADGE
+  GRIMOIRE_GAME
+  MEMBERSHIP
+  OTHER
+}
+
+enum DmPaymentMethodType {
+  PAYPAL
+  E_TRANSFER
+  BANK_TRANSFER
+  CASH
+  OTHER
+}
+
+enum TicketPayoutStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 model User {
   id           String            @id @default(cuid())
   name         String
@@ -101,6 +123,11 @@ model User {
   siteHealthChecksTriggered SiteHealthCheck[]
   checkoutOrders CheckoutOrder[]
   patronMemberships PatronMembership[]
+  ticketSalesSettingsUpdated TicketSalesSettings[] @relation("TicketSalesSettingsUpdatedBy")
+  ticketRefundsCreated TicketRefund[] @relation("TicketRefundCreatedBy")
+  dmPaymentProfiles DmPaymentProfile[] @relation("DmPaymentProfileUser")
+  ticketPayoutsAsDm TicketPayout[] @relation("TicketPayoutDmUser")
+  ticketPayoutsCreated TicketPayout[] @relation("TicketPayoutCreatedBy")
 }
 
 model UserRole {
@@ -467,9 +494,92 @@ model CheckoutOrder {
   capturedAt        DateTime?
   user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   patronMembership  PatronMembership?
+  ticketRefunds     TicketRefund[]
 
   @@index([status, createdAt(sort: Desc)])
   @@index([checkoutType, createdAt(sort: Desc)])
+}
+
+model TicketSalesSettings {
+  id                     String   @id @default("default")
+  provincialTaxRatePct   Float    @default(0)
+  federalTaxRatePct      Float    @default(5)
+  defaultDmPayoutRatePct Float    @default(0)
+  updatedByUserId        String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  updatedBy              User?    @relation("TicketSalesSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+}
+
+model TicketRefund {
+  id             String               @id @default(cuid())
+  checkoutOrderId String?
+  checkoutType   CheckoutType
+  saleSourceType TicketSaleSourceType @default(OTHER)
+  saleSourceId   String?
+  saleSourceLabel String
+  amountUsd      Float
+  currencyCode   String               @default("USD")
+  reason         String
+  notes          String?
+  refundedAt     DateTime             @default(now())
+  createdByUserId String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  checkoutOrder  CheckoutOrder?       @relation(fields: [checkoutOrderId], references: [id], onDelete: SetNull)
+  createdBy      User?                @relation("TicketRefundCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([checkoutType, refundedAt(sort: Desc)])
+  @@index([saleSourceType, refundedAt(sort: Desc)])
+}
+
+model DmPaymentProfile {
+  id                 String               @id @default(cuid())
+  lookupKey          String               @unique
+  dmUserId           String?              @unique
+  dmName             String
+  contactEmail       String?
+  paymentMethodType  DmPaymentMethodType?
+  paymentMethodLabel String?
+  paymentDetails     String?
+  notes              String?
+  isActive           Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  dmUser             User?                @relation("DmPaymentProfileUser", fields: [dmUserId], references: [id], onDelete: SetNull)
+  ticketPayouts      TicketPayout[]
+
+  @@index([dmName])
+}
+
+model TicketPayout {
+  id                 String             @id @default(cuid())
+  dmPaymentProfileId String?
+  dmUserId           String?
+  dmName             String
+  checkoutType       CheckoutType
+  saleSourceType     TicketSaleSourceType
+  saleSourceId       String?
+  saleSourceLabel    String
+  seatCount          Int                @default(0)
+  grossTicketSalesUsd Float
+  payoutRatePct      Float
+  payoutAmountUsd    Float
+  paidPayoutRatePct  Float?
+  currencyCode       String             @default("USD")
+  status             TicketPayoutStatus @default(PENDING)
+  notes              String?
+  paidAt             DateTime?
+  createdByUserId    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  dmPaymentProfile   DmPaymentProfile?  @relation(fields: [dmPaymentProfileId], references: [id], onDelete: SetNull)
+  dmUser             User?              @relation("TicketPayoutDmUser", fields: [dmUserId], references: [id], onDelete: SetNull)
+  createdBy          User?              @relation("TicketPayoutCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([checkoutType, createdAt(sort: Desc)])
+  @@index([saleSourceType, saleSourceId])
 }
 
 model PatronMembership {

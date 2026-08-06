@@ -133,6 +133,9 @@ export const characterSchema = z
     backstory: z.string().trim().max(4000).optional().or(z.literal("")),
     totalGold: z.coerce.number().int().min(0),
     magicItems: z.array(z.string().trim().min(1).max(80)).max(10),
+    magicItemNames: z
+      .array(z.string().trim().max(160))
+      .max(10),
     magicItemMinorProperties: z
       .array(z.string().trim().max(80))
       .max(10),
@@ -140,6 +143,9 @@ export const characterSchema = z
       .array(z.string().trim().max(160))
       .max(10),
     commonMagicItems: z.array(z.string().trim().min(1).max(80)).max(5),
+    commonMagicItemNames: z
+      .array(z.string().trim().max(160))
+      .max(5),
     commonMagicItemMinorProperties: z
       .array(z.string().trim().max(80))
       .max(5),
@@ -185,11 +191,13 @@ const characterFieldErrorMessages: Partial<Record<keyof CharacterFormData, strin
   backstory: "Character backstory must be 4000 characters or fewer.",
   totalGold: "Total gold must be a whole number of 0 or more.",
   magicItems: "Each current build magic item must be 80 characters or fewer.",
+  magicItemNames: "Each current build magic item name must be 160 characters or fewer.",
   magicItemMinorProperties: "Each current build magic item minor property must be 80 characters or fewer.",
-  magicItemFlavors: "Each current build magic item flavor note must be 160 characters or fewer.",
+  magicItemFlavors: "Each current build magic item notes field must be 160 characters or fewer.",
   commonMagicItems: "Each common magic item must be 80 characters or fewer.",
+  commonMagicItemNames: "Each common magic item name must be 160 characters or fewer.",
   commonMagicItemMinorProperties: "Each common magic item minor property must be 80 characters or fewer.",
-  commonMagicItemFlavors: "Each common magic item flavor note must be 160 characters or fewer.",
+  commonMagicItemFlavors: "Each common magic item notes field must be 160 characters or fewer.",
   consumables: "Each consumable must be 80 characters or fewer.",
   boon: "Boon must be 80 characters or fewer.",
   blessing: "Blessing must be 80 characters or fewer.",

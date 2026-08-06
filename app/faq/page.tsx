@@ -341,7 +341,7 @@ export default function FaqPage() {
                   rel="noreferrer"
                   target="_blank"
                 >
-                  Rules Layer Channel
+                  Rules Lawyer Channel
                 </a>
               </div>
             </div>

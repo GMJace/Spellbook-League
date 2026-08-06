@@ -22,6 +22,11 @@ const adminNavigationLinks = [
     roles: ["ADMIN", "EVENT_ADMIN"],
   },
   {
+    href: "/admin/ticket-sales",
+    label: "Ticket sales",
+    roles: ["ADMIN", "EVENT_ADMIN"],
+  },
+  {
     href: "/admin/league-choices",
     label: "League legal choices",
     roles: ["ADMIN", "LEAGUE_ADMIN"],

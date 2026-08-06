@@ -94,11 +94,14 @@ function MagicRewardSelectList({
   addLabel,
   emptyMessage,
   itemName,
+  itemDisplayLabel,
   itemNoneLabel,
   itemOptions,
   items,
+  itemNames,
   itemFlavors,
   minorProperties,
+  nameName,
   flavorName,
   minorPropertyName,
   minorPropertyOptions,
@@ -107,16 +110,20 @@ function MagicRewardSelectList({
   addLabel: string;
   emptyMessage: string;
   itemName: string;
+  itemDisplayLabel: string;
   itemNoneLabel: string;
   itemOptions: string[];
   items: string[];
+  itemNames: string[];
   itemFlavors: string[];
   minorProperties: string[];
+  nameName: string;
   flavorName: string;
   minorPropertyName: string;
   minorPropertyOptions: string[];
   onChange: (
     nextItems: string[],
+    nextNames: string[],
     nextMinorProperties: string[],
     nextFlavors: string[]
   ) => void;
@@ -137,23 +144,25 @@ function MagicRewardSelectList({
             <div className="stack" style={{ gap: "0.75rem" }}>
               <label style={{ margin: 0 }}>
                 <span className="muted" style={{ display: "block", marginBottom: "0.35rem" }}>
-                  Selection {index + 1}
+                  Selection {index + 1} · Item (counts as)
                 </span>
                 <select
                   name={itemName}
                   value={item}
                   onChange={(event) => {
                     const nextItems = [...items];
+                    const nextNames = [...itemNames];
                     const nextMinorProperties = [...minorProperties];
                     const nextFlavors = [...itemFlavors];
                     nextItems[index] = event.target.value;
 
                     if (!event.target.value) {
+                      nextNames[index] = "";
                       nextMinorProperties[index] = "";
                       nextFlavors[index] = "";
                     }
 
-                    onChange(nextItems, nextMinorProperties, nextFlavors);
+                    onChange(nextItems, nextNames, nextMinorProperties, nextFlavors);
                   }}
                 >
                   <option value="">{itemNoneLabel}</option>
@@ -167,7 +176,26 @@ function MagicRewardSelectList({
               {item ? (
                 <label style={{ margin: 0 }}>
                   <span className="muted" style={{ display: "block", marginBottom: "0.35rem" }}>
-                    Minor property
+                    Name
+                  </span>
+                  <input
+                    name={nameName}
+                    maxLength={160}
+                    placeholder={`Add ${itemDisplayLabel.toLowerCase()} name`}
+                    type="text"
+                    value={itemNames[index] ?? ""}
+                    onChange={(event) => {
+                      const nextNames = [...itemNames];
+                      nextNames[index] = event.target.value;
+                      onChange(items, nextNames, minorProperties, itemFlavors);
+                    }}
+                  />
+                </label>
+              ) : null}
+              {item ? (
+                <label style={{ margin: 0 }}>
+                  <span className="muted" style={{ display: "block", marginBottom: "0.35rem" }}>
+                    Minor Property
                   </span>
                   <select
                     name={minorPropertyName}
@@ -175,7 +203,7 @@ function MagicRewardSelectList({
                     onChange={(event) => {
                       const nextMinorProperties = [...minorProperties];
                       nextMinorProperties[index] = event.target.value;
-                      onChange(items, nextMinorProperties, itemFlavors);
+                      onChange(items, itemNames, nextMinorProperties, itemFlavors);
                     }}
                   >
                     <option value="">No minor property</option>
@@ -190,27 +218,25 @@ function MagicRewardSelectList({
               {item ? (
                 <label style={{ margin: 0 }}>
                   <span className="muted" style={{ display: "block", marginBottom: "0.35rem" }}>
-                    Item flavor
+                    Notes (Flavor)
                   </span>
                   <input
                     name={flavorName}
                     maxLength={160}
-                    placeholder="Add item flavor"
+                    placeholder="Add flavor notes"
                     type="text"
                     value={itemFlavors[index] ?? ""}
                     onChange={(event) => {
                       const nextFlavors = [...itemFlavors];
                       nextFlavors[index] = event.target.value;
-                      onChange(items, minorProperties, nextFlavors);
+                      onChange(items, itemNames, minorProperties, nextFlavors);
                     }}
                   />
                 </label>
-              ) : (
-                <>
-                  <input name={minorPropertyName} type="hidden" value="" />
-                  <input name={flavorName} type="hidden" value="" />
-                </>
-              )}
+              ) : null}
+              {!item ? <input name={nameName} type="hidden" value="" /> : null}
+              {!item ? <input name={minorPropertyName} type="hidden" value="" /> : null}
+              {!item ? <input name={flavorName} type="hidden" value="" /> : null}
             </div>
             <button
               className="secondary"
@@ -218,6 +244,7 @@ function MagicRewardSelectList({
               onClick={() => {
                 onChange(
                   items.filter((_, currentIndex) => currentIndex !== index),
+                  itemNames.filter((_, currentIndex) => currentIndex !== index),
                   minorProperties.filter((_, currentIndex) => currentIndex !== index),
                   itemFlavors.filter((_, currentIndex) => currentIndex !== index)
                 );
@@ -238,7 +265,12 @@ function MagicRewardSelectList({
           className="secondary"
           type="button"
           onClick={() => {
-            onChange([...items, ""], [...minorProperties, ""], [...itemFlavors, ""]);
+            onChange(
+              [...items, ""],
+              [...itemNames, ""],
+              [...minorProperties, ""],
+              [...itemFlavors, ""]
+            );
           }}
         >
           {addLabel}
@@ -285,6 +317,9 @@ export function GameRewardFields({
     } satisfies LegalRewardOptions
   );
   const [buildMagicItems, setBuildMagicItems] = useState(initialSelections.buildMagicItems);
+  const [buildMagicItemNames, setBuildMagicItemNames] = useState(
+    initialSelections.buildMagicItemNames
+  );
   const [buildMagicItemMinorProperties, setBuildMagicItemMinorProperties] = useState(
     initialSelections.buildMagicItemMinorProperties
   );
@@ -292,6 +327,9 @@ export function GameRewardFields({
     initialSelections.buildMagicItemFlavors
   );
   const [commonMagicItems, setCommonMagicItems] = useState(initialSelections.commonMagicItems);
+  const [commonMagicItemNames, setCommonMagicItemNames] = useState(
+    initialSelections.commonMagicItemNames
+  );
   const [commonMagicItemMinorProperties, setCommonMagicItemMinorProperties] = useState(
     initialSelections.commonMagicItemMinorProperties
   );
@@ -330,16 +368,20 @@ export function GameRewardFields({
           addLabel="Add Uncommon+ magic item"
           emptyMessage="No Uncommon+ magic items selected yet."
           itemName="rewardBuildMagicItems"
+          itemDisplayLabel="magic item"
           itemNoneLabel="Select an Uncommon+ magic item"
           itemOptions={legalBuildMagicItemOptions}
           items={buildMagicItems}
+          itemNames={buildMagicItemNames}
           itemFlavors={buildMagicItemFlavors}
+          nameName="rewardBuildMagicItemNames"
           minorProperties={buildMagicItemMinorProperties}
           flavorName="rewardBuildMagicItemFlavors"
           minorPropertyName="rewardBuildMagicItemMinorProperties"
           minorPropertyOptions={legalMinorPropertyOptions}
-          onChange={(nextItems, nextMinorProperties, nextFlavors) => {
+          onChange={(nextItems, nextNames, nextMinorProperties, nextFlavors) => {
             setBuildMagicItems(nextItems);
+            setBuildMagicItemNames(nextNames);
             setBuildMagicItemMinorProperties(nextMinorProperties);
             setBuildMagicItemFlavors(nextFlavors);
           }}
@@ -352,16 +394,20 @@ export function GameRewardFields({
           addLabel="Add common magic item"
           emptyMessage="No common magic items selected yet."
           itemName="rewardCommonMagicItems"
+          itemDisplayLabel="common magic item"
           itemNoneLabel="Select a common magic item"
           itemOptions={legalCommonMagicItemOptions}
           items={commonMagicItems}
+          itemNames={commonMagicItemNames}
           itemFlavors={commonMagicItemFlavors}
+          nameName="rewardCommonMagicItemNames"
           minorProperties={commonMagicItemMinorProperties}
           flavorName="rewardCommonMagicItemFlavors"
           minorPropertyName="rewardCommonMagicItemMinorProperties"
           minorPropertyOptions={legalMinorPropertyOptions}
-          onChange={(nextItems, nextMinorProperties, nextFlavors) => {
+          onChange={(nextItems, nextNames, nextMinorProperties, nextFlavors) => {
             setCommonMagicItems(nextItems);
+            setCommonMagicItemNames(nextNames);
             setCommonMagicItemMinorProperties(nextMinorProperties);
             setCommonMagicItemFlavors(nextFlavors);
           }}

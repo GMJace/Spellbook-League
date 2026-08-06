@@ -17,6 +17,7 @@ import {
   getMagicItemLimit,
   getCharacterTier,
   hasBoonSlot,
+  parseMagicItemFlavorDetails,
 } from "@/lib/character";
 import { prisma } from "@/lib/prisma";
 
@@ -88,6 +89,7 @@ function getCharmLabel(index: number) {
 
 function getVisibleSlottedItems(
   items: string[],
+  names: string[],
   minorProperties: string[],
   flavors: string[],
   getLabel: (index: number) => string,
@@ -96,19 +98,25 @@ function getVisibleSlottedItems(
     .map((item, index) => ({
       label: getLabel(index),
       value: item.trim(),
+      name: (names[index] ?? "").trim(),
       minorProperty: (minorProperties[index] ?? "").trim(),
       flavor: (flavors[index] ?? "").trim(),
     }))
     .filter((item) => item.value);
 }
 
-function formatMagicItemDisplay(value: string, minorProperty: string, flavor: string) {
-  const details = [
-    minorProperty ? `Minor Property: ${minorProperty}` : "",
-    flavor ? `Flavor: ${flavor}` : "",
-  ].filter(Boolean);
-
-  return details.length ? `${value} (${details.join(" | ")})` : value;
+function getMagicItemDetailLines(item: {
+  value: string;
+  name: string;
+  minorProperty: string;
+  flavor: string;
+}) {
+  return [
+    { label: "Item (counts as)", value: item.value },
+    { label: "Name", value: item.name || "Not added" },
+    { label: "Minor Property", value: item.minorProperty || "Not added" },
+    { label: "Notes (Flavor)", value: item.flavor || "Not added" },
+  ];
 }
 
 function formatDate(date: Date) {
@@ -215,39 +223,54 @@ export default async function CharacterLogsheetPage({
   const boonSlotEnabled = hasBoonSlot(tier);
   const charmSlots = getCharmSlotCount(tier);
   const magicItems = parseMagicItems(character.magicItems, magicItemSlots);
+  const magicItemFlavorDetails = parseMagicItemFlavorDetails(character.magicItemFlavors);
   const magicItemMinorProperties = parseMagicItems(
     character.magicItemMinorProperties,
     magicItemSlots
   );
-  const magicItemFlavors = parseMagicItems(character.magicItemFlavors, magicItemSlots);
+  const magicItemNames = Array.from({ length: magicItemSlots }, (_, index) =>
+    magicItemFlavorDetails[index]?.name ?? ""
+  );
+  const magicItemFlavors = Array.from({ length: magicItemSlots }, (_, index) =>
+    magicItemFlavorDetails[index]?.notes ?? ""
+  );
   const commonMagicItems = parseMagicItems(
     character.commonMagicItems,
     COMMON_MAGIC_ITEM_SLOT_COUNT
+  );
+  const commonMagicItemFlavorDetails = parseMagicItemFlavorDetails(
+    character.commonMagicItemFlavors
   );
   const commonMagicItemMinorProperties = parseMagicItems(
     character.commonMagicItemMinorProperties,
     COMMON_MAGIC_ITEM_SLOT_COUNT
   );
-  const commonMagicItemFlavors = parseMagicItems(
-    character.commonMagicItemFlavors,
-    COMMON_MAGIC_ITEM_SLOT_COUNT
+  const commonMagicItemNames = Array.from(
+    { length: COMMON_MAGIC_ITEM_SLOT_COUNT },
+    (_, index) => commonMagicItemFlavorDetails[index]?.name ?? ""
+  );
+  const commonMagicItemFlavors = Array.from(
+    { length: COMMON_MAGIC_ITEM_SLOT_COUNT },
+    (_, index) => commonMagicItemFlavorDetails[index]?.notes ?? ""
   );
   const consumables = parseMagicItems(character.consumables, consumableSlots);
   const charms = parseMagicItems(character.charms, charmSlots);
   const visibleMagicItems = getVisibleSlottedItems(
     magicItems,
+    magicItemNames,
     magicItemMinorProperties,
     magicItemFlavors,
     getMagicItemLabel
   );
   const visibleCommonMagicItems = getVisibleSlottedItems(
     commonMagicItems,
+    commonMagicItemNames,
     commonMagicItemMinorProperties,
     commonMagicItemFlavors,
     getCommonMagicItemLabel,
   );
-  const visibleConsumables = getVisibleSlottedItems(consumables, [], [], getConsumableLabel);
-  const visibleCharms = getVisibleSlottedItems(charms, [], [], getCharmLabel);
+  const visibleConsumables = getVisibleSlottedItems(consumables, [], [], [], getConsumableLabel);
+  const visibleCharms = getVisibleSlottedItems(charms, [], [], [], getCharmLabel);
   const visibleBoon = boonSlotEnabled ? character.boon.trim() : "";
   const visibleBlessing = character.blessing.trim();
   const upcomingGameSignups = character.participants
@@ -581,16 +604,27 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            {visibleMagicItems.map((item, index) => (
-              <div key={`${character.id}-item-${index}`}>
-                <p className="muted" style={sectionItemHeaderStyle}>
-                  {item.label}
-                </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {formatMagicItemDisplay(item.value, item.minorProperty, item.flavor)}
-                </p>
-              </div>
-            ))}
+            {visibleMagicItems.length ? (
+              visibleMagicItems.map((item, index) => (
+                <div key={`${character.id}-item-${index}`} style={detailCardStyle}>
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    {item.label}
+                  </p>
+                  {getMagicItemDetailLines(item).map((detail) => (
+                    <div key={`${item.label}-${detail.label}`} className="stack" style={{ gap: "0.2rem" }}>
+                      <p className="muted" style={{ margin: 0 }}>
+                        {detail.label}
+                      </p>
+                      <p style={{ margin: 0 }}>{detail.value}</p>
+                    </div>
+                  ))}
+                </div>
+              ))
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                No uncommon+ magic items recorded.
+              </p>
+            )}
           </div>
 
           <div
@@ -613,16 +647,27 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            {visibleCommonMagicItems.map((item, index) => (
-              <div key={`${character.id}-common-item-${index}`}>
-                <p className="muted" style={sectionItemHeaderStyle}>
-                  {item.label}
-                </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {formatMagicItemDisplay(item.value, item.minorProperty, item.flavor)}
-                </p>
-              </div>
-            ))}
+            {visibleCommonMagicItems.length ? (
+              visibleCommonMagicItems.map((item, index) => (
+                <div key={`${character.id}-common-item-${index}`} style={detailCardStyle}>
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    {item.label}
+                  </p>
+                  {getMagicItemDetailLines(item).map((detail) => (
+                    <div key={`${item.label}-${detail.label}`} className="stack" style={{ gap: "0.2rem" }}>
+                      <p className="muted" style={{ margin: 0 }}>
+                        {detail.label}
+                      </p>
+                      <p style={{ margin: 0 }}>{detail.value}</p>
+                    </div>
+                  ))}
+                </div>
+              ))
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                No common magic items recorded.
+              </p>
+            )}
           </div>
 
           <div

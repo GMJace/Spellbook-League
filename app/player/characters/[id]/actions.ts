@@ -8,6 +8,7 @@ import {
   getConsumableItemLimit,
   getMagicItemLimit,
   hasBoonSlot,
+  serializeMagicItemFlavorDetails,
 } from "@/lib/character";
 import { requireRole } from "@/lib/auth";
 import {
@@ -49,8 +50,14 @@ function getSubmittedSlotSelections(formData: FormData, name: string) {
   return formData.getAll(name).map((value) => String(value).trim());
 }
 
-function compressSlottedSelections(items: string[], details: string[], flavors: string[]) {
+function compressSlottedSelections(
+  items: string[],
+  names: string[],
+  details: string[],
+  flavors: string[],
+) {
   const nextItems: string[] = [];
+  const nextNames: string[] = [];
   const nextDetails: string[] = [];
   const nextFlavors: string[] = [];
 
@@ -62,12 +69,14 @@ function compressSlottedSelections(items: string[], details: string[], flavors: 
     }
 
     nextItems.push(item);
+    nextNames.push(names[index] ?? "");
     nextDetails.push(details[index] ?? "");
     nextFlavors.push(flavors[index] ?? "");
   }
 
   return {
     items: nextItems,
+    names: nextNames,
     details: nextDetails,
     flavors: nextFlavors,
   };
@@ -123,12 +132,17 @@ export async function updateCharacter(
     getLeagueLegalCharmOptions(),
   ]);
   const submittedMagicItems = getSubmittedSlotSelections(formData, "magicItems");
+  const submittedMagicItemNames = getSubmittedSlotSelections(formData, "magicItemNames");
   const submittedMagicItemMinorProperties = getSubmittedSlotSelections(
     formData,
     "magicItemMinorProperties"
   );
   const submittedMagicItemFlavors = getSubmittedSlotSelections(formData, "magicItemFlavors");
   const submittedCommonMagicItems = getSubmittedSlotSelections(formData, "commonMagicItems");
+  const submittedCommonMagicItemNames = getSubmittedSlotSelections(
+    formData,
+    "commonMagicItemNames"
+  );
   const submittedCommonMagicItemMinorProperties = getSubmittedSlotSelections(
     formData,
     "commonMagicItemMinorProperties"
@@ -139,11 +153,13 @@ export async function updateCharacter(
   );
   const compressedMagicItemSelections = compressSlottedSelections(
     submittedMagicItems,
+    submittedMagicItemNames,
     submittedMagicItemMinorProperties,
     submittedMagicItemFlavors
   );
   const compressedCommonMagicItemSelections = compressSlottedSelections(
     submittedCommonMagicItems,
+    submittedCommonMagicItemNames,
     submittedCommonMagicItemMinorProperties,
     submittedCommonMagicItemFlavors
   );
@@ -170,9 +186,11 @@ export async function updateCharacter(
     backstory: formData.get("backstory"),
     totalGold: formData.get("totalGold"),
     magicItems: compressedMagicItemSelections.items,
+    magicItemNames: compressedMagicItemSelections.names,
     magicItemMinorProperties: compressedMagicItemSelections.details,
     magicItemFlavors: compressedMagicItemSelections.flavors,
     commonMagicItems: compressedCommonMagicItemSelections.items,
+    commonMagicItemNames: compressedCommonMagicItemSelections.names,
     commonMagicItemMinorProperties: compressedCommonMagicItemSelections.details,
     commonMagicItemFlavors: compressedCommonMagicItemSelections.flavors,
     consumables: formData
@@ -229,7 +247,6 @@ export async function updateCharacter(
   const legalBuildMagicItemSet = new Set(
     getCharacterBuildMagicItemOptions(legalMagicItemOptions)
   );
-  const legalUncommonMagicItemSet = new Set(legalMagicItemOptions.Uncommon);
   const legalMinorPropertySet = new Set(legalMinorPropertyOptions);
   const invalidBuildMagicItem = parsed.data.magicItems.find(
     (item) => !legalBuildMagicItemSet.has(item)
@@ -257,7 +274,7 @@ export async function updateCharacter(
   const invalidBuildMinorProperty = parsed.data.magicItemMinorProperties.find(
     (minorProperty, index) =>
       minorProperty &&
-      legalUncommonMagicItemSet.has(parsed.data.magicItems[index]) &&
+      legalBuildMagicItemSet.has(parsed.data.magicItems[index]) &&
       !legalMinorPropertySet.has(minorProperty)
   );
 
@@ -282,7 +299,7 @@ export async function updateCharacter(
   const normalizedMagicItemMinorProperties = parsed.data.magicItems.map((item, index) => {
     const minorProperty = parsed.data.magicItemMinorProperties[index] ?? "";
 
-    return legalUncommonMagicItemSet.has(item) && legalMinorPropertySet.has(minorProperty)
+    return legalBuildMagicItemSet.has(item) && legalMinorPropertySet.has(minorProperty)
       ? minorProperty
       : "";
   });
@@ -294,11 +311,15 @@ export async function updateCharacter(
       return legalMinorPropertySet.has(minorProperty) ? minorProperty : "";
     }
   );
-  const normalizedMagicItemFlavors = parsed.data.magicItems.map((item, index) =>
-    legalUncommonMagicItemSet.has(item) ? parsed.data.magicItemFlavors[index] ?? "" : ""
-  );
+  const normalizedMagicItemFlavors = parsed.data.magicItems.map((item, index) => ({
+    name: parsed.data.magicItemNames[index] ?? "",
+    notes: legalBuildMagicItemSet.has(item) ? parsed.data.magicItemFlavors[index] ?? "" : "",
+  }));
   const normalizedCommonMagicItemFlavors = parsed.data.commonMagicItems.map(
-    (_, index) => parsed.data.commonMagicItemFlavors[index] ?? ""
+    (_, index) => ({
+      name: parsed.data.commonMagicItemNames[index] ?? "",
+      notes: parsed.data.commonMagicItemFlavors[index] ?? "",
+    })
   );
 
   const legalConsumableSet = new Set(legalConsumableOptions);
@@ -384,12 +405,14 @@ export async function updateCharacter(
       totalGold: parsed.data.totalGold,
       magicItems: JSON.stringify(parsed.data.magicItems),
       magicItemMinorProperties: JSON.stringify(normalizedMagicItemMinorProperties),
-      magicItemFlavors: JSON.stringify(normalizedMagicItemFlavors),
+      magicItemFlavors: serializeMagicItemFlavorDetails(normalizedMagicItemFlavors),
       commonMagicItems: JSON.stringify(parsed.data.commonMagicItems),
       commonMagicItemMinorProperties: JSON.stringify(
         normalizedCommonMagicItemMinorProperties
       ),
-      commonMagicItemFlavors: JSON.stringify(normalizedCommonMagicItemFlavors),
+      commonMagicItemFlavors: serializeMagicItemFlavorDetails(
+        normalizedCommonMagicItemFlavors
+      ),
       consumables: JSON.stringify(parsed.data.consumables),
       boon: parsed.data.boon || "",
       blessing: parsed.data.blessing || "",

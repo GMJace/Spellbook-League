@@ -979,6 +979,69 @@ button.button-small {
   line-height: 1.7;
 }
 
+.ggcon-flying-carpet-section {
+  padding: clamp(1.2rem, 3vw, 1.8rem);
+  background:
+    radial-gradient(circle at top left, rgba(141, 255, 112, 0.2), rgba(0, 0, 0, 0) 42%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0) 55%),
+    #000000;
+}
+
+.ggcon-flying-carpet-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.ggcon-flying-carpet-copy {
+  align-content: space-between;
+}
+
+.ggcon-flying-carpet-title {
+  color: #8dff70;
+  font-size: clamp(2.1rem, 5vw, 3.5rem);
+  line-height: 0.98;
+}
+
+.ggcon-flying-carpet-body {
+  max-width: 36rem;
+  color: #eef8ea;
+  line-height: 1.7;
+}
+
+.ggcon-flying-carpet-button {
+  background: #8dff70;
+  color: #000000;
+  border-color: #8dff70;
+}
+
+.ggcon-flying-carpet-button:hover {
+  background: #b4ff97;
+  border-color: #b4ff97;
+}
+
+.ggcon-flying-carpet-benefits {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ggcon-flying-carpet-benefit {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.pill.ggcon-flying-carpet-pill {
+  width: fit-content;
+  border: none;
+  background: rgba(141, 255, 112, 0.16);
+  color: #dfffd2;
+}
+
 .ggcon-paypal-form {
   align-items: flex-start;
   width: 100%;
@@ -2168,7 +2231,8 @@ textarea {
   .homepage-encounters-grid,
   .homepage-activity-grid,
   .homepage-community-row,
-  .ggcon-schedule-grid {
+  .ggcon-schedule-grid,
+  .ggcon-flying-carpet-grid {
     grid-template-columns: 1fr;
   }
 

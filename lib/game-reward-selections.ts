@@ -10,9 +10,11 @@ export type LegalRewardOptions = {
 
 export type ParsedGameRewardSelections = {
   buildMagicItems: string[];
+  buildMagicItemNames: string[];
   buildMagicItemMinorProperties: string[];
   buildMagicItemFlavors: string[];
   commonMagicItems: string[];
+  commonMagicItemNames: string[];
   commonMagicItemMinorProperties: string[];
   commonMagicItemFlavors: string[];
   consumables: string[];
@@ -47,9 +49,10 @@ function parseMagicRewardLine(
   minorPropertyOptions: string[]
 ) {
   let item = line.trim();
+  let name = "";
   let minorProperty = "";
   let flavor = "";
-  const detailPattern = /\s+\((Minor Property|Flavor):\s*([^)]*)\)\s*$/;
+  const detailPattern = /\s+\((Name|Minor Property|Notes \(Flavor\)|Flavor):\s*([^)]*)\)\s*$/;
 
   while (true) {
     const match = item.match(detailPattern);
@@ -60,9 +63,11 @@ function parseMagicRewardLine(
 
     const [, label, value] = match;
 
-    if (label === "Minor Property") {
+    if (label === "Name") {
+      name = value.trim();
+    } else if (label === "Minor Property") {
       minorProperty = value.trim();
-    } else if (label === "Flavor") {
+    } else if (label === "Notes (Flavor)" || label === "Flavor") {
       flavor = value.trim();
     }
 
@@ -79,15 +84,22 @@ function parseMagicRewardLine(
 
   return {
     item,
+    name,
     minorProperty,
     flavor,
   };
 }
 
-function formatMagicRewardLine(item: string, minorProperty: string, flavor: string) {
+function formatMagicRewardLine(
+  item: string,
+  name: string,
+  minorProperty: string,
+  flavor: string
+) {
   const details = [
+    name ? `(Name: ${name})` : "",
     minorProperty ? `(Minor Property: ${minorProperty})` : "",
-    flavor ? `(Flavor: ${flavor})` : "",
+    flavor ? `(Notes (Flavor): ${flavor})` : "",
   ].filter(Boolean);
 
   return details.length ? `${item} ${details.join(" ")}` : item;
@@ -107,6 +119,7 @@ function pushMatchedLine(
 
   if (buildMagicItemMatch) {
     selections.buildMagicItems.push(buildMagicItemMatch.item);
+    selections.buildMagicItemNames.push(buildMagicItemMatch.name);
     selections.buildMagicItemMinorProperties.push(buildMagicItemMatch.minorProperty);
     selections.buildMagicItemFlavors.push(buildMagicItemMatch.flavor);
     return;
@@ -120,6 +133,7 @@ function pushMatchedLine(
 
   if (commonMagicItemMatch) {
     selections.commonMagicItems.push(commonMagicItemMatch.item);
+    selections.commonMagicItemNames.push(commonMagicItemMatch.name);
     selections.commonMagicItemMinorProperties.push(commonMagicItemMatch.minorProperty);
     selections.commonMagicItemFlavors.push(commonMagicItemMatch.flavor);
     return;
@@ -155,9 +169,11 @@ export function parseStoredGameRewardSelections(
 ): ParsedGameRewardSelections {
   const selections: ParsedGameRewardSelections = {
     buildMagicItems: [],
+    buildMagicItemNames: [],
     buildMagicItemMinorProperties: [],
     buildMagicItemFlavors: [],
     commonMagicItems: [],
+    commonMagicItemNames: [],
     commonMagicItemMinorProperties: [],
     commonMagicItemFlavors: [],
     consumables: [],
@@ -196,6 +212,7 @@ export function buildStoredGameRewardStrings(
     ...selections.buildMagicItems.map((item, index) =>
       formatMagicRewardLine(
         item,
+        selections.buildMagicItemNames[index] ?? "",
         selections.buildMagicItemMinorProperties[index] ?? "",
         selections.buildMagicItemFlavors[index] ?? ""
       )
@@ -203,6 +220,7 @@ export function buildStoredGameRewardStrings(
     ...selections.commonMagicItems.map((item, index) =>
       formatMagicRewardLine(
         item,
+        selections.commonMagicItemNames[index] ?? "",
         selections.commonMagicItemMinorProperties[index] ?? "",
         selections.commonMagicItemFlavors[index] ?? ""
       )
@@ -223,8 +241,14 @@ export function buildStoredGameRewardStrings(
   };
 }
 
-function compressSlottedSelections(items: string[], minorProperties: string[], flavors: string[]) {
+function compressSlottedSelections(
+  items: string[],
+  names: string[],
+  minorProperties: string[],
+  flavors: string[]
+) {
   const nextItems: string[] = [];
+  const nextNames: string[] = [];
   const nextMinorProperties: string[] = [];
   const nextFlavors: string[] = [];
 
@@ -236,12 +260,14 @@ function compressSlottedSelections(items: string[], minorProperties: string[], f
     }
 
     nextItems.push(item);
+    nextNames.push(names[index] ?? "");
     nextMinorProperties.push(minorProperties[index] ?? "");
     nextFlavors.push(flavors[index] ?? "");
   }
 
   return {
     items: nextItems,
+    names: nextNames,
     minorProperties: nextMinorProperties,
     flavors: nextFlavors,
   };
@@ -251,6 +277,9 @@ export function readGameRewardSelectionsFromFormData(formData: FormData) {
   const compressedBuildMagicItems = compressSlottedSelections(
     formData
       .getAll("rewardBuildMagicItems")
+      .map((value) => String(value).trim()),
+    formData
+      .getAll("rewardBuildMagicItemNames")
       .map((value) => String(value).trim()),
     formData
       .getAll("rewardBuildMagicItemMinorProperties")
@@ -265,6 +294,9 @@ export function readGameRewardSelectionsFromFormData(formData: FormData) {
       .getAll("rewardCommonMagicItems")
       .map((value) => String(value).trim()),
     formData
+      .getAll("rewardCommonMagicItemNames")
+      .map((value) => String(value).trim()),
+    formData
       .getAll("rewardCommonMagicItemMinorProperties")
       .map((value) => String(value).trim())
     ,
@@ -275,9 +307,11 @@ export function readGameRewardSelectionsFromFormData(formData: FormData) {
 
   return {
     buildMagicItems: compressedBuildMagicItems.items,
+    buildMagicItemNames: compressedBuildMagicItems.names,
     buildMagicItemMinorProperties: compressedBuildMagicItems.minorProperties,
     buildMagicItemFlavors: compressedBuildMagicItems.flavors,
     commonMagicItems: compressedCommonMagicItems.items,
+    commonMagicItemNames: compressedCommonMagicItems.names,
     commonMagicItemMinorProperties: compressedCommonMagicItems.minorProperties,
     commonMagicItemFlavors: compressedCommonMagicItems.flavors,
     consumables: formData
@@ -308,9 +342,11 @@ export function readGameRewardSelectionsFromFormData(formData: FormData) {
 export function hasStructuredGameRewardSelectionFields(formData: FormData) {
   return [
     "rewardBuildMagicItems",
+    "rewardBuildMagicItemNames",
     "rewardBuildMagicItemMinorProperties",
     "rewardBuildMagicItemFlavors",
     "rewardCommonMagicItems",
+    "rewardCommonMagicItemNames",
     "rewardCommonMagicItemMinorProperties",
     "rewardCommonMagicItemFlavors",
     "rewardConsumables",

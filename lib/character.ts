@@ -573,6 +573,11 @@ export const COMMON_MAGIC_ITEM_SLOT_COUNT = 5;
 export const MAX_CONSUMABLE_SLOT_COUNT = 15;
 export const MAX_CHARM_SLOT_COUNT = 5;
 
+export type MagicItemFlavorDetails = {
+  name: string;
+  notes: string;
+};
+
 type CharacterLike = CharacterLevels & {
   magicItems: string;
 };
@@ -648,6 +653,57 @@ export function parseMagicItems(value: string) {
   } catch {
     return [];
   }
+}
+
+export function parseMagicItemFlavorDetails(value: string | null | undefined) {
+  if (!value?.trim()) {
+    return [] as MagicItemFlavorDetails[];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.map((entry) => {
+      if (typeof entry === "string") {
+        return {
+          name: "",
+          notes: entry,
+        };
+      }
+
+      if (entry && typeof entry === "object") {
+        return {
+          name: typeof entry.name === "string" ? entry.name.trim() : "",
+          notes:
+            typeof entry.notes === "string"
+              ? entry.notes.trim()
+              : typeof entry.flavor === "string"
+                ? entry.flavor.trim()
+                : "",
+        };
+      }
+
+      return {
+        name: "",
+        notes: "",
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function serializeMagicItemFlavorDetails(details: MagicItemFlavorDetails[]) {
+  return JSON.stringify(
+    details.map((detail) => ({
+      name: detail.name.trim(),
+      notes: detail.notes.trim(),
+    }))
+  );
 }
 
 export function parseSkillSelections(value: string | null | undefined) {

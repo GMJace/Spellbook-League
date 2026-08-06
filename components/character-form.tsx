@@ -28,6 +28,7 @@ import {
   type LegalFeatGroup,
   type LegalLanguageGroup,
   type LegalToolGroup,
+  parseMagicItemFlavorDetails,
   parseMagicItems,
   parseSkillSelections,
   parseToggleSelections,
@@ -221,6 +222,14 @@ export function CharacterForm({
       legalBuildMagicItemOptions
     )
   );
+  const [magicItemNames, setMagicItemNames] = useState(() =>
+    ensureItemSlots(
+      parseMagicItemFlavorDetails(initialValues?.magicItemFlavors ?? "").map(
+        (detail) => detail.name
+      ),
+      1
+    )
+  );
   const [magicItemMinorProperties, setMagicItemMinorProperties] = useState(() =>
     ensureSelectableItemSlots(
       parseMagicItems(initialValues?.magicItemMinorProperties ?? ""),
@@ -229,13 +238,26 @@ export function CharacterForm({
     )
   );
   const [magicItemFlavors, setMagicItemFlavors] = useState(() =>
-    ensureItemSlots(parseMagicItems(initialValues?.magicItemFlavors ?? ""), 1)
+    ensureItemSlots(
+      parseMagicItemFlavorDetails(initialValues?.magicItemFlavors ?? "").map(
+        (detail) => detail.notes
+      ),
+      1
+    )
   );
   const [commonMagicItems, setCommonMagicItems] = useState(() =>
     ensureSelectableItemSlots(
       parseMagicItems(initialValues?.commonMagicItems ?? ""),
       COMMON_MAGIC_ITEM_SLOT_COUNT,
       legalCommonMagicItemOptions
+    )
+  );
+  const [commonMagicItemNames, setCommonMagicItemNames] = useState(() =>
+    ensureItemSlots(
+      parseMagicItemFlavorDetails(initialValues?.commonMagicItemFlavors ?? "").map(
+        (detail) => detail.name
+      ),
+      COMMON_MAGIC_ITEM_SLOT_COUNT
     )
   );
   const [commonMagicItemMinorProperties, setCommonMagicItemMinorProperties] = useState(() =>
@@ -247,7 +269,9 @@ export function CharacterForm({
   );
   const [commonMagicItemFlavors, setCommonMagicItemFlavors] = useState(() =>
     ensureItemSlots(
-      parseMagicItems(initialValues?.commonMagicItemFlavors ?? ""),
+      parseMagicItemFlavorDetails(initialValues?.commonMagicItemFlavors ?? "").map(
+        (detail) => detail.notes
+      ),
       COMMON_MAGIC_ITEM_SLOT_COUNT
     )
   );
@@ -310,9 +334,9 @@ export function CharacterForm({
     () => new Set(legalMinorPropertyOptions),
     [legalMinorPropertyOptions]
   );
-  const legalUncommonMagicItemSet = useMemo(
-    () => new Set(legalUncommonMagicItemOptions),
-    [legalUncommonMagicItemOptions]
+  const legalBuildMagicItemSet = useMemo(
+    () => new Set(legalBuildMagicItemOptions),
+    [legalBuildMagicItemOptions]
   );
   const skillGroups = Array.from({ length: 3 }, (_, index) =>
     DND_SKILLS.slice(
@@ -384,6 +408,14 @@ export function CharacterForm({
         legalBuildMagicItemOptions
       )
     );
+    setMagicItemNames(
+      ensureItemSlots(
+        parseMagicItemFlavorDetails(initialValues?.magicItemFlavors ?? "").map(
+          (detail) => detail.name
+        ),
+        nextMagicItemLimit
+      )
+    );
     setMagicItemMinorProperties(
       ensureSelectableItemSlots(
         parseMagicItems(initialValues?.magicItemMinorProperties ?? ""),
@@ -393,7 +425,9 @@ export function CharacterForm({
     );
     setMagicItemFlavors(
       ensureItemSlots(
-        parseMagicItems(initialValues?.magicItemFlavors ?? ""),
+        parseMagicItemFlavorDetails(initialValues?.magicItemFlavors ?? "").map(
+          (detail) => detail.notes
+        ),
         nextMagicItemLimit
       )
     );
@@ -402,6 +436,14 @@ export function CharacterForm({
         parseMagicItems(initialValues?.commonMagicItems ?? ""),
         COMMON_MAGIC_ITEM_SLOT_COUNT,
         legalCommonMagicItemOptions
+      )
+    );
+    setCommonMagicItemNames(
+      ensureItemSlots(
+        parseMagicItemFlavorDetails(initialValues?.commonMagicItemFlavors ?? "").map(
+          (detail) => detail.name
+        ),
+        COMMON_MAGIC_ITEM_SLOT_COUNT
       )
     );
     setCommonMagicItemMinorProperties(
@@ -413,7 +455,9 @@ export function CharacterForm({
     );
     setCommonMagicItemFlavors(
       ensureItemSlots(
-        parseMagicItems(initialValues?.commonMagicItemFlavors ?? ""),
+        parseMagicItemFlavorDetails(initialValues?.commonMagicItemFlavors ?? "").map(
+          (detail) => detail.notes
+        ),
         COMMON_MAGIC_ITEM_SLOT_COUNT
       )
     );
@@ -477,29 +521,49 @@ export function CharacterForm({
   }, [legalBuildMagicItemOptions, magicItemLimit]);
 
   useEffect(() => {
+    setMagicItemNames((current) =>
+      Array.from({ length: magicItems.length }, (_, index) => {
+        const item = magicItems[index] ?? "";
+
+        return item ? current[index] ?? "" : "";
+      })
+    );
+  }, [magicItems]);
+
+  useEffect(() => {
     setMagicItemMinorProperties((current) =>
       Array.from({ length: magicItems.length }, (_, index) => {
         const item = magicItems[index] ?? "";
         const minorProperty = current[index] ?? "";
 
-        if (!item || !legalUncommonMagicItemSet.has(item)) {
+        if (!item || !legalBuildMagicItemSet.has(item)) {
           return "";
         }
 
         return legalMinorPropertySet.has(minorProperty) ? minorProperty : "";
       })
     );
-  }, [legalMinorPropertySet, legalUncommonMagicItemSet, magicItems]);
+  }, [legalBuildMagicItemSet, legalMinorPropertySet, magicItems]);
 
   useEffect(() => {
     setMagicItemFlavors((current) =>
       Array.from({ length: magicItems.length }, (_, index) => {
         const item = magicItems[index] ?? "";
 
-        return item && legalUncommonMagicItemSet.has(item) ? current[index] ?? "" : "";
+        return item && legalBuildMagicItemSet.has(item) ? current[index] ?? "" : "";
       })
     );
-  }, [legalUncommonMagicItemSet, magicItems]);
+  }, [legalBuildMagicItemSet, magicItems]);
+
+  useEffect(() => {
+    setCommonMagicItemNames((current) =>
+      Array.from({ length: commonMagicItems.length }, (_, index) => {
+        const item = commonMagicItems[index] ?? "";
+
+        return item ? current[index] ?? "" : "";
+      })
+    );
+  }, [commonMagicItems]);
 
   useEffect(() => {
     setCommonMagicItemMinorProperties((current) =>
@@ -714,7 +778,7 @@ export function CharacterForm({
           name="magicItemMinorProperties"
           type="hidden"
           value={
-            magicItems[index] && legalUncommonMagicItemSet.has(magicItems[index])
+            magicItems[index] && legalBuildMagicItemSet.has(magicItems[index])
               ? minorProperty
               : ""
           }
@@ -726,7 +790,7 @@ export function CharacterForm({
           name="magicItemFlavors"
           type="hidden"
           value={
-            magicItems[index] && legalUncommonMagicItemSet.has(magicItems[index]) ? flavor : ""
+            magicItems[index] && legalBuildMagicItemSet.has(magicItems[index]) ? flavor : ""
           }
         />
       ))}
@@ -1007,8 +1071,8 @@ export function CharacterForm({
           {magicItems.map((item, index) => (
             <div className="stack" key={index} style={{ gap: "0.45rem" }}>
               <label>
-                Magic item slot {index + 1}
-                {index < 3 ? " (attunement)" : ""}
+                Slot {index + 1}
+                {index < 3 ? " (attunement)" : ""} · Item (counts as)
                 <select
                   name="magicItems"
                   value={item}
@@ -1017,10 +1081,19 @@ export function CharacterForm({
                     const next = [...magicItems];
                     next[index] = nextItem;
                     setMagicItems(next);
+                    setMagicItemNames((current) => {
+                      const nextNames = [...current];
+
+                      if (!nextItem) {
+                        nextNames[index] = "";
+                      }
+
+                      return nextNames;
+                    });
                     setMagicItemMinorProperties((current) => {
                       const nextProperties = [...current];
 
-                      if (!nextItem || !legalUncommonMagicItemSet.has(nextItem)) {
+                      if (!nextItem) {
                         nextProperties[index] = "";
                       }
 
@@ -1029,7 +1102,7 @@ export function CharacterForm({
                     setMagicItemFlavors((current) => {
                       const nextFlavors = [...current];
 
-                      if (!nextItem || !legalUncommonMagicItemSet.has(nextItem)) {
+                      if (!nextItem) {
                         nextFlavors[index] = "";
                       }
 
@@ -1045,42 +1118,66 @@ export function CharacterForm({
                   ))}
                 </select>
               </label>
-              {item && legalUncommonMagicItemSet.has(item) ? (
-                <>
-                  <label>
-                    Minor property
-                    <select
-                      value={magicItemMinorProperties[index] ?? ""}
-                      onChange={(event) => {
-                        const next = [...magicItemMinorProperties];
-                        next[index] = event.target.value;
-                        setMagicItemMinorProperties(next);
-                      }}
-                    >
-                      <option value="">No minor property</option>
-                      {legalMinorPropertyOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Item flavor
-                    <input
-                      maxLength={160}
-                      placeholder="Add item flavor"
-                      type="text"
-                      value={magicItemFlavors[index] ?? ""}
-                      onChange={(event) => {
-                        const next = [...magicItemFlavors];
-                        next[index] = event.target.value;
-                        setMagicItemFlavors(next);
-                      }}
-                    />
-                  </label>
-                </>
+              {item && legalBuildMagicItemSet.has(item) ? (
+                <label>
+                  Name
+                  <input
+                    maxLength={160}
+                    name="magicItemNames"
+                    placeholder="Add item name"
+                    type="text"
+                    value={magicItemNames[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...magicItemNames];
+                      next[index] = event.target.value;
+                      setMagicItemNames(next);
+                    }}
+                  />
+                </label>
               ) : null}
+              {item && legalBuildMagicItemSet.has(item) ? (
+                <label>
+                  Minor Property
+                  <select
+                    name="magicItemMinorProperties"
+                    value={magicItemMinorProperties[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...magicItemMinorProperties];
+                      next[index] = event.target.value;
+                      setMagicItemMinorProperties(next);
+                    }}
+                  >
+                    <option value="">No minor property</option>
+                    {legalMinorPropertyOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {item && legalBuildMagicItemSet.has(item) ? (
+                <label>
+                  Notes (Flavor)
+                  <input
+                    maxLength={160}
+                    name="magicItemFlavors"
+                    placeholder="Add flavor notes"
+                    type="text"
+                    value={magicItemFlavors[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...magicItemFlavors];
+                      next[index] = event.target.value;
+                      setMagicItemFlavors(next);
+                    }}
+                  />
+                </label>
+              ) : null}
+              {!item ? <input name="magicItemNames" type="hidden" value="" /> : null}
+              {!item ? (
+                <input name="magicItemMinorProperties" type="hidden" value="" />
+              ) : null}
+              {!item ? <input name="magicItemFlavors" type="hidden" value="" /> : null}
             </div>
           ))}
         </div>
@@ -1091,7 +1188,7 @@ export function CharacterForm({
           {commonMagicItems.map((item, index) => (
             <div className="stack" key={`common-${index}`} style={{ gap: "0.45rem" }}>
               <label>
-                Common Magic Item Slot {index + 1}
+                Slot {index + 1} · Item (counts as)
                 <select
                   name="commonMagicItems"
                   value={item}
@@ -1100,6 +1197,15 @@ export function CharacterForm({
                     const next = [...commonMagicItems];
                     next[index] = nextItem;
                     setCommonMagicItems(next);
+                    setCommonMagicItemNames((current) => {
+                      const nextNames = [...current];
+
+                      if (!nextItem) {
+                        nextNames[index] = "";
+                      }
+
+                      return nextNames;
+                    });
                     setCommonMagicItemMinorProperties((current) => {
                       const nextProperties = [...current];
 
@@ -1129,41 +1235,65 @@ export function CharacterForm({
                 </select>
               </label>
               {item ? (
-                <>
-                  <label>
-                    Minor property
-                    <select
-                      value={commonMagicItemMinorProperties[index] ?? ""}
-                      onChange={(event) => {
-                        const next = [...commonMagicItemMinorProperties];
-                        next[index] = event.target.value;
-                        setCommonMagicItemMinorProperties(next);
-                      }}
-                    >
-                      <option value="">No minor property</option>
-                      {legalMinorPropertyOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Item flavor
-                    <input
-                      maxLength={160}
-                      placeholder="Add item flavor"
-                      type="text"
-                      value={commonMagicItemFlavors[index] ?? ""}
-                      onChange={(event) => {
-                        const next = [...commonMagicItemFlavors];
-                        next[index] = event.target.value;
-                        setCommonMagicItemFlavors(next);
-                      }}
-                    />
-                  </label>
-                </>
+                <label>
+                  Name
+                  <input
+                    maxLength={160}
+                    name="commonMagicItemNames"
+                    placeholder="Add item name"
+                    type="text"
+                    value={commonMagicItemNames[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...commonMagicItemNames];
+                      next[index] = event.target.value;
+                      setCommonMagicItemNames(next);
+                    }}
+                  />
+                </label>
               ) : null}
+              {item ? (
+                <label>
+                  Minor Property
+                  <select
+                    name="commonMagicItemMinorProperties"
+                    value={commonMagicItemMinorProperties[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...commonMagicItemMinorProperties];
+                      next[index] = event.target.value;
+                      setCommonMagicItemMinorProperties(next);
+                    }}
+                  >
+                    <option value="">No minor property</option>
+                    {legalMinorPropertyOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {item ? (
+                <label>
+                  Notes (Flavor)
+                  <input
+                    maxLength={160}
+                    name="commonMagicItemFlavors"
+                    placeholder="Add flavor notes"
+                    type="text"
+                    value={commonMagicItemFlavors[index] ?? ""}
+                    onChange={(event) => {
+                      const next = [...commonMagicItemFlavors];
+                      next[index] = event.target.value;
+                      setCommonMagicItemFlavors(next);
+                    }}
+                  />
+                </label>
+              ) : null}
+              {!item ? <input name="commonMagicItemNames" type="hidden" value="" /> : null}
+              {!item ? (
+                <input name="commonMagicItemMinorProperties" type="hidden" value="" />
+              ) : null}
+              {!item ? <input name="commonMagicItemFlavors" type="hidden" value="" /> : null}
             </div>
           ))}
         </div>
