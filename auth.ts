@@ -19,17 +19,21 @@ async function syncTokenWithDatabase(token: {
   const userId = token.sub?.trim();
   const email = token.email?.toLowerCase().trim();
 
-  const dbUser = userId
+  let dbUser = userId
     ? await prisma.user.findUnique({
         where: { id: userId },
         include: { roles: true },
       })
-    : email
-      ? await prisma.user.findUnique({
-          where: { email },
-          include: { roles: true },
-        })
-      : null;
+    : null;
+
+  // OAuth providers can populate token.sub with the provider account ID
+  // before we have swapped it to the local database user ID.
+  if (!dbUser && email) {
+    dbUser = await prisma.user.findUnique({
+      where: { email },
+      include: { roles: true },
+    });
+  }
 
   if (!dbUser) {
     token.roles = [];
