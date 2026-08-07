@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { FlyingCarpetSection } from "@/components/flying-carpet-section";
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -285,6 +286,8 @@ export default async function StorePage() {
           </p>
         )}
       </section>
+
+      <FlyingCarpetSection />
 
       <section className="list-card stack">
         <div className="store-line-divider" aria-hidden="true" />

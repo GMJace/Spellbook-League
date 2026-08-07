@@ -16,6 +16,7 @@ import type { GrimoirePayPalCheckoutPayload } from "@/lib/paypal-checkout-types"
 type GrimoireCartBuilderProps = {
   games: GrimoireGame[];
   initialBadgeQuantity: number;
+  initialBadgeType: "REGULAR" | "FLYING_CARPET";
   initialSelectedGameSlugs: string[];
   nextEvent: SeasonEvent;
   paypalClientId: string | null;
@@ -38,6 +39,7 @@ function getConflictingGames(games: GrimoireGame[]) {
 export function GrimoireCartBuilder({
   games,
   initialBadgeQuantity,
+  initialBadgeType,
   initialSelectedGameSlugs,
   nextEvent,
   paypalClientId,
@@ -50,7 +52,7 @@ export function GrimoireCartBuilder({
     ) as Record<string, number>,
   );
   const [badgeQuantity, setBadgeQuantity] = useState(initialBadgeQuantity);
-  const [badgeType, setBadgeType] = useState<"REGULAR" | "FLYING_CARPET">("REGULAR");
+  const [badgeType, setBadgeType] = useState<"REGULAR" | "FLYING_CARPET">(initialBadgeType);
   const [conflictAcknowledged, setConflictAcknowledged] = useState(false);
   const [isGiftPurchase, setIsGiftPurchase] = useState(false);
   const [receiverEmails, setReceiverEmails] = useState<string[]>([""]);

@@ -5,6 +5,7 @@ import { getPayPalClientId } from "@/lib/paypal";
 type PageProps = {
   searchParams: Promise<{
     badges?: string | string[];
+    badgeType?: string | string[];
     games?: string | string[];
   }>;
 };
@@ -33,6 +34,12 @@ function parseBadgeQuantity(rawValue: string | string[] | undefined) {
   return Math.max(0, Math.min(6, Math.trunc(parsed)));
 }
 
+function parseBadgeType(rawValue: string | string[] | undefined) {
+  const value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+
+  return value === "FLYING_CARPET" ? "FLYING_CARPET" : "REGULAR";
+}
+
 export default async function GrimoireCartPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
   const paypalClientId = getPayPalClientId();
@@ -56,6 +63,7 @@ export default async function GrimoireCartPage({ searchParams }: PageProps) {
         <GrimoireCartBuilder
           games={nextEventGames}
           initialBadgeQuantity={parseBadgeQuantity(resolvedSearchParams.badges)}
+          initialBadgeType={parseBadgeType(resolvedSearchParams.badgeType)}
           initialSelectedGameSlugs={parseSelectedGames(resolvedSearchParams.games)}
           nextEvent={nextEvent}
           paypalClientId={paypalClientId}

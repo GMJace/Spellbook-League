@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { FlyingCarpetSection } from "@/components/flying-carpet-section";
 import { GrimoireGatheringText } from "@/components/grimoire-gathering-text";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
@@ -162,50 +163,7 @@ export default async function GrimoireGatheringPage() {
         </div>
       </section>
 
-      <section className="card ledger-panel ggcon-flying-carpet-section">
-        <div className="ggcon-flying-carpet-grid">
-          <div className="stack ggcon-flying-carpet-copy">
-            <div className="stack" style={{ gap: "0.45rem" }}>
-              <p className="eyebrow" style={{ margin: 0 }}>Limited Badge</p>
-              <h2 className="ggcon-flying-carpet-title" style={{ margin: 0 }}>
-                Flying Carpet Badge
-              </h2>
-              <p className="ggcon-flying-carpet-body" style={{ margin: 0 }}>
-                Upgrade your <GrimoireGatheringText /> weekend with the limited
-                Flying Carpet Badge and get the jump on the event before the
-                public rush begins.
-              </p>
-            </div>
-
-            <div className="inline-actions" style={{ flexWrap: "wrap" }}>
-              <Link className="button ggcon-flying-carpet-button" href="/grimoire-gathering/cart">
-                Claim Yours in Cart
-              </Link>
-            </div>
-          </div>
-
-          <div className="ggcon-flying-carpet-benefits">
-            <div className="ggcon-flying-carpet-benefit">
-              <span className="pill ggcon-flying-carpet-pill">Early Access</span>
-              <p style={{ margin: 0 }}>
-                Buy tickets for available event games before general access opens.
-              </p>
-            </div>
-            <div className="ggcon-flying-carpet-benefit">
-              <span className="pill ggcon-flying-carpet-pill">Three Wishes Draw</span>
-              <p style={{ margin: 0 }}>
-                Get entry into the Three Wishes Draw during the event weekend.
-              </p>
-            </div>
-            <div className="ggcon-flying-carpet-benefit">
-              <span className="pill ggcon-flying-carpet-pill">Game Genie</span>
-              <p style={{ margin: 0 }}>
-                Unlock access to the Game Genie (IYKYK) channel in the event Discord.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <FlyingCarpetSection />
 
       <section className="card ledger-panel stack">
         <img
