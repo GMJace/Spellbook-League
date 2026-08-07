@@ -57,15 +57,9 @@ export const metadata: Metadata = {
   title: "SPELLBOOK",
   description: "A tabletop league tracker for players and dungeon masters.",
   icons: {
-    icon: [
-      {
-        url: "/icon",
-        type: "image/png",
-        sizes: "32x32",
-      },
-    ],
-    shortcut: "/icon",
-    apple: "/icon",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
