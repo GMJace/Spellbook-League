@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 
 import { createGrimoireDmSubmission } from "@/app/grimoire-gathering/dm/actions";
 import { BulletTextarea } from "@/components/bullet-textarea";
+import { GameRewardFields } from "@/components/game-reward-fields";
+import type { LegalRewardOptions } from "@/lib/game-reward-selections";
 import type { GrimoireEventSlot, SeasonEvent } from "@/lib/grimoire";
 
 type GrimoireDmSubmissionFormProps = {
@@ -16,6 +18,7 @@ type GrimoireDmSubmissionFormProps = {
     email?: string;
     name?: string;
   };
+  legalRewardsJson: string;
   slotsByEvent: Record<string, GrimoireEventSlot[]>;
 };
 
@@ -30,24 +33,34 @@ export function GrimoireDmSubmissionForm({
   events,
   initialEventId,
   initialValues,
+  legalRewardsJson,
   slotsByEvent,
 }: GrimoireDmSubmissionFormProps) {
   const router = useRouter();
+  const legalRewards = useMemo(
+    () => JSON.parse(legalRewardsJson) as LegalRewardOptions,
+    [legalRewardsJson]
+  );
   const defaultEventId = initialEventId ?? events[0]?.id ?? "";
   const [selectedEventId, setSelectedEventId] = useState(defaultEventId);
-  const availableSlots = useMemo(
+  const eventSlots = useMemo(
     () => slotsByEvent[selectedEventId] ?? [],
     [selectedEventId, slotsByEvent]
   );
-  const [selectedSlotStartAt, setSelectedSlotStartAt] = useState(
-    availableSlots[0]?.startAt ?? ""
+  const openSlots = useMemo(
+    () => eventSlots.filter((slot) => !slot.isFull),
+    [eventSlots]
+  );
+  const [selectedEventSlotId, setSelectedEventSlotId] = useState(
+    openSlots[0]?.id ?? ""
   );
   const [message, setMessage] = useState("");
+  const [rewardFieldsKey, setRewardFieldsKey] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    setSelectedSlotStartAt(availableSlots[0]?.startAt ?? "");
-  }, [availableSlots]);
+    setSelectedEventSlotId(openSlots[0]?.id ?? "");
+  }, [openSlots]);
 
   return (
     <form
@@ -60,29 +73,7 @@ export function GrimoireDmSubmissionForm({
         const formData = new FormData(form);
 
         startTransition(async () => {
-          const result = await createGrimoireDmSubmission({
-            name: String(formData.get("name") ?? ""),
-            email: String(formData.get("email") ?? ""),
-            discord: String(formData.get("discord") ?? ""),
-            title: String(formData.get("title") ?? ""),
-            gameCode: String(formData.get("gameCode") ?? ""),
-            eventId: String(formData.get("eventId") ?? ""),
-            slotStartAt: String(formData.get("slotStartAt") ?? ""),
-            tier: String(formData.get("tier") ?? "TIER_1") as
-              | "TIER_1"
-              | "TIER_2"
-              | "TIER_3"
-              | "TIER_4",
-            seats: Number(formData.get("seats") ?? 6),
-            serviceHours: String(formData.get("serviceHours") ?? ""),
-            downtimeDaysAwarded: String(formData.get("downtimeDaysAwarded") ?? ""),
-            rewardsSummary: String(formData.get("rewardsSummary") ?? ""),
-            magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
-            consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
-            sessionNotes: String(formData.get("sessionNotes") ?? ""),
-            summary: String(formData.get("summary") ?? ""),
-            notes: String(formData.get("notes") ?? ""),
-          });
+          const result = await createGrimoireDmSubmission(formData);
 
           if (result?.error) {
             setMessage(result.error);
@@ -92,7 +83,10 @@ export function GrimoireDmSubmissionForm({
           setMessage(result?.success ?? "Submission saved.");
           form.reset();
           setSelectedEventId(defaultEventId);
-          setSelectedSlotStartAt((slotsByEvent[defaultEventId] ?? [])[0]?.startAt ?? "");
+          setSelectedEventSlotId(
+            (slotsByEvent[defaultEventId] ?? []).find((slot) => !slot.isFull)?.id ?? ""
+          );
+          setRewardFieldsKey((current) => current + 1);
           router.refresh();
         });
       }}
@@ -151,16 +145,16 @@ export function GrimoireDmSubmissionForm({
         <label>
           Event time slot
           <select
-            name="slotStartAt"
+            name="eventSlotId"
             onChange={(event) => {
-              setSelectedSlotStartAt(event.target.value);
+              setSelectedEventSlotId(event.target.value);
             }}
             required
-            value={selectedSlotStartAt}
+            value={selectedEventSlotId}
           >
-            {availableSlots.map((slot) => (
-              <option key={slot.startAt} value={slot.startAt}>
-                {slot.label}
+            {openSlots.map((slot) => (
+              <option key={slot.id} value={slot.id}>
+                {slot.label} ({slot.availableGameSlots} of {slot.gameSlotCount} open)
               </option>
             ))}
           </select>
@@ -181,11 +175,17 @@ export function GrimoireDmSubmissionForm({
         </label>
       </div>
 
-      {availableSlots.length ? null : (
+      {eventSlots.length ? null : (
         <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
           No published time slots are available for the selected event yet.
         </p>
       )}
+      {eventSlots.length && !openSlots.length ? (
+        <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+          All game slots for this event are currently full. Event admins need to open more table
+          slots before another DM can submit for this event.
+        </p>
+      ) : null}
 
       <label>
         Game summary (Include themes and content advisories)
@@ -227,21 +227,16 @@ export function GrimoireDmSubmissionForm({
         </label>
       </div>
 
-      <label>
-        Magic items awarded
-        <BulletTextarea name="magicItemsAwarded" />
-      </label>
-      <p className="muted" style={{ margin: 0 }}>
-        Each line is a bullet point.
-      </p>
-
-      <label>
-        Consumables awarded
-        <BulletTextarea name="consumablesAwarded" />
-      </label>
-      <p className="muted" style={{ margin: 0 }}>
-        Each line is a bullet point.
-      </p>
+      <GameRewardFields
+        key={rewardFieldsKey}
+        legalBlessingOptions={legalRewards.legalBlessingOptions}
+        legalBoonOptions={legalRewards.legalBoonOptions}
+        legalBuildMagicItemOptions={legalRewards.legalBuildMagicItemOptions}
+        legalCharmOptions={legalRewards.legalCharmOptions}
+        legalCommonMagicItemOptions={legalRewards.legalCommonMagicItemOptions}
+        legalConsumableOptions={legalRewards.legalConsumableOptions}
+        legalMinorPropertyOptions={legalRewards.legalMinorPropertyOptions}
+      />
 
       <label>
         Session notes/Story Awards
@@ -261,7 +256,7 @@ export function GrimoireDmSubmissionForm({
 
       {message ? <p className="muted ggcon-meta-note">{message}</p> : null}
 
-      <button disabled={isPending} type="submit">
+      <button disabled={isPending || !openSlots.length} type="submit">
         {isPending ? "Saving submission..." : "Submit game for review"}
       </button>
     </form>

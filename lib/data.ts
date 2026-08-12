@@ -7,6 +7,11 @@ export async function getHomepageData() {
 
   const grouped = await prisma.gameParticipant.groupBy({
     by: ["characterId"],
+    where: {
+      characterId: {
+        not: null,
+      },
+    },
     _count: { gameId: true },
     orderBy: {
       _count: {
@@ -18,7 +23,7 @@ export async function getHomepageData() {
 
   const characters = await prisma.character.findMany({
     where: {
-      id: { in: grouped.map((entry) => entry.characterId) },
+      id: { in: grouped.flatMap((entry) => (entry.characterId ? [entry.characterId] : [])) },
     },
     include: {
       user: true,
@@ -29,6 +34,10 @@ export async function getHomepageData() {
 
   const leaderboard = grouped
     .map((entry) => {
+      if (!entry.characterId) {
+        return null;
+      }
+
       const character = characterMap.get(entry.characterId);
       if (!character) {
         return null;

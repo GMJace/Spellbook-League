@@ -5,6 +5,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getNextGrimoireEvent, getCuratedGamesForEvent } from "@/lib/grimoire-server";
+import {
+  getParticipantCharacterLabel,
+  normalizeParticipantCharacterId,
+} from "@/lib/game-participants";
 import { getGrimoireGuildMembershipSettings } from "@/lib/grimoire-guild-membership";
 import { formatPayPalAmount, paypalRequest } from "@/lib/paypal";
 import type { PayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
@@ -79,7 +83,7 @@ function jsonError(message: string, status: number) {
 
 function serializeLeagueItems(
   items: Array<{
-    characterId: string;
+    characterId: null | string;
     characterName: string;
     gameId: string;
     guestEmails: string[];
@@ -150,6 +154,15 @@ async function buildLeagueCheckout(
       },
     },
     include: {
+      participants: {
+        where: {
+          userId: player.id,
+        },
+        select: {
+          id: true,
+        },
+        take: 1,
+      },
       _count: {
         select: {
           participants: true,
@@ -169,7 +182,7 @@ async function buildLeagueCheckout(
       : null;
   const paypalItems: CanonicalCheckout["purchaseUnits"][number]["items"] = [];
   const serializedItems: Array<{
-    characterId: string;
+    characterId: null | string;
     characterName: string;
     gameId: string;
     guestEmails: string[];
@@ -199,13 +212,16 @@ async function buildLeagueCheckout(
 
   for (const item of payload.items) {
     const game = gamesById.get(item.gameId);
-    const character = player.characters.find((entry) => entry.id === item.characterId);
+    const selectedCharacterId = normalizeParticipantCharacterId(item.characterId);
+    const character = selectedCharacterId
+      ? player.characters.find((entry) => entry.id === selectedCharacterId)
+      : null;
 
     if (!game) {
       throw new Error("One or more selected league games are no longer available.");
     }
 
-    if (!character) {
+    if (selectedCharacterId && !character) {
       throw new Error("Choose one of your characters for each league game before checkout.");
     }
 
@@ -213,7 +229,14 @@ async function buildLeagueCheckout(
       throw new Error(`${game.title} is not a paid checkout game.`);
     }
 
-    if (getCharacterTier(getCharacterTotalLevel(character)) !== getTierValue(game.tier)) {
+    if (game.participants.length > 0) {
+      throw new Error(`You are already signed up for ${game.title}.`);
+    }
+
+    if (
+      character &&
+      getCharacterTier(getCharacterTotalLevel(character)) !== getTierValue(game.tier)
+    ) {
       throw new Error(`${character.name} does not match the tier for ${game.title}.`);
     }
 
@@ -238,11 +261,11 @@ async function buildLeagueCheckout(
       ? `; Guest emails: ${item.guestEmails.join(", ")}`
       : "";
     summaryParts.push(
-      `${game.title} x${item.quantity} (${game.ticketPrice}); Character: ${character.name}${emailSummary}`,
+      `${game.title} x${item.quantity} (${game.ticketPrice}); Character: ${getParticipantCharacterLabel(character?.name)}${emailSummary}`,
     );
     serializedItems.push({
-      characterId: character.id,
-      characterName: character.name,
+      characterId: character?.id ?? null,
+      characterName: getParticipantCharacterLabel(character?.name),
       gameId: item.gameId,
       guestEmails: item.guestEmails,
       quantity: item.quantity,

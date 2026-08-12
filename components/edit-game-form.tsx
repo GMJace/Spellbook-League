@@ -25,6 +25,7 @@ export function EditGameForm({
 
   return (
     <GameForm
+      allowCancelledStatus
       initialValues={initialValues}
       legalBlessingOptions={legalRewards.legalBlessingOptions}
       legalBoonOptions={legalRewards.legalBoonOptions}

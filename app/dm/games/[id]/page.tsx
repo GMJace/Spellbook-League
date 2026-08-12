@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { deleteGame } from "@/app/dm/games/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { LocalizedEventTime } from "@/components/localized-event-time";
+import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { prisma } from "@/lib/prisma";
 import { splitBulletLines } from "@/lib/utils";
 
@@ -52,7 +53,7 @@ export default async function DmGameDetailPage({ params }: PageProps) {
           user: true,
           character: true,
         },
-        orderBy: [{ user: { name: "asc" } }, { character: { name: "asc" } }],
+        orderBy: [{ user: { name: "asc" } }, { createdAt: "asc" }],
       },
     },
   });
@@ -67,6 +68,13 @@ export default async function DmGameDetailPage({ params }: PageProps) {
 
   const availableSpots = Math.max((game.seatCapacity ?? 0) - game.participants.length, 0);
   const gameSummaryLines = splitBulletLines(game.gameSummary);
+  const sortedParticipants = [...game.participants].sort(
+    (left, right) =>
+      left.user.name.localeCompare(right.user.name) ||
+      getParticipantCharacterLabel(left.character?.name).localeCompare(
+        getParticipantCharacterLabel(right.character?.name),
+      ),
+  );
 
   return (
     <main className="page-shell">
@@ -150,6 +158,10 @@ export default async function DmGameDetailPage({ params }: PageProps) {
                   <strong>{game.ticketPrice}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
+                  <span className="muted">Duration</span>
+                  <strong>{game.duration || "TBD"}</strong>
+                </div>
+                <div className="list-card stack" style={{ gap: "0.35rem" }}>
                   <span className="muted">Status</span>
                   <strong>{game.status.replaceAll("_", " ")}</strong>
                 </div>
@@ -227,17 +239,21 @@ export default async function DmGameDetailPage({ params }: PageProps) {
               </thead>
               <tbody>
                 {game.participants.length ? (
-                  game.participants.map((participant) => (
+                  sortedParticipants.map((participant) => (
                     <tr key={participant.id}>
                       <td>{participant.user.name}</td>
-                      <td>{participant.character.name}</td>
+                      <td>{getParticipantCharacterLabel(participant.character?.name)}</td>
                       <td>
-                        <Link
-                          className="button button-secondary button-small"
-                          href={`/player/characters/${participant.characterId}`}
-                        >
-                          View logsheet
-                        </Link>
+                        {participant.characterId ? (
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/player/characters/${participant.characterId}`}
+                          >
+                            View logsheet
+                          </Link>
+                        ) : (
+                          <span className="muted">No character yet</span>
+                        )}
                       </td>
                     </tr>
                   ))

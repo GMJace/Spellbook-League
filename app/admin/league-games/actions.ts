@@ -42,6 +42,7 @@ async function parseGameForm(formData: FormData) {
     gameSummary: String(formData.get("gameSummary") ?? ""),
     ticketPrice: String(formData.get("ticketPrice") ?? "Free"),
     datePlayed: String(formData.get("datePlayed") ?? ""),
+    duration: String(formData.get("duration") ?? ""),
     tier: String(formData.get("tier") ?? "TIER_1"),
     seatCapacity: String(formData.get("seatCapacity") ?? "6"),
     serviceHours: String(formData.get("serviceHours") ?? ""),
@@ -61,11 +62,13 @@ async function parseGameForm(formData: FormData) {
   const seenCharacterIds = new Set<string>();
 
   for (const participant of parsed.data.participants) {
-    if (seenCharacterIds.has(participant.characterId)) {
+    if (participant.characterId && seenCharacterIds.has(participant.characterId)) {
       return { error: "A character cannot be added to the same game twice." } as const;
     }
 
-    seenCharacterIds.add(participant.characterId);
+    if (participant.characterId) {
+      seenCharacterIds.add(participant.characterId);
+    }
   }
 
   const players = await prisma.user.findMany({
@@ -83,9 +86,9 @@ async function parseGameForm(formData: FormData) {
   for (const participant of parsed.data.participants) {
     const selectedUser = playerMap.get(participant.userId);
     const hasRole = selectedUser?.roles.some((role) => role.role === "PLAYER");
-    const ownsCharacter = selectedUser?.characters.some(
-      (character) => character.id === participant.characterId
-    );
+    const ownsCharacter = participant.characterId
+      ? selectedUser?.characters.some((character) => character.id === participant.characterId)
+      : true;
 
     if (!selectedUser || !hasRole || !ownsCharacter) {
       return { error: "One or more selected participants are invalid." } as const;
@@ -151,6 +154,7 @@ export async function adminUpdateLeagueGame(formData: FormData) {
         ticketPrice: parsed.data.ticketPrice,
         adventureImagePath,
         datePlayed: new Date(parsed.data.datePlayed),
+        duration: parsed.data.duration,
         tier: parsed.data.tier,
         seatCapacity: parsed.data.seatCapacity,
         serviceHours: parsed.data.serviceHours,

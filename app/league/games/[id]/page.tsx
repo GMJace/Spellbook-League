@@ -4,9 +4,18 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { getCharacterTier, getCharacterTotalLevel } from "@/lib/character";
+import {
+  getParticipantCharacterLabel,
+  TBD_CHARACTER_OPTION_LABEL,
+  TBD_CHARACTER_VALUE,
+} from "@/lib/game-participants";
 import { prisma } from "@/lib/prisma";
 import { formatStatus, formatTier, isPaidTicketPrice, splitBulletLines } from "@/lib/utils";
-import { leaveLeagueGame, signupForFreeLeagueGame } from "./actions";
+import {
+  leaveLeagueGame,
+  signupForFreeLeagueGame,
+  updateLeagueGameCharacterSelection,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,11 +42,17 @@ function renderSignupMessage(signupState: string | undefined) {
     case "paid":
       return "This game requires checkout through the cart.";
     case "choose-character":
-      return "Please choose one of your characters to sign up.";
+      return "Please choose one of your characters or select TBD to sign up.";
     case "invalid-character":
       return "Please choose a valid character from your roster.";
+    case "character-unavailable":
+      return "That character is already assigned to this game.";
     case "wrong-tier":
       return "Choose a character whose tier matches this game.";
+    case "updated":
+      return "Your signup has been updated.";
+    case "not-signed-up":
+      return "You need to be signed up for this game before changing the character selection.";
     default:
       return null;
   }
@@ -76,7 +91,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
             character: true,
             user: true,
           },
-          orderBy: [{ user: { name: "asc" } }, { character: { name: "asc" } }],
+          orderBy: [{ user: { name: "asc" } }, { createdAt: "asc" }],
         },
       },
     }),
@@ -110,17 +125,28 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
 
   const availableSpots = Math.max((game.seatCapacity ?? 0) - game.participants.length, 0);
   const isSignupOpen = game.status === "SCHEDULED";
-  const canAddToCart = isSignupOpen && isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
-  const canJoinForFree = isSignupOpen && !isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
-  const isPlayer = Boolean(player?.roles.some((role) => role.role === "PLAYER"));
   const playerSignup = player
     ? game.participants.find((participant) => participant.userId === player.id)
     : null;
+  const canAddToCart =
+    isSignupOpen &&
+    isPaidTicketPrice(game.ticketPrice) &&
+    availableSpots > 0 &&
+    !playerSignup;
+  const canJoinForFree = isSignupOpen && !isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
+  const isPlayer = Boolean(player?.roles.some((role) => role.role === "PLAYER"));
   const eligibleCharacters =
     player?.characters.filter(
       (character) =>
         getCharacterTier(getCharacterTotalLevel(character)) === Number(game.tier.replace("TIER_", ""))
     ) ?? [];
+  const sortedParticipants = [...game.participants].sort(
+    (left, right) =>
+      left.user.name.localeCompare(right.user.name) ||
+      getParticipantCharacterLabel(left.character?.name).localeCompare(
+        getParticipantCharacterLabel(right.character?.name),
+      ),
+  );
   const signupMessage = renderSignupMessage(resolvedSearchParams.signup);
   const leaveMessage = renderLeaveMessage(resolvedSearchParams.leave, supportEmail);
   const gameSummaryLines = splitBulletLines(game.gameSummary);
@@ -198,6 +224,15 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
                   <span className="muted">Price</span>
                   <strong>{game.ticketPrice}</strong>
+                  {game.ticketAccessCodeHash ? (
+                    <span className="muted ggcon-meta-note">
+                      Have an access code? Redeem it from the league cart.
+                    </span>
+                  ) : null}
+                </div>
+                <div className="list-card stack" style={{ gap: "0.35rem" }}>
+                  <span className="muted">Duration</span>
+                  <strong>{game.duration || "TBD"}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
                   <span className="muted">Status</span>
@@ -220,7 +255,8 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   <div className="stack" style={{ gap: "0.35rem" }}>
                     <strong>Your signup</strong>
                     <p className="muted" style={{ margin: 0 }}>
-                      Signed up as <strong>{playerSignup.character.name}</strong>.
+                      Signed up as{" "}
+                      <strong>{getParticipantCharacterLabel(playerSignup.character?.name)}</strong>.
                     </p>
                   </div>
 
@@ -229,6 +265,37 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
 
                   {isSignupOpen ? (
                     <>
+                      <form
+                        action={updateLeagueGameCharacterSelection}
+                        className="stack"
+                        style={{ gap: "0.75rem" }}
+                      >
+                        <input name="gameId" type="hidden" value={game.id} />
+                        <label>
+                          Character
+                          <select
+                            defaultValue={playerSignup.characterId ?? TBD_CHARACTER_VALUE}
+                            name="characterId"
+                            required
+                          >
+                            <option value={TBD_CHARACTER_VALUE}>{TBD_CHARACTER_OPTION_LABEL}</option>
+                            {eligibleCharacters.map((character) => (
+                              <option key={character.id} value={character.id}>
+                                {character.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <p className="muted" style={{ margin: 0 }}>
+                          Select TBD if you have not decided yet. You can assign a character later.
+                        </p>
+                        <div>
+                          <button className="button button-secondary" type="submit">
+                            Update signup
+                          </button>
+                        </div>
+                      </form>
+
                       <p className="muted" style={{ margin: 0 }}>
                         {isPaidTicketPrice(game.ticketPrice)
                           ? "Leaving this game will remove your seat and email SPELLBOOK staff to begin refund review for any paid ticket tied to this signup."
@@ -273,12 +340,13 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   {signupMessage ? <p style={{ margin: 0 }}>{signupMessage}</p> : null}
                   {leaveMessage ? <p style={{ margin: 0 }}>{leaveMessage}</p> : null}
 
-                  {canJoinForFree && isPlayer && eligibleCharacters.length ? (
+                  {canJoinForFree && isPlayer ? (
                     <form action={signupForFreeLeagueGame} className="stack" style={{ gap: "0.75rem" }}>
                       <input name="gameId" type="hidden" value={game.id} />
                       <label>
                         Character
-                        <select defaultValue={eligibleCharacters[0]?.id ?? ""} name="characterId" required>
+                        <select defaultValue={TBD_CHARACTER_VALUE} name="characterId" required>
+                          <option value={TBD_CHARACTER_VALUE}>{TBD_CHARACTER_OPTION_LABEL}</option>
                           {eligibleCharacters.map((character) => (
                             <option key={character.id} value={character.id}>
                               {character.name}
@@ -286,27 +354,22 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                           ))}
                         </select>
                       </label>
+                      <p className="muted" style={{ margin: 0 }}>
+                        Select TBD if you have not decided yet. TBD can join any tier and be
+                        assigned later.
+                      </p>
+                      {!eligibleCharacters.length ? (
+                        <p className="muted" style={{ margin: 0 }}>
+                          You do not have a matching-tier character yet, so TBD is selected by
+                          default.
+                        </p>
+                      ) : null}
                       <div>
                         <button className="button" type="submit">
                           Sign up for free
                         </button>
                       </div>
                     </form>
-                  ) : canJoinForFree && isPlayer && player?.characters.length ? (
-                    <p style={{ margin: 0 }}>
-                      You do not have a character in {formatTier(game.tier)} yet.
-                    </p>
-                  ) : canJoinForFree && isPlayer ? (
-                    <div className="stack" style={{ gap: "0.6rem" }}>
-                      <p style={{ margin: 0 }}>
-                        Create a character before signing up for this game.
-                      </p>
-                      <div>
-                        <Link className="button" href="/player/characters/new">
-                          Create character
-                        </Link>
-                      </div>
-                    </div>
                   ) : canJoinForFree && session?.user?.id ? (
                     <p style={{ margin: 0 }}>
                       Only player accounts can sign up directly for free games.
@@ -391,10 +454,10 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
               </thead>
               <tbody>
                 {game.participants.length ? (
-                  game.participants.map((participant) => (
+                  sortedParticipants.map((participant) => (
                     <tr key={participant.id}>
                       <td>{participant.user.name}</td>
-                      <td>{participant.character.name}</td>
+                      <td>{getParticipantCharacterLabel(participant.character?.name)}</td>
                     </tr>
                   ))
                 ) : (

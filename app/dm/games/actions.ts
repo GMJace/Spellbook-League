@@ -1,11 +1,13 @@
 // @ts-nocheck
 "use server";
 
+import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { createNotifications } from "@/lib/notifications";
 import { requireRole } from "@/lib/auth";
+import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import {
   buildStoredGameRewardStrings,
   hasStructuredGameRewardSelectionFields,
@@ -14,8 +16,10 @@ import {
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
+import { isPaidTicketPrice } from "@/lib/utils";
 
 const MAX_ADVENTURE_IMAGE_SIZE = 5 * 1024 * 1024;
+const TICKET_ACCESS_CODE_HASH_ROUNDS = 10;
 
 function formatNotificationDate(value: string) {
   const date = new Date(value);
@@ -36,7 +40,9 @@ const GAME_FIELD_LABELS: Record<string, string> = {
   adventureCode: "Adventure code",
   gameSummary: "Game summary",
   ticketPrice: "Price",
+  ticketAccessCode: "Ticket access code",
   datePlayed: "Date and time",
+  duration: "Duration",
   tier: "Tier",
   seatCapacity: "Player capacity",
   rewardsSummary: "Awarded Gold",
@@ -49,7 +55,9 @@ type GameFieldName =
   | "adventureCode"
   | "gameSummary"
   | "ticketPrice"
+  | "ticketAccessCode"
   | "datePlayed"
+  | "duration"
   | "tier"
   | "seatCapacity"
   | "serviceHours"
@@ -72,7 +80,9 @@ const GAME_FIELD_ERROR_MESSAGES: Record<GameFieldName, string> = {
   adventureCode: "Enter an adventure code.",
   gameSummary: "Game summary must be 1500 characters or fewer.",
   ticketPrice: 'Enter a price such as "Free" or "$15 USD".',
+  ticketAccessCode: "Ticket access code must be at least 4 characters and 100 characters or fewer.",
   datePlayed: "Choose a valid game date and time.",
+  duration: "Duration must be 80 characters or fewer.",
   tier: "Choose a valid tier.",
   seatCapacity: "Player capacity must be between 1 and 12.",
   serviceHours: "Service hours must be a number between 0 and 999.",
@@ -145,19 +155,21 @@ function buildGameValidationErrorResult(
 }
 
 function buildParticipantSummaries(
-  participants: Array<{ userId: string; characterId: string }>,
+  participants: Array<{ userId: string; characterId: null | string }>,
   playerMap: Map<string, { name: string; characters: Array<{ id: string; name: string }> }>
 ) {
   const grouped = new Map<
     string,
-    { userId: string; userName: string; firstCharacterId: string; characterNames: string[] }
+    { userId: string; userName: string; firstCharacterId: null | string; characterNames: string[] }
   >();
 
   for (const participant of participants) {
     const player = playerMap.get(participant.userId);
-    const character = player?.characters.find((entry) => entry.id === participant.characterId);
+    const character = participant.characterId
+      ? player?.characters.find((entry) => entry.id === participant.characterId)
+      : null;
 
-    if (!player || !character) {
+    if (!player) {
       continue;
     }
 
@@ -170,7 +182,11 @@ function buildParticipantSummaries(
         characterNames: [],
       };
 
-    existing.characterNames.push(character.name);
+    if (!existing.firstCharacterId && participant.characterId) {
+      existing.firstCharacterId = participant.characterId;
+    }
+
+    existing.characterNames.push(getParticipantCharacterLabel(character?.name));
     grouped.set(participant.userId, existing);
   }
 
@@ -180,14 +196,14 @@ function buildParticipantSummaries(
 function buildExistingParticipantSummaries(
   participants: Array<{
     userId: string;
-    characterId: string;
+    characterId: null | string;
     user: { name: string };
-    character: { name: string };
+    character: null | { name: string };
   }>
 ) {
   const grouped = new Map<
     string,
-    { userId: string; userName: string; firstCharacterId: string; characterNames: string[] }
+    { userId: string; userName: string; firstCharacterId: null | string; characterNames: string[] }
   >();
 
   for (const participant of participants) {
@@ -200,7 +216,11 @@ function buildExistingParticipantSummaries(
         characterNames: [],
       };
 
-    existing.characterNames.push(participant.character.name);
+    if (!existing.firstCharacterId && participant.characterId) {
+      existing.firstCharacterId = participant.characterId;
+    }
+
+    existing.characterNames.push(getParticipantCharacterLabel(participant.character?.name));
     grouped.set(participant.userId, existing);
   }
 
@@ -284,7 +304,9 @@ async function parseGameForm(formData: FormData) {
     adventureCode: String(formData.get("adventureCode") ?? ""),
     gameSummary: String(formData.get("gameSummary") ?? ""),
     ticketPrice: String(formData.get("ticketPrice") ?? "Free"),
+    ticketAccessCode: String(formData.get("ticketAccessCode") ?? ""),
     datePlayed: String(formData.get("datePlayed") ?? ""),
+    duration: String(formData.get("duration") ?? ""),
     tier: String(formData.get("tier") ?? "TIER_1"),
     seatCapacity: String(formData.get("seatCapacity") ?? "6"),
     serviceHours: String(formData.get("serviceHours") ?? ""),
@@ -304,7 +326,7 @@ async function parseGameForm(formData: FormData) {
   const seenCharacterIds = new Set<string>();
 
   for (const participant of parsed.data.participants) {
-    if (seenCharacterIds.has(participant.characterId)) {
+    if (participant.characterId && seenCharacterIds.has(participant.characterId)) {
       return {
         error: "A character cannot be added to the same game twice.",
         fieldErrors: {
@@ -313,7 +335,9 @@ async function parseGameForm(formData: FormData) {
       } as const;
     }
 
-    seenCharacterIds.add(participant.characterId);
+    if (participant.characterId) {
+      seenCharacterIds.add(participant.characterId);
+    }
   }
 
   const players = await prisma.user.findMany({
@@ -331,9 +355,9 @@ async function parseGameForm(formData: FormData) {
   for (const participant of parsed.data.participants) {
     const selectedUser = playerMap.get(participant.userId);
     const hasRole = selectedUser?.roles.some((role) => role.role === "PLAYER");
-    const ownsCharacter = selectedUser?.characters.some(
-      (character) => character.id === participant.characterId
-    );
+    const ownsCharacter = participant.characterId
+      ? selectedUser?.characters.some((character) => character.id === participant.characterId)
+      : true;
 
     if (!selectedUser || !hasRole || !ownsCharacter) {
       return {
@@ -378,6 +402,7 @@ async function requireOwnedGame(gameId: string) {
       id: true,
       dmId: true,
       adventureImagePath: true,
+      ticketAccessCodeHash: true,
     },
   });
 
@@ -388,6 +413,28 @@ async function requireOwnedGame(gameId: string) {
   return { currentUser, game };
 }
 
+async function resolveTicketAccessCodeHash({
+  clearRequested,
+  existingHash = null,
+  ticketAccessCode,
+  ticketPrice,
+}: {
+  clearRequested: boolean;
+  existingHash?: null | string;
+  ticketAccessCode: string;
+  ticketPrice: string;
+}) {
+  if (!isPaidTicketPrice(ticketPrice) || clearRequested) {
+    return null;
+  }
+
+  if (!ticketAccessCode.trim()) {
+    return existingHash;
+  }
+
+  return bcrypt.hash(ticketAccessCode.trim(), TICKET_ACCESS_CODE_HASH_ROUNDS);
+}
+
 export async function createGame(formData: FormData) {
   const user = await requireRole("DM");
   const parsed = await parseGameForm(formData);
@@ -395,6 +442,12 @@ export async function createGame(formData: FormData) {
   if ("error" in parsed) {
     return { error: parsed.error };
   }
+
+  const ticketAccessCodeHash = await resolveTicketAccessCodeHash({
+    clearRequested: String(formData.get("clearTicketAccessCode") ?? "").trim() === "true",
+    ticketAccessCode: parsed.data.ticketAccessCode,
+    ticketPrice: parsed.data.ticketPrice,
+  });
 
   const adventureImageFile = formData.get("adventureImage");
   const reuseAdventureImagePath = String(formData.get("reuseAdventureImagePath") ?? "").trim();
@@ -431,8 +484,10 @@ export async function createGame(formData: FormData) {
         adventureCode: parsed.data.adventureCode,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
+        ticketAccessCodeHash,
         adventureImagePath,
         datePlayed: new Date(parsed.data.datePlayed),
+        duration: parsed.data.duration,
         tier: parsed.data.tier,
         seatCapacity: parsed.data.seatCapacity,
         serviceHours: parsed.data.serviceHours,
@@ -487,8 +542,10 @@ export async function createGame(formData: FormData) {
             { label: "Characters", value: participant.characterNames.join(", ") },
             { label: "Status", value: parsed.data.status },
           ],
-          actionLabel: "Open character",
-          actionHref: `/player/characters/${participant.firstCharacterId}`,
+          actionLabel: participant.firstCharacterId ? "Open character" : "View game",
+          actionHref: participant.firstCharacterId
+            ? `/player/characters/${participant.firstCharacterId}`
+            : `/league/games/${createdGame.id}`,
         })),
     ]);
 
@@ -511,6 +568,13 @@ export async function updateGame(formData: FormData) {
   if ("error" in parsed) {
     return { error: parsed.error };
   }
+
+  const ticketAccessCodeHash = await resolveTicketAccessCodeHash({
+    clearRequested: String(formData.get("clearTicketAccessCode") ?? "").trim() === "true",
+    existingHash: game.ticketAccessCodeHash,
+    ticketAccessCode: parsed.data.ticketAccessCode,
+    ticketPrice: parsed.data.ticketPrice,
+  });
 
   const adventureImageFile = formData.get("adventureImage");
   let adventureImagePath = game.adventureImagePath;
@@ -571,8 +635,10 @@ export async function updateGame(formData: FormData) {
         adventureCode: parsed.data.adventureCode,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
+        ticketAccessCodeHash,
         adventureImagePath,
         datePlayed: new Date(parsed.data.datePlayed),
+        duration: parsed.data.duration,
         tier: parsed.data.tier,
         seatCapacity: parsed.data.seatCapacity,
         serviceHours: parsed.data.serviceHours,
@@ -632,8 +698,10 @@ export async function updateGame(formData: FormData) {
             { label: "Characters", value: participant.characterNames.join(", ") },
             { label: "Status", value: parsed.data.status },
           ],
-          actionLabel: "Open character",
-          actionHref: `/player/characters/${participant.firstCharacterId}`,
+          actionLabel: participant.firstCharacterId ? "Open character" : "View game",
+          actionHref: participant.firstCharacterId
+            ? `/player/characters/${participant.firstCharacterId}`
+            : `/league/games/${game.id}`,
         })),
       ...removedParticipantSummaries
         .filter((participant) => participant.userId !== currentUser.id)
@@ -648,8 +716,10 @@ export async function updateGame(formData: FormData) {
             { label: "Date", value: formattedDate },
             { label: "Characters", value: participant.characterNames.join(", ") },
           ],
-          actionLabel: "View character log",
-          actionHref: `/player/characters/${participant.firstCharacterId}`,
+          actionLabel: participant.firstCharacterId ? "View character log" : "View game",
+          actionHref: participant.firstCharacterId
+            ? `/player/characters/${participant.firstCharacterId}`
+            : `/league/games/${game.id}`,
         })),
     ]);
   });
@@ -741,8 +811,10 @@ export async function deleteGame(formData: FormData) {
                 { label: "Characters", value: participant.characterNames.join(", ") },
               ].filter(Boolean)
             ),
-            actionLabel: "Open character",
-            actionHref: `/player/characters/${participant.firstCharacterId}`,
+            actionLabel: participant.firstCharacterId ? "Open character" : "View game",
+            actionHref: participant.firstCharacterId
+              ? `/player/characters/${participant.firstCharacterId}`
+              : "/league",
             isRead: false,
           })),
       ],

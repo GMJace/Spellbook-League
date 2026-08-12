@@ -76,7 +76,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
                 user: true,
                 character: true,
               },
-              orderBy: [{ user: { name: "asc" } }, { character: { name: "asc" } }],
+              orderBy: [{ user: { name: "asc" } }, { createdAt: "asc" }],
             },
           },
         })
@@ -95,7 +95,9 @@ export default async function NewGamePage({ searchParams }: PageProps) {
         adventureCode: duplicatedGame.adventureCode,
         gameSummary: duplicatedGame.gameSummary,
         ticketPrice: duplicatedGame.ticketPrice,
+        hasTicketAccessCode: false,
         datePlayed: "",
+        duration: duplicatedGame.duration,
         tier: duplicatedGame.tier,
         seatCapacity: String(duplicatedGame.seatCapacity),
         serviceHours: String(duplicatedGame.serviceHours ?? 0),

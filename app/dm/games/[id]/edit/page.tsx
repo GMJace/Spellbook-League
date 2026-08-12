@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { EditGameForm } from "@/components/edit-game-form";
 import { getLeaguePlayers } from "@/lib/data";
+import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions, getLeagueLegalMinorPropertyOptions } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 
@@ -68,7 +69,7 @@ export default async function EditGamePage({ params }: PageProps) {
             user: true,
             character: true,
           },
-          orderBy: [{ user: { name: "asc" } }, { character: { name: "asc" } }],
+          orderBy: [{ user: { name: "asc" } }, { createdAt: "asc" }],
         },
       },
     }),
@@ -94,14 +95,16 @@ export default async function EditGamePage({ params }: PageProps) {
     adventureCode: game.adventureCode,
     gameSummary: game.gameSummary,
     ticketPrice: game.ticketPrice,
+    hasTicketAccessCode: Boolean(game.ticketAccessCodeHash),
     adventureImagePath: game.adventureImagePath,
     consumablesAwarded: game.consumablesAwarded,
     datePlayed: formatDateInput(game.datePlayed),
+    duration: game.duration,
     downtimeDaysAwarded: String(game.downtimeDaysAwarded ?? 0),
     magicItemsAwarded: game.magicItemsAwarded,
     participants: game.participants.map((participant) => ({
       characterId: participant.characterId,
-      characterName: participant.character.name,
+      characterName: getParticipantCharacterLabel(participant.character?.name),
       userId: participant.userId,
       userName: participant.user.name,
     })),

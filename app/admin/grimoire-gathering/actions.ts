@@ -6,6 +6,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireGrimoireAdminUser } from "@/lib/admin";
+import {
+  buildStandardGrimoireEventSlots,
+  getGrimoireSlotCapacityValidationErrors,
+  readStandardGrimoireSlotCountsFromFormData,
+} from "@/lib/grimoire-slots";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
@@ -31,7 +36,6 @@ const eventFieldsSchema = z.object({
   ticketLabel: z.string().trim().min(1).max(120),
   ticketPrice: z.string().trim().min(1).max(80),
   ticketPriceUsd: z.coerce.number().min(0),
-  slots: z.string().trim().min(1),
 });
 
 const createEventSchema = eventFieldsSchema;
@@ -120,49 +124,6 @@ function buildGrimoireEventIdFromTitle(value: string) {
   return slug ? `ggcon-${slug}` : "";
 }
 
-function parseSlotLines(value: string) {
-  const lines = parseTextareaLines(value);
-
-  const slots = lines.map((line) => {
-    const separatorIndex = line.indexOf("|");
-
-    if (separatorIndex === -1) {
-      return null;
-    }
-
-    const label = line.slice(0, separatorIndex).trim();
-    const startAt = line.slice(separatorIndex + 1).trim();
-    const parsedDate = parseDateOrNull(startAt);
-
-    if (!label || !parsedDate) {
-      return null;
-    }
-
-    return {
-      label,
-      startAt: parsedDate,
-    };
-  });
-
-  return slots.every(Boolean) ? (slots as Array<{ label: string; startAt: Date }>) : null;
-}
-
-function hasDuplicateSlotStartTimes(slots: Array<{ label: string; startAt: Date }>) {
-  const seen = new Set<string>();
-
-  for (const slot of slots) {
-    const key = slot.startAt.toISOString();
-
-    if (seen.has(key)) {
-      return true;
-    }
-
-    seen.add(key);
-  }
-
-  return false;
-}
-
 function formatGrimoireSlotDateTime(value: Date) {
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
@@ -211,7 +172,6 @@ const grimoireEventFieldLabels: Record<string, string> = {
   ticketLabel: "Ticket label",
   ticketPrice: "Ticket display price",
   ticketPriceUsd: "Ticket price USD",
-  slots: "Event slots",
 };
 
 const grimoireCuratedGameFieldLabels: Record<string, string> = {
@@ -338,7 +298,6 @@ export async function createGrimoireEvent(formData: FormData) {
     ticketLabel: formData.get("ticketLabel"),
     ticketPrice: formData.get("ticketPrice"),
     ticketPriceUsd: formData.get("ticketPriceUsd"),
-    slots: formData.get("slots"),
   });
 
   if (!parsed.success) {
@@ -352,8 +311,9 @@ export async function createGrimoireEvent(formData: FormData) {
     );
   }
 
-  const date = parseDateOrNull(parsed.data.date);
-  const slots = parseSlotLines(parsed.data.slots);
+  const slotCounts = readStandardGrimoireSlotCountsFromFormData(formData);
+  const slotCapacityErrors = getGrimoireSlotCapacityValidationErrors(slotCounts);
+  const slots = buildStandardGrimoireEventSlots(parsed.data.date, slotCounts);
   const generatedEventId = buildGrimoireEventIdFromTitle(parsed.data.subtitle);
 
   if (!generatedEventId) {
@@ -365,12 +325,22 @@ export async function createGrimoireEvent(formData: FormData) {
     );
   }
 
-  if (!date || !slots?.length) {
-    redirect(buildGrimoireEventRedirect({ status: "invalid-slots" }));
+  if (slotCapacityErrors.length) {
+    redirect(
+      buildGrimoireEventRedirect({
+        details: slotCapacityErrors.join(" | "),
+        status: "invalid-fields",
+      }),
+    );
   }
 
-  if (hasDuplicateSlotStartTimes(slots)) {
-    redirect(buildGrimoireEventRedirect({ status: "duplicate-slots" }));
+  if (!slots?.length) {
+    redirect(
+      buildGrimoireEventRedirect({
+        details: "Weekend start date: Choose a valid Friday date.",
+        status: "invalid-fields",
+      }),
+    );
   }
 
   const existingEvent = await prisma.grimoireEvent.findUnique({
@@ -388,7 +358,7 @@ export async function createGrimoireEvent(formData: FormData) {
         id: generatedEventId,
         label: parsed.data.label,
         subtitle: parsed.data.subtitle,
-        date,
+        date: slots[0].startAt,
         displayDate: parsed.data.displayDate,
         theme: parsed.data.theme,
         themeDetails: JSON.stringify(parseTextareaLines(parsed.data.themeDetails)),
@@ -434,7 +404,6 @@ export async function updateGrimoireEvent(formData: FormData) {
     ticketLabel: formData.get("ticketLabel"),
     ticketPrice: formData.get("ticketPrice"),
     ticketPriceUsd: formData.get("ticketPriceUsd"),
-    slots: formData.get("slots"),
   });
 
   const editEventQuery = typeof formData.get("eventId") === "string"
@@ -453,14 +422,26 @@ export async function updateGrimoireEvent(formData: FormData) {
     );
   }
 
-  const date = parseDateOrNull(parsed.data.date);
-  const slots = parseSlotLines(parsed.data.slots);
+  const slotCounts = readStandardGrimoireSlotCountsFromFormData(formData);
+  const slotCapacityErrors = getGrimoireSlotCapacityValidationErrors(slotCounts);
+  const slots = buildStandardGrimoireEventSlots(parsed.data.date, slotCounts);
 
-  if (!date || !slots?.length) {
+  if (slotCapacityErrors.length) {
+    redirect(
+      buildGrimoireEventRedirect({
+        details: slotCapacityErrors.join(" | "),
+        editEventId: parsed.data.eventId,
+        status: "invalid-fields",
+      }),
+    );
+  }
+
+  if (!slots?.length) {
     redirect(
       buildGrimoireEventRedirect({
         editEventId: parsed.data.eventId,
-        status: "invalid-slots",
+        details: "Weekend start date: Choose a valid Friday date.",
+        status: "invalid-fields",
       }),
     );
   }
@@ -473,7 +454,9 @@ export async function updateGrimoireEvent(formData: FormData) {
       },
       curatedGames: {
         select: {
+          id: true,
           slug: true,
+          startAt: true,
         },
       },
       submissions: {
@@ -495,22 +478,52 @@ export async function updateGrimoireEvent(formData: FormData) {
     );
   }
 
-  if (existingEvent.submissions.length > 0 && existingEvent.slots.length !== slots.length) {
-    redirect(
-      buildGrimoireEventRedirect({
-        editEventId: parsed.data.eventId,
-        status: "invalid-slot-count",
-      }),
-    );
+  const occupiedCountsByStartAt = new Map<string, number>();
+
+  for (const curatedGame of existingEvent.curatedGames) {
+    const key = curatedGame.startAt.toISOString();
+    occupiedCountsByStartAt.set(key, (occupiedCountsByStartAt.get(key) ?? 0) + 1);
   }
 
-  const submissionIdsBySlot = new Map<string, string[]>();
-
   for (const submission of existingEvent.submissions) {
+    if (submission.status === "REJECTED") {
+      continue;
+    }
+
     const key = submission.slotStartAt.toISOString();
-    const slotSubmissionIds = submissionIdsBySlot.get(key) ?? [];
-    slotSubmissionIds.push(submission.id);
-    submissionIdsBySlot.set(key, slotSubmissionIds);
+    occupiedCountsByStartAt.set(key, (occupiedCountsByStartAt.get(key) ?? 0) + 1);
+  }
+
+  const existingSlotsByKey = new Map(
+    existingEvent.slots.map((slot) => [slot.slotKey, slot]),
+  );
+  const occupancyErrors = slots
+    .flatMap((slot) => {
+      const existingSlot = existingSlotsByKey.get(slot.slotKey);
+
+      if (!existingSlot) {
+        return [];
+      }
+
+      const occupiedCount = occupiedCountsByStartAt.get(existingSlot.startAt.toISOString()) ?? 0;
+
+      if (slot.gameSlotCount >= occupiedCount) {
+        return [];
+      }
+
+      return [
+        `${slot.label}: Cannot lower table count below ${occupiedCount} while games or submissions already occupy this time slot.`,
+      ];
+    });
+
+  if (occupancyErrors.length) {
+    redirect(
+      buildGrimoireEventRedirect({
+        details: occupancyErrors.join(" | "),
+        editEventId: parsed.data.eventId,
+        status: "invalid-fields",
+      }),
+    );
   }
 
   try {
@@ -520,7 +533,7 @@ export async function updateGrimoireEvent(formData: FormData) {
         data: {
           label: parsed.data.label,
           subtitle: parsed.data.subtitle,
-          date,
+          date: slots[0].startAt,
           displayDate: parsed.data.displayDate,
           theme: parsed.data.theme,
           themeDetails: JSON.stringify(parseTextareaLines(parsed.data.themeDetails)),
@@ -531,26 +544,32 @@ export async function updateGrimoireEvent(formData: FormData) {
         },
       });
 
-      if (existingEvent.submissions.length > 0) {
-        for (const [index, oldSlot] of existingEvent.slots.entries()) {
-          const newSlot = slots[index];
-          const submissionIds = submissionIdsBySlot.get(oldSlot.startAt.toISOString()) ?? [];
+      for (const oldSlot of existingEvent.slots) {
+        const newSlot = slots.find((slot) => slot.slotKey === oldSlot.slotKey);
 
-          if (!submissionIds.length) {
-            continue;
-          }
-
-          await tx.grimoireDmSubmission.updateMany({
-            where: {
-              id: {
-                in: submissionIds,
-              },
-            },
-            data: {
-              slotStartAt: newSlot.startAt,
-            },
-          });
+        if (!newSlot || oldSlot.startAt.getTime() === newSlot.startAt.getTime()) {
+          continue;
         }
+
+        await tx.grimoireDmSubmission.updateMany({
+          where: {
+            eventId: existingEvent.id,
+            slotStartAt: oldSlot.startAt,
+          },
+          data: {
+            slotStartAt: newSlot.startAt,
+          },
+        });
+
+        await tx.grimoireCuratedGame.updateMany({
+          where: {
+            eventId: existingEvent.id,
+            startAt: oldSlot.startAt,
+          },
+          data: {
+            startAt: newSlot.startAt,
+          },
+        });
       }
 
       await tx.grimoireEventSlot.deleteMany({
@@ -560,8 +579,11 @@ export async function updateGrimoireEvent(formData: FormData) {
       await tx.grimoireEventSlot.createMany({
         data: slots.map((slot) => ({
           eventId: existingEvent.id,
+          slotKey: slot.slotKey,
           label: slot.label,
           startAt: slot.startAt,
+          endAt: slot.endAt,
+          gameSlotCount: slot.gameSlotCount,
         })),
       });
     });

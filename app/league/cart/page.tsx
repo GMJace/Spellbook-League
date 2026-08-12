@@ -41,7 +41,29 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
   const session = await auth();
   const paypalClientId = getPayPalClientId();
-  const [pricedLeagueGames, player, membershipSettings] = await Promise.all([
+  const player = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: {
+          id: session.user.id,
+        },
+        include: {
+          roles: true,
+          characters: {
+            select: {
+              id: true,
+              name: true,
+              class1Level: true,
+              class2Level: true,
+              class3Level: true,
+            },
+            orderBy: {
+              name: "asc",
+            },
+          },
+        },
+      })
+    : null;
+  const [pricedLeagueGames, membershipSettings] = await Promise.all([
     prisma.game.findMany({
       where: {
         status: "SCHEDULED",
@@ -56,35 +78,27 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
             participants: true,
           },
         },
+        ...(player?.id
+          ? {
+              participants: {
+                where: {
+                  userId: player.id,
+                },
+                select: {
+                  id: true,
+                },
+                take: 1,
+              },
+            }
+          : {}),
       },
       orderBy: [{ datePlayed: "asc" }, { title: "asc" }],
     }),
-    session?.user?.id
-      ? prisma.user.findUnique({
-          where: {
-            id: session.user.id,
-          },
-          include: {
-            roles: true,
-            characters: {
-              select: {
-                id: true,
-                name: true,
-                class1Level: true,
-                class2Level: true,
-                class3Level: true,
-              },
-              orderBy: {
-                name: "asc",
-              },
-            },
-          },
-        })
-      : Promise.resolve(null),
     getGrimoireGuildMembershipSettings(),
   ]);
 
   const cartGames = pricedLeagueGames
+    .filter((game) => !(game.participants?.length ?? 0))
     .filter((game) => isPaidTicketPrice(game.ticketPrice))
     .map((game) => ({
       id: game.id,
@@ -95,6 +109,7 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
       tier: game.tier,
       ticketPrice: game.ticketPrice,
       ticketPriceUsd: parseTicketPriceUsd(game.ticketPrice),
+      hasTicketAccessCode: Boolean(game.ticketAccessCodeHash),
       seatCapacity: game.seatCapacity,
       participantCount: game._count.participants,
     }));

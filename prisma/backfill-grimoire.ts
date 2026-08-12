@@ -41,8 +41,11 @@ async function main() {
           create: grimoireEventSlots
             .filter((slot) => slot.eventId === event.id)
             .map((slot) => ({
+              slotKey: slot.slotKey,
               label: slot.label,
               startAt: new Date(slot.startAt),
+              endAt: new Date(slot.endAt),
+              gameSlotCount: slot.gameSlotCount,
             })),
         },
         curatedGames: {

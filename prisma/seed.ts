@@ -7,6 +7,10 @@ import bcrypt from "bcryptjs";
 import { GameStatus, PrismaClient, Tier } from "@prisma/client";
 
 import { achievementBadgePathBySlug } from "./achievement-badge-map";
+import {
+  buildStandardGrimoireEventSlots,
+  formatGrimoireEventDateInput,
+} from "../lib/grimoire-slots";
 
 const prisma = new PrismaClient();
 const dataDirectory = path.join(process.cwd(), "data");
@@ -999,22 +1003,17 @@ async function main() {
     });
   }
 
-  const grimoireEventDate = atTime(addDays(now, 79), 18);
-
-  const grimoireEventSlots = [
-    {
-      label: "Friday Prelude",
-      startAt: atTime(grimoireEventDate, 18),
-    },
-    {
-      label: "Saturday Main Event",
-      startAt: atTime(addDays(grimoireEventDate, 1), 12),
-    },
-    {
-      label: "Saturday Finale",
-      startAt: atTime(addDays(grimoireEventDate, 1), 20),
-    },
-  ];
+  const grimoireWeekendDate = addDays(now, 79);
+  const grimoireEventSlots =
+    buildStandardGrimoireEventSlots(formatGrimoireEventDateInput(grimoireWeekendDate), {
+      friday_5pm: 1,
+      saturday_7am: 0,
+      saturday_noon: 1,
+      saturday_5pm: 1,
+      sunday_7am: 0,
+      sunday_noon: 1,
+    }) ?? [];
+  const grimoireEventDate = grimoireEventSlots[0]?.startAt ?? atTime(grimoireWeekendDate, 17);
 
   await prisma.grimoireEvent.create({
     data: {
@@ -1022,7 +1021,7 @@ async function main() {
       label: formatMonthLabel(grimoireEventDate),
       subtitle: "Echoes of the End",
       date: grimoireEventDate,
-      displayDate: formatDisplayDateRange(grimoireEventDate, addDays(grimoireEventDate, 1)),
+      displayDate: formatDisplayDateRange(grimoireEventDate, addDays(grimoireEventDate, 2)),
       theme: "Season finale and campaign payoffs",
       themeDetails: JSON.stringify([
         "Signature boss fights, payoffs, and returning NPCs.",
@@ -1036,7 +1035,13 @@ async function main() {
       ticketPriceUsd: 30,
       finale: true,
       slots: {
-        create: grimoireEventSlots,
+        create: grimoireEventSlots.map((slot) => ({
+          slotKey: slot.slotKey,
+          label: slot.label,
+          startAt: slot.startAt,
+          endAt: slot.endAt,
+          gameSlotCount: slot.gameSlotCount,
+        })),
       },
     },
   });
@@ -1054,7 +1059,7 @@ async function main() {
           "Designed for players who want a convention capstone.",
           "Expect legendary foes, collapsing terrain, and a big ending.",
         ]),
-        startAt: grimoireEventSlots[1].startAt,
+        startAt: grimoireEventSlots[2].startAt,
         dm: "Tamsin Vale",
         tier: Tier.TIER_4,
         ticketPrice: "$18 USD",
@@ -1092,7 +1097,7 @@ async function main() {
         title: "Last Light on the Obsidian Stairs",
         gameCode: "COMM-FIN-08",
         eventId: "ggcon-echoes-of-the-end",
-        slotStartAt: finaleEventSlots[2].startAt,
+        slotStartAt: grimoireEventSlots[5].startAt,
         tier: Tier.TIER_4,
         seats: 6,
         summary:

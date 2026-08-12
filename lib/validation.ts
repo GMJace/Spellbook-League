@@ -352,7 +352,14 @@ export const gameSchema = z.object({
   adventureCode: z.string().trim().min(1, "Adventure code").max(40),
   gameSummary: z.string().trim().max(1500).default(""),
   ticketPrice: z.string().trim().min(1).max(40),
+  ticketAccessCode: z
+    .string()
+    .trim()
+    .max(100)
+    .default("")
+    .refine((value) => value === "" || value.length >= 4, "Ticket access code"),
   datePlayed: z.string().trim().min(1, "Date and time"),
+  duration: z.string().trim().max(80).default(""),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   seatCapacity: z.coerce.number().int().min(1).max(12),
   serviceHours: z.preprocess(
@@ -386,7 +393,7 @@ export const gameSchema = z.object({
     .array(
       z.object({
         userId: z.string().min(1),
-        characterId: z.string().min(1),
+        characterId: z.string().trim().min(1).nullable(),
       })
     ),
 });
@@ -395,6 +402,6 @@ export const gameParticipantsSchema = z
   .array(
     z.object({
       userId: z.string().min(1),
-      characterId: z.string().min(1),
+      characterId: z.string().trim().min(1).nullable(),
     })
   );

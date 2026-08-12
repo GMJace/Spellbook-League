@@ -3,6 +3,15 @@ import Link from "next/link";
 import { GrimoireDmSubmissionForm } from "@/components/grimoire-dm-submission-form";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { formatGrimoireTier } from "@/lib/grimoire";
+import {
+  getCharacterBuildMagicItemOptions,
+  getLeagueLegalBlessingOptions,
+  getLeagueLegalBoonOptions,
+  getLeagueLegalCharmOptions,
+  getLeagueLegalConsumableOptions,
+  getLeagueLegalMagicItemOptions,
+  getLeagueLegalMinorPropertyOptions,
+} from "@/lib/league-legal-choices";
 import { getNextGrimoireEvent, getSeasonSchedule, getSlotsForEvent } from "@/lib/grimoire-server";
 import { prisma } from "@/lib/prisma";
 
@@ -23,8 +32,26 @@ type SubmissionRow = {
 };
 
 export default async function GrimoireDmPage() {
-  const nextEvent = await getNextGrimoireEvent();
-  const publishedEvents = (await getSeasonSchedule()).filter(
+  const [
+    nextEvent,
+    seasonSchedule,
+    legalMagicItemOptions,
+    legalConsumableOptions,
+    legalBoonOptions,
+    legalBlessingOptions,
+    legalCharmOptions,
+    legalMinorPropertyOptions,
+  ] = await Promise.all([
+    getNextGrimoireEvent(),
+    getSeasonSchedule(),
+    getLeagueLegalMagicItemOptions(),
+    getLeagueLegalConsumableOptions(),
+    getLeagueLegalBoonOptions(),
+    getLeagueLegalBlessingOptions(),
+    getLeagueLegalCharmOptions(),
+    getLeagueLegalMinorPropertyOptions(),
+  ]);
+  const publishedEvents = seasonSchedule.filter(
     (event) => new Date(event.date).getTime() >= Date.now()
   );
 
@@ -56,6 +83,15 @@ export default async function GrimoireDmPage() {
     publishedEvents.map(async (event) => [event.id, await getSlotsForEvent(event.id)] as const)
   );
   const slotsByEvent = Object.fromEntries(slotPairs);
+  const legalRewardsJson = JSON.stringify({
+    legalBuildMagicItemOptions: getCharacterBuildMagicItemOptions(legalMagicItemOptions),
+    legalCommonMagicItemOptions: legalMagicItemOptions.Common,
+    legalConsumableOptions,
+    legalBoonOptions,
+    legalBlessingOptions,
+    legalCharmOptions,
+    legalMinorPropertyOptions,
+  });
   const slots = slotsByEvent[nextEvent.id] ?? [];
   const submissions = (await prisma.grimoireDmSubmission.findMany({
     where: {
@@ -101,6 +137,7 @@ export default async function GrimoireDmPage() {
             <GrimoireDmSubmissionForm
               events={publishedEvents}
               initialEventId={nextEvent.id}
+              legalRewardsJson={legalRewardsJson}
               slotsByEvent={slotsByEvent}
             />
           </section>

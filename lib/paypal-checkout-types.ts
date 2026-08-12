@@ -17,8 +17,8 @@ export type SerializedLeagueCheckoutMembership = {
 };
 
 export type SerializedLeagueCheckoutItem = {
-  characterId?: string;
-  characterName?: string;
+  characterId?: string | null;
+  characterName?: string | null;
   gameId?: string;
   guestEmails?: string[];
   quantity?: number;

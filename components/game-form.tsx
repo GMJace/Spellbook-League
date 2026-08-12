@@ -5,6 +5,12 @@ import { useMemo, useState, useTransition } from "react";
 import { BulletTextarea } from "@/components/bullet-textarea";
 import { DatePickerField } from "@/components/date-picker-field";
 import { GameRewardFields } from "@/components/game-reward-fields";
+import {
+  TBD_CHARACTER_LABEL,
+  TBD_CHARACTER_OPTION_LABEL,
+  TBD_CHARACTER_VALUE,
+} from "@/lib/game-participants";
+import { isPaidTicketPrice } from "@/lib/utils";
 
 type Player = {
   id: string;
@@ -15,7 +21,7 @@ type Player = {
 type Participant = {
   userId: string;
   userName: string;
-  characterId: string;
+  characterId: null | string;
   characterName: string;
 };
 
@@ -25,7 +31,9 @@ export type GameFormInitialValues = {
   adventureCode: string;
   gameSummary: string;
   ticketPrice: string;
+  hasTicketAccessCode?: boolean;
   datePlayed: string;
+  duration: string;
   tier: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
   seatCapacity: string;
   serviceHours: string;
@@ -40,6 +48,7 @@ export type GameFormInitialValues = {
 };
 
 type GameFormProps = {
+  allowCancelledStatus?: boolean;
   initialValues?: GameFormInitialValues;
   legalBlessingOptions?: string[];
   legalBoonOptions?: string[];
@@ -67,7 +76,9 @@ type GameFormFieldName =
   | "adventureCode"
   | "gameSummary"
   | "ticketPrice"
+  | "ticketAccessCode"
   | "datePlayed"
+  | "duration"
   | "tier"
   | "seatCapacity"
   | "serviceHours"
@@ -165,6 +176,7 @@ async function resizeAdventureImage(file: File) {
 }
 
 export function GameForm({
+  allowCancelledStatus = false,
   initialValues,
   legalBlessingOptions = [],
   legalBoonOptions = [],
@@ -188,9 +200,15 @@ export function GameForm({
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<GameFormFieldName, string>>>({});
   const [isPending, startTransition] = useTransition();
   const resolvedTicketPrice = initialValues?.ticketPrice ?? "Free";
+  const [selectedTicketPrice, setSelectedTicketPrice] = useState(resolvedTicketPrice);
   const hasCustomTicketPrice = !ticketPriceOptions.some(
     (option) => option.value === resolvedTicketPrice,
   );
+  const showTicketAccessCodeControls =
+    isPaidTicketPrice(selectedTicketPrice) || Boolean(initialValues?.hasTicketAccessCode);
+  const availableStatuses = allowCancelledStatus
+    ? statuses
+    : statuses.filter((status) => status.value !== "CANCELLED");
 
   const errorTextStyle = { color: "#8f341b", margin: 0 };
   const fieldBlockStyle = { gap: "0.35rem" };
@@ -311,6 +329,11 @@ export function GameForm({
               aria-invalid={Boolean(getFieldError("ticketPrice"))}
               defaultValue={resolvedTicketPrice}
               name="ticketPrice"
+              onChange={(event) => {
+                setSelectedTicketPrice(event.target.value);
+                clearFieldError("ticketPrice");
+                clearFieldError("ticketAccessCode");
+              }}
               required
             >
               {hasCustomTicketPrice ? (
@@ -327,6 +350,47 @@ export function GameForm({
             <p style={errorTextStyle}>{getFieldError("ticketPrice")}</p>
           ) : null}
         </div>
+        {showTicketAccessCodeControls ? (
+          <div className="stack" style={fieldBlockStyle}>
+            <label>
+              Ticket access code
+              <input
+                aria-invalid={Boolean(getFieldError("ticketAccessCode"))}
+                autoComplete="off"
+                name="ticketAccessCode"
+                placeholder={
+                  initialValues?.hasTicketAccessCode
+                    ? "Enter a new code to replace the current one"
+                    : "Optional code for free player entry"
+                }
+                type="text"
+              />
+            </label>
+            {initialValues?.hasTicketAccessCode ? (
+              <label
+                className="muted ggcon-meta-note"
+                style={{ alignItems: "center", display: "flex", gap: "0.45rem" }}
+              >
+                <input name="clearTicketAccessCode" type="checkbox" value="true" />
+                Remove the current access code
+              </label>
+            ) : (
+              <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                Optional. Players can enter this code in the league cart to join without buying a
+                ticket.
+              </p>
+            )}
+            {initialValues?.hasTicketAccessCode ? (
+              <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                Leave this blank to keep the current code, enter a new one to replace it, or check
+                the box above to remove it.
+              </p>
+            ) : null}
+            {getFieldError("ticketAccessCode") ? (
+              <p style={errorTextStyle}>{getFieldError("ticketAccessCode")}</p>
+            ) : null}
+          </div>
+        ) : null}
         <div className="stack" style={fieldBlockStyle}>
           <DatePickerField
             aria-invalid={Boolean(getFieldError("datePlayed"))}
@@ -338,6 +402,21 @@ export function GameForm({
           />
           {getFieldError("datePlayed") ? (
             <p style={errorTextStyle}>{getFieldError("datePlayed")}</p>
+          ) : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Duration
+            <input
+              aria-invalid={Boolean(getFieldError("duration"))}
+              defaultValue={initialValues?.duration ?? ""}
+              name="duration"
+              placeholder="4 hours"
+              type="text"
+            />
+          </label>
+          {getFieldError("duration") ? (
+            <p style={errorTextStyle}>{getFieldError("duration")}</p>
           ) : null}
         </div>
         <div className="stack" style={fieldBlockStyle}>
@@ -381,7 +460,7 @@ export function GameForm({
               name="status"
               defaultValue={initialValues?.status ?? "SCHEDULED"}
             >
-              {statuses.map((status) => (
+              {availableStatuses.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
                 </option>
@@ -528,7 +607,7 @@ export function GameForm({
         <div>
           <h2>Participants</h2>
           <p className="muted">
-            Search league players, then select one of their characters before
+            Search league players, then select one of their characters or mark them as TBD before
             adding them to the game.
           </p>
           {getFieldError("participants") ? (
@@ -574,7 +653,8 @@ export function GameForm({
                 clearFieldError("participants");
               }}
             >
-              <option value="">Select a character</option>
+              <option value="">Select a character or TBD</option>
+              <option value={TBD_CHARACTER_VALUE}>{TBD_CHARACTER_OPTION_LABEL}</option>
               {characters.map((character) => (
                 <option key={character.id} value={character.id}>
                   {character.name}
@@ -589,17 +669,18 @@ export function GameForm({
                 if (!selectedPlayer || !selectedCharacterId) {
                   setFieldErrors((current) => ({
                     ...current,
-                    participants: "Choose a player and one of their characters.",
+                    participants: "Choose a player and either a character or TBD.",
                   }));
-                  setError("Choose a player and one of their characters.");
+                  setError("Choose a player and either a character or TBD.");
                   return;
                 }
 
-                const character = selectedPlayer.characters.find(
-                  (entry) => entry.id === selectedCharacterId
-                );
+                const character =
+                  selectedCharacterId === TBD_CHARACTER_VALUE
+                    ? null
+                    : selectedPlayer.characters.find((entry) => entry.id === selectedCharacterId);
 
-                if (!character) {
+                if (selectedCharacterId !== TBD_CHARACTER_VALUE && !character) {
                   setFieldErrors((current) => ({
                     ...current,
                     participants: "The selected character was not found.",
@@ -609,7 +690,8 @@ export function GameForm({
                 }
 
                 const exists = participants.some(
-                  (participant) => participant.characterId === character.id
+                  (participant) =>
+                    Boolean(character?.id) && participant.characterId === character?.id
                 );
 
                 if (exists) {
@@ -626,8 +708,8 @@ export function GameForm({
                   {
                     userId: selectedPlayer.id,
                     userName: selectedPlayer.name,
-                    characterId: character.id,
-                    characterName: character.name,
+                    characterId: character?.id ?? null,
+                    characterName: character?.name ?? TBD_CHARACTER_LABEL,
                   },
                 ]);
                 setSelectedCharacterId("");
@@ -642,8 +724,11 @@ export function GameForm({
 
         <div className="stack">
           {participants.length ? (
-            participants.map((participant) => (
-              <div key={participant.characterId} className="list-card">
+            participants.map((participant, participantIndex) => (
+              <div
+                key={`${participant.userId}-${participant.characterId ?? "tbd"}-${participantIndex}`}
+                className="list-card"
+              >
                 <div className="inline-actions" style={{ justifyContent: "space-between" }}>
                   <div>
                     <strong>{participant.characterName}</strong>
@@ -663,7 +748,7 @@ export function GameForm({
 
                       setParticipants((current) =>
                         current.filter(
-                          (entry) => entry.characterId !== participant.characterId
+                          (_, index) => index !== participantIndex
                         )
                       );
                       clearFieldError("participants");

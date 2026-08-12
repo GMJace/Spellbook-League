@@ -13,9 +13,12 @@ import {
 } from "@/app/admin/grimoire-gathering/actions";
 import { requireGrimoireAdminUser } from "@/lib/admin";
 import { formatGrimoireTier } from "@/lib/grimoire";
+import {
+  STANDARD_GRIMOIRE_TIME_SLOTS,
+  formatGrimoireEventDateInput,
+  getGrimoireEventDateFieldName,
+} from "@/lib/grimoire-slots";
 import { prisma } from "@/lib/prisma";
-
-const grimoireAdminTimeZone = "America/Edmonton";
 
 function formatDateTime(date: Date | null) {
   if (!date) {
@@ -31,23 +34,6 @@ function formatDateTime(date: Date | null) {
   }).format(date);
 }
 
-function formatDateTimeInput(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: grimoireAdminTimeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(date);
-
-  const getPart = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-
-  return `${getPart("year")}-${getPart("month")}-${getPart("day")}T${getPart("hour")}:${getPart("minute")}`;
-}
-
 function parseStringArray(value: string) {
   try {
     const parsed = JSON.parse(value);
@@ -57,15 +43,8 @@ function parseStringArray(value: string) {
   }
 }
 
-function formatSlotTextarea(
-  slots: Array<{
-    label: string;
-    startAt: Date;
-  }>,
-) {
-  return slots
-    .map((slot) => `${slot.label} | ${formatDateTimeInput(slot.startAt)}`)
-    .join("\n");
+function buildSlotOccupancyKey(eventId: string, startAt: Date) {
+  return `${eventId}:${startAt.toISOString()}`;
 }
 
 type SubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -103,13 +82,24 @@ type EventRow = {
   finale: boolean;
   slots: Array<{
     id: string;
+    slotKey: string;
     label: string;
     startAt: Date;
+    endAt: Date;
+    gameSlotCount: number;
+    filledGameSlots: number;
+    availableGameSlots: number;
+    isFull: boolean;
   }>;
   _count: {
     curatedGames: number;
     submissions: number;
   };
+};
+
+type EventSlotOption = {
+  event: EventRow;
+  slot: EventRow["slots"][number];
 };
 
 type CuratedGameRow = {
@@ -128,6 +118,45 @@ type CuratedGameRow = {
   seatCapacity: number;
   gameCode: string | null;
 };
+
+function formatEventSlotOptionLabel({ event, slot }: EventSlotOption) {
+  return `${event.subtitle} | ${slot.label} (${slot.availableGameSlots} of ${slot.gameSlotCount} open)`;
+}
+
+function EventSlotCapacityFields({
+  slots,
+}: {
+  slots?: EventRow["slots"];
+}) {
+  const slotMap = new Map((slots ?? []).map((slot) => [slot.slotKey, slot]));
+
+  return (
+    <div className="form-grid">
+      {STANDARD_GRIMOIRE_TIME_SLOTS.map((slotDefinition) => {
+        const slot = slotMap.get(slotDefinition.key);
+
+        return (
+          <label key={slotDefinition.key}>
+            {slotDefinition.label}
+            <input
+              defaultValue={slot?.gameSlotCount ?? 0}
+              max="99"
+              min="0"
+              name={getGrimoireEventDateFieldName(slotDefinition.key)}
+              required
+              type="number"
+            />
+            <span className="muted ggcon-meta-note">
+              {slot
+                ? `${slot.filledGameSlots} filled, ${slot.availableGameSlots} open`
+                : "Number of open four-hour game slots for this time slot."}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
 
 function ModerationActionButton({
   decision,
@@ -329,10 +358,53 @@ export default async function AdminGrimoireGatheringPage({
     }),
   ]);
 
-  const eventRows = events as EventRow[];
+  const slotOccupancy = new Map<string, number>();
+
+  for (const game of games) {
+    const key = buildSlotOccupancyKey(game.eventId, game.startAt);
+    slotOccupancy.set(key, (slotOccupancy.get(key) ?? 0) + 1);
+  }
+
+  for (const submission of submissions) {
+    if (submission.status === "REJECTED") {
+      continue;
+    }
+
+    const key = buildSlotOccupancyKey(submission.eventId, submission.slotStartAt);
+    slotOccupancy.set(key, (slotOccupancy.get(key) ?? 0) + 1);
+  }
+
+  const rawEventRows = events as Array<
+    Omit<EventRow, "slots"> & {
+      slots: Array<
+        Omit<EventRow["slots"][number], "filledGameSlots" | "availableGameSlots" | "isFull">
+      >;
+    }
+  >;
+  const eventRows = rawEventRows.map((event) => ({
+    ...event,
+    slots: event.slots.map((slot) => {
+      const filledGameSlots = slotOccupancy.get(buildSlotOccupancyKey(event.id, slot.startAt)) ?? 0;
+      const availableGameSlots = Math.max(slot.gameSlotCount - filledGameSlots, 0);
+
+      return {
+        ...slot,
+        filledGameSlots,
+        availableGameSlots,
+        isFull: availableGameSlots <= 0,
+      };
+    }),
+  }));
   const curatedGameRows = games as CuratedGameRow[];
   const submissionRows = submissions as SubmissionRow[];
   const eventMap = new Map(eventRows.map((event) => [event.id, event]));
+  const eventSlotOptions = eventRows.flatMap((event) =>
+    event.slots.map((slot) => ({
+      event,
+      slot,
+    })),
+  );
+  const availableEventSlotOptions = eventSlotOptions.filter(({ slot }) => !slot.isFull);
   const selectedEvent = params.editEvent
     ? eventRows.find((event) => event.id === params.editEvent) ?? null
     : null;
@@ -348,9 +420,18 @@ export default async function AdminGrimoireGatheringPage({
   const selectedEventThemeDetails = selectedEvent
     ? parseStringArray(selectedEvent.themeDetails).join("\n")
     : "";
-  const selectedEventSlots = selectedEvent
-    ? formatSlotTextarea(selectedEvent.slots)
+  const selectedGameEventSlotId = selectedGame
+    ? eventSlotOptions.find(
+        ({ event, slot }) =>
+          event.id === selectedGame.eventId &&
+          slot.startAt.getTime() === selectedGame.startAt.getTime(),
+      )?.slot.id ?? ""
     : "";
+  const editableEventSlotOptions = selectedGame
+    ? eventSlotOptions.filter(
+        ({ slot }) => !slot.isFull || slot.id === selectedGameEventSlotId,
+      )
+    : [];
 
   const pendingSubmissions = submissionRows.filter(
     (submission) => submission.status === "PENDING",
@@ -369,14 +450,8 @@ export default async function AdminGrimoireGatheringPage({
     invalid: "The requested Grimoire event change could not be completed.",
     "duplicate-id":
       "That event title is already in use. Choose a different event title before creating the event.",
-    "duplicate-slots":
-      "Two event slots use the same date and time. Give each slot a unique `YYYY-MM-DDTHH:MM` value.",
     "invalid-fields":
       "The event could not be saved because one or more fields are invalid. Shorten the text or check the required fields and try again.",
-    "invalid-slots":
-      "The event could not be saved because one or more slot lines are invalid. Use `Label | YYYY-MM-DDTHH:MM` for each slot.",
-    "invalid-slot-count":
-      "This event already has submissions, so you need to keep the same number of slot lines when editing it.",
     "invalid-save":
       "The requested Grimoire event change could not be completed because the event could not be saved.",
   };
@@ -493,10 +568,10 @@ export default async function AdminGrimoireGatheringPage({
 
                 <div className="form-grid">
                   <DatePickerField
-                    label="Event date/time"
+                    label="Weekend start date (Friday)"
                     name="date"
                     required
-                    type="datetime-local"
+                    type="date"
                   />
                   <label>
                     Display date
@@ -547,16 +622,17 @@ export default async function AdminGrimoireGatheringPage({
                   </label>
                 </div>
 
-                <label>
-                  Event slots
-                  <textarea
-                    name="slots"
-                    placeholder={"Friday Evening | 2027-06-12T19:00\nSaturday Morning | 2027-06-13T10:00"}
-                    required
-                  />
-                </label>
+                <div className="stack" style={{ gap: "0.75rem" }}>
+                  <div>
+                    <strong>Open game slots by time slot</strong>
+                    <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                      All event time slots use Mountain time. Each game slot is 4 hours long.
+                    </p>
+                  </div>
+                  <EventSlotCapacityFields />
+                </div>
                 <p className="muted" style={{ margin: 0 }}>
-                  Enter one slot per line using `Label | YYYY-MM-DDTHH:MM`.
+                  Set how many tables DMs can fill in each standard event time slot.
                 </p>
 
                 <button className="button-secondary" type="submit">
@@ -596,16 +672,23 @@ export default async function AdminGrimoireGatheringPage({
               >
                 <div className="form-grid">
                   <label>
-                    Event
-                    <select defaultValue={eventRows[0]?.id ?? ""} name="eventId" required>
-                      {eventRows.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.label} - {event.subtitle}
+                    Event time slot
+                    <select
+                      defaultValue={availableEventSlotOptions[0]?.slot.id ?? ""}
+                      name="eventSlotId"
+                      required
+                    >
+                      {availableEventSlotOptions.map((option) => (
+                        <option key={option.slot.id} value={option.slot.id}>
+                          {formatEventSlotOptionLabel(option)}
                         </option>
                       ))}
                     </select>
                   </label>
                 </div>
+                <p className="muted" style={{ margin: 0 }}>
+                  Curated games also consume one four-hour game slot from the selected event time.
+                </p>
 
                 <label>
                   Adventure cover
@@ -635,12 +718,6 @@ export default async function AdminGrimoireGatheringPage({
                 </label>
 
                 <div className="form-grid">
-                  <DatePickerField
-                    label="Start time"
-                    name="startAt"
-                    required
-                    type="datetime-local"
-                  />
                   <label>
                     Dungeon Master
                     <input name="dm" required type="text" />
@@ -679,9 +756,18 @@ export default async function AdminGrimoireGatheringPage({
                   <p className="muted" style={{ margin: 0 }}>
                     Create an event first to unlock curated game creation.
                   </p>
+                ) : !availableEventSlotOptions.length ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    All event time slots are full. Increase a slot's open game count before adding
+                    another curated game.
+                  </p>
                 ) : null}
 
-                <button className="button-secondary" disabled={!eventRows.length} type="submit">
+                <button
+                  className="button-secondary"
+                  disabled={!availableEventSlotOptions.length}
+                  type="submit"
+                >
                   Create game
                 </button>
               </form>
@@ -720,11 +806,11 @@ export default async function AdminGrimoireGatheringPage({
 
               <div className="form-grid">
                 <DatePickerField
-                  defaultValue={formatDateTimeInput(selectedEvent.date)}
-                  label="Event date/time"
+                  defaultValue={formatGrimoireEventDateInput(selectedEvent.date)}
+                  label="Weekend start date (Friday)"
                   name="date"
                   required
-                  type="datetime-local"
+                  type="date"
                 />
                 <label>
                   Display date
@@ -736,6 +822,9 @@ export default async function AdminGrimoireGatheringPage({
                   />
                 </label>
               </div>
+              <p className="muted" style={{ margin: 0 }}>
+                Standard event time slots are fixed to Mountain time and run for 4 hours each.
+              </p>
 
               <label>
                 Theme
@@ -788,23 +877,19 @@ export default async function AdminGrimoireGatheringPage({
                 </label>
               </div>
 
-              <label>
-                Event slots
-                <textarea
-                  defaultValue={selectedEventSlots}
-                  name="slots"
-                  required
-                />
-              </label>
+              <div className="stack" style={{ gap: "0.75rem" }}>
+                <div>
+                  <strong>Open game slots by time slot</strong>
+                  <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                    Reduce a slot only if enough capacity remains for the games already assigned to
+                    it.
+                  </p>
+                </div>
+                <EventSlotCapacityFields slots={selectedEvent.slots} />
+              </div>
               <p className="muted" style={{ margin: 0 }}>
-                Enter one slot per line using `Label | YYYY-MM-DDTHH:MM`.
+                Each number is the total number of tables available for that event time slot.
               </p>
-              {selectedEvent._count.submissions ? (
-                <p className="muted" style={{ margin: 0 }}>
-                  This event already has submissions. Keep the slot lines in the same order if
-                  you need to adjust slot times so existing tables stay paired with the right slot.
-                </p>
-              ) : null}
 
               <div className="inline-actions" style={{ flexWrap: "wrap" }}>
                 <button className="button-secondary" type="submit">
@@ -855,16 +940,26 @@ export default async function AdminGrimoireGatheringPage({
 
               <div className="form-grid">
                 <label>
-                  Event
-                  <select defaultValue={selectedGame.eventId} name="eventId" required>
-                    {eventRows.map((event) => (
-                      <option key={event.id} value={event.id}>
-                        {event.label} - {event.subtitle}
+                  Event time slot
+                  <select
+                    defaultValue={selectedGameEventSlotId || (editableEventSlotOptions[0]?.slot.id ?? "")}
+                    name="eventSlotId"
+                    required
+                  >
+                    {editableEventSlotOptions.map((option) => (
+                      <option key={option.slot.id} value={option.slot.id}>
+                        {formatEventSlotOptionLabel(option)}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
+              {!selectedGameEventSlotId ? (
+                <p className="muted" style={{ margin: 0 }}>
+                  This game's previous slot is no longer available. Pick a current event time slot
+                  before saving.
+                </p>
+              ) : null}
 
               <label>
                 Game title
@@ -913,13 +1008,6 @@ export default async function AdminGrimoireGatheringPage({
               </label>
 
               <div className="form-grid">
-                <DatePickerField
-                  defaultValue={formatDateTimeInput(selectedGame.startAt)}
-                  label="Start time"
-                  name="startAt"
-                  required
-                  type="datetime-local"
-                />
                 <label>
                   Dungeon Master
                   <input defaultValue={selectedGame.dm} name="dm" required type="text" />
@@ -968,7 +1056,7 @@ export default async function AdminGrimoireGatheringPage({
                 </label>
               </div>
 
-              <button className="button-secondary" type="submit">
+              <button className="button-secondary" disabled={!editableEventSlotOptions.length} type="submit">
                 Save game changes
               </button>
             </form>

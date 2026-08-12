@@ -44,9 +44,13 @@ type GrimoireGameRecord = {
 };
 
 type GrimoireSlotRecord = {
+  id: string;
   eventId: string;
+  slotKey: string;
   label: string;
   startAt: Date;
+  endAt: Date;
+  gameSlotCount: number;
 };
 
 type GrimoireSubmissionRecord = {
@@ -109,10 +113,36 @@ function mapCuratedGameToGrimoireGame(game: GrimoireGameRecord): GrimoireGame {
 
 function mapSlotToGrimoireEventSlot(slot: GrimoireSlotRecord): GrimoireEventSlot {
   return {
+    id: slot.id,
     eventId: slot.eventId,
+    slotKey: slot.slotKey,
     label: slot.label,
     startAt: slot.startAt.toISOString(),
+    endAt: slot.endAt.toISOString(),
+    gameSlotCount: slot.gameSlotCount,
+    filledGameSlots: 0,
+    availableGameSlots: Math.max(slot.gameSlotCount, 0),
+    isFull: slot.gameSlotCount <= 0,
   };
+}
+
+function buildSlotOccupancyMap(
+  curatedGames: Array<{ startAt: Date }>,
+  submissions: Array<{ slotStartAt: Date }>,
+) {
+  const occupancyByStart = new Map<string, number>();
+
+  for (const curatedGame of curatedGames) {
+    const key = curatedGame.startAt.toISOString();
+    occupancyByStart.set(key, (occupancyByStart.get(key) ?? 0) + 1);
+  }
+
+  for (const submission of submissions) {
+    const key = submission.slotStartAt.toISOString();
+    occupancyByStart.set(key, (occupancyByStart.get(key) ?? 0) + 1);
+  }
+
+  return occupancyByStart;
 }
 
 function formatSubmissionGameDetails(submission: GrimoireSubmissionRecord) {
@@ -221,12 +251,44 @@ export async function getCuratedGrimoireGameBySlug(slug: string) {
 }
 
 export async function getSlotsForEvent(eventId: string) {
-  const slots = (await prisma.grimoireEventSlot.findMany({
-    where: { eventId },
-    orderBy: [{ startAt: "asc" }, { createdAt: "asc" }],
-  })) as GrimoireSlotRecord[];
+  const [slots, curatedGames, submissions] = await Promise.all([
+    prisma.grimoireEventSlot.findMany({
+      where: { eventId },
+      orderBy: [{ startAt: "asc" }, { createdAt: "asc" }],
+    }) as Promise<GrimoireSlotRecord[]>,
+    prisma.grimoireCuratedGame.findMany({
+      where: { eventId },
+      select: {
+        startAt: true,
+      },
+    }),
+    prisma.grimoireDmSubmission.findMany({
+      where: {
+        eventId,
+        status: {
+          in: ["PENDING", "APPROVED"],
+        },
+      },
+      select: {
+        slotStartAt: true,
+      },
+    }),
+  ]);
 
-  return slots.map(mapSlotToGrimoireEventSlot);
+  const occupancyByStart = buildSlotOccupancyMap(curatedGames, submissions);
+
+  return slots.map((slot) => {
+    const mappedSlot = mapSlotToGrimoireEventSlot(slot);
+    const filledGameSlots = occupancyByStart.get(slot.startAt.toISOString()) ?? 0;
+    const availableGameSlots = Math.max(slot.gameSlotCount - filledGameSlots, 0);
+
+    return {
+      ...mappedSlot,
+      filledGameSlots,
+      availableGameSlots,
+      isFull: availableGameSlots <= 0,
+    };
+  });
 }
 
 export async function getMergedGamesForEvent(eventId: string) {

@@ -4,6 +4,7 @@ import { AdminLeagueGameEditForm } from "@/components/admin-league-game-edit-for
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { requireAdminUser } from "@/lib/admin";
 import { getLeaguePlayers } from "@/lib/data";
+import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function AdminLeagueGameEditPage({ params }: PageProps) {
             user: true,
             character: true,
           },
-          orderBy: [{ user: { name: "asc" } }, { character: { name: "asc" } }],
+          orderBy: [{ user: { name: "asc" } }, { createdAt: "asc" }],
         },
       },
     }),
@@ -57,11 +58,12 @@ export default async function AdminLeagueGameEditPage({ params }: PageProps) {
     adventureImagePath: game.adventureImagePath,
     consumablesAwarded: game.consumablesAwarded,
     datePlayed: formatDateInput(game.datePlayed),
+    duration: game.duration,
     downtimeDaysAwarded: String(game.downtimeDaysAwarded ?? 0),
     magicItemsAwarded: game.magicItemsAwarded,
     participants: game.participants.map((participant) => ({
       characterId: participant.characterId,
-      characterName: participant.character.name,
+      characterName: getParticipantCharacterLabel(participant.character?.name),
       userId: participant.userId,
       userName: participant.user.name,
     })),

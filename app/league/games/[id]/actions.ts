@@ -5,6 +5,10 @@ import { redirect } from "next/navigation";
 
 import { requireRole } from "@/lib/auth";
 import { getCharacterTier, getCharacterTotalLevel } from "@/lib/character";
+import {
+  getParticipantCharacterLabel,
+  normalizeParticipantCharacterId,
+} from "@/lib/game-participants";
 import type { SerializedLeagueCheckoutData } from "@/lib/paypal-checkout-types";
 import { prisma } from "@/lib/prisma";
 import {
@@ -46,13 +50,14 @@ function parseSerializedLeagueCheckoutItems(value: string) {
 export async function signupForFreeLeagueGame(formData: FormData) {
   const user = await requireRole("PLAYER");
   const gameId = String(formData.get("gameId") ?? "").trim();
-  const characterId = String(formData.get("characterId") ?? "").trim();
+  const characterIdRaw = String(formData.get("characterId") ?? "").trim();
+  const characterId = normalizeParticipantCharacterId(characterIdRaw);
 
   if (!gameId) {
     redirect("/league");
   }
 
-  if (!characterId) {
+  if (!characterIdRaw) {
     redirectToSignupState(gameId, "choose-character");
   }
 
@@ -80,7 +85,7 @@ export async function signupForFreeLeagueGame(formData: FormData) {
     redirect("/login?session=stale");
   }
 
-  if (!player.characters.some((character) => character.id === characterId)) {
+  if (characterId && !player.characters.some((character) => character.id === characterId)) {
     redirectToSignupState(gameId, "invalid-character");
   }
 
@@ -115,16 +120,21 @@ export async function signupForFreeLeagueGame(formData: FormData) {
       return "already";
     }
 
-    if (game.participants.some((participant) => participant.characterId === characterId)) {
-      return "already";
+    if (
+      characterId &&
+      game.participants.some((participant) => participant.characterId === characterId)
+    ) {
+      return "character-unavailable";
     }
 
-    const selectedCharacter =
-      player.characters.find((character) => character.id === characterId) ?? null;
+    const selectedCharacter = characterId
+      ? player.characters.find((character) => character.id === characterId) ?? null
+      : null;
 
     if (
-      !selectedCharacter ||
-      getCharacterTier(getCharacterTotalLevel(selectedCharacter)) !== Number(game.tier.replace("TIER_", ""))
+      selectedCharacter &&
+      getCharacterTier(getCharacterTotalLevel(selectedCharacter)) !==
+        Number(game.tier.replace("TIER_", ""))
     ) {
       return "wrong-tier";
     }
@@ -156,13 +166,165 @@ export async function signupForFreeLeagueGame(formData: FormData) {
   revalidatePath("/league");
   revalidatePath(`/league/games/${gameId}`);
   revalidatePath("/player");
-  revalidatePath(`/player/characters/${characterId}`);
+  if (characterId) {
+    revalidatePath(`/player/characters/${characterId}`);
+  }
 
   if (result === "missing") {
     redirect("/league");
   }
 
   redirectToSignupState(gameId, result);
+}
+
+export async function updateLeagueGameCharacterSelection(formData: FormData) {
+  const user = await requireRole("PLAYER");
+  const gameId = String(formData.get("gameId") ?? "").trim();
+  const characterIdRaw = String(formData.get("characterId") ?? "").trim();
+  const nextCharacterId = normalizeParticipantCharacterId(characterIdRaw);
+
+  if (!gameId) {
+    redirect("/league");
+  }
+
+  if (!characterIdRaw) {
+    redirectToSignupState(gameId, "choose-character");
+  }
+
+  const player = await prisma.user.findUnique({
+    where: {
+      id: user.id,
+    },
+    include: {
+      characters: {
+        select: {
+          id: true,
+          name: true,
+          class1Level: true,
+          class2Level: true,
+          class3Level: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      },
+    },
+  });
+
+  if (!player) {
+    redirect("/login?session=stale");
+  }
+
+  if (
+    nextCharacterId &&
+    !player.characters.some((character) => character.id === nextCharacterId)
+  ) {
+    redirectToSignupState(gameId, "invalid-character");
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const participant = await tx.gameParticipant.findFirst({
+      where: {
+        gameId,
+        userId: user.id,
+      },
+      include: {
+        game: {
+          select: {
+            id: true,
+            status: true,
+            tier: true,
+          },
+        },
+      },
+    });
+
+    if (!participant) {
+      return {
+        currentCharacterId: null as null | string,
+        gameId,
+        state: "not-signed-up" as const,
+      };
+    }
+
+    if (participant.game.status !== "SCHEDULED") {
+      return {
+        currentCharacterId: participant.characterId,
+        gameId,
+        state: "closed" as const,
+      };
+    }
+
+    const selectedCharacter = nextCharacterId
+      ? player.characters.find((character) => character.id === nextCharacterId) ?? null
+      : null;
+
+    if (
+      selectedCharacter &&
+      getCharacterTier(getCharacterTotalLevel(selectedCharacter)) !==
+        Number(participant.game.tier.replace("TIER_", ""))
+    ) {
+      return {
+        currentCharacterId: participant.characterId,
+        gameId,
+        state: "wrong-tier" as const,
+      };
+    }
+
+    if (nextCharacterId) {
+      const takenByAnotherParticipant = await tx.gameParticipant.findFirst({
+        where: {
+          gameId,
+          characterId: nextCharacterId,
+          id: {
+            not: participant.id,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (takenByAnotherParticipant) {
+        return {
+          currentCharacterId: participant.characterId,
+          gameId,
+          state: "character-unavailable" as const,
+        };
+      }
+    }
+
+    await tx.gameParticipant.update({
+      where: {
+        id: participant.id,
+      },
+      data: {
+        characterId: nextCharacterId,
+      },
+    });
+
+    return {
+      currentCharacterId: participant.characterId,
+      gameId,
+      nextCharacterId,
+      state: "updated" as const,
+    };
+  });
+
+  revalidatePath("/");
+  revalidatePath("/league");
+  revalidatePath(`/league/games/${gameId}`);
+  revalidatePath("/player");
+
+  if (result.currentCharacterId) {
+    revalidatePath(`/player/characters/${result.currentCharacterId}`);
+  }
+
+  if ("nextCharacterId" in result && result.nextCharacterId) {
+    revalidatePath(`/player/characters/${result.nextCharacterId}`);
+  }
+
+  redirectToSignupState(gameId, result.state);
 }
 
 export async function leaveLeagueGame(formData: FormData) {
@@ -289,7 +451,7 @@ export async function leaveLeagueGame(formData: FormData) {
     });
 
     return {
-      characterId: participant.character.id,
+      characterId: participant.character?.id ?? null,
       gameAdventureCode: participant.game.adventureCode,
       gameDateTime: formatDateTime(participant.game.datePlayed),
       gameId: participant.game.id,
@@ -302,7 +464,7 @@ export async function leaveLeagueGame(formData: FormData) {
       requiresRefundReview,
       state: "success" as const,
       supportEmail,
-      characterName: participant.character.name,
+      characterName: getParticipantCharacterLabel(participant.character?.name),
     };
   });
 
@@ -311,7 +473,9 @@ export async function leaveLeagueGame(formData: FormData) {
     revalidatePath("/league");
     revalidatePath(`/league/games/${result.gameId}`);
     revalidatePath("/player");
-    revalidatePath(`/player/characters/${result.characterId}`);
+    if (result.characterId) {
+      revalidatePath(`/player/characters/${result.characterId}`);
+    }
 
     if (result.requiresRefundReview) {
       try {

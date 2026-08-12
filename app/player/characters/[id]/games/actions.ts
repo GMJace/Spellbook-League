@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
+import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import {
   buildStoredGameRewardStrings,
   hasStructuredGameRewardSelectionFields,
@@ -204,7 +205,7 @@ export async function updatePlayerGameLog(
     redirect("/player");
   }
 
-  const { participant } = await requireOwnedLoggedGame(characterId, gameId);
+  const { character, participant } = await requireOwnedLoggedGame(characterId, gameId);
   const rewardStrings = getSubmittedRewardStrings(formData);
 
   const parsed = playerGameLogSchema.safeParse({
@@ -282,7 +283,7 @@ export async function updatePlayerGameLog(
       details: [
         { label: "Adventure", value: parsed.data.adventureCode },
         { label: "Date", value: formattedDate },
-        { label: "Character", value: participant.character.name },
+        { label: "Character", value: getParticipantCharacterLabel(participant.character?.name ?? character.name) },
         { label: "DM", value: parsed.data.dmName },
       ],
       actionLabel: "Open character",

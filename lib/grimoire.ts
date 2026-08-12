@@ -40,9 +40,16 @@ export type GrimoireGame = {
 };
 
 export type GrimoireEventSlot = {
+  id: string;
   eventId: string;
+  slotKey: string;
   label: string;
   startAt: string;
+  endAt: string;
+  gameSlotCount: number;
+  filledGameSlots: number;
+  availableGameSlots: number;
+  isFull: boolean;
 };
 
 export const grimoireEventTicketNotice =
@@ -293,29 +300,76 @@ export const grimoireGames: GrimoireGame[] = [
 
 export const grimoireEventSlots: GrimoireEventSlot[] = [
   {
+    id: "ggcon-2026-09-friday-5pm",
     eventId: "ggcon-2026-09",
+    slotKey: "friday_5pm",
     label: "Friday Evening",
     startAt: "2026-09-18T19:00:00-06:00",
+    endAt: "2026-09-18T23:00:00-06:00",
+    gameSlotCount: 1,
+    filledGameSlots: 1,
+    availableGameSlots: 0,
+    isFull: true,
   },
   {
+    id: "ggcon-2026-09-saturday-morning",
     eventId: "ggcon-2026-09",
+    slotKey: "saturday_7am",
     label: "Saturday Morning",
     startAt: "2026-09-19T10:00:00-06:00",
+    endAt: "2026-09-19T14:00:00-06:00",
+    gameSlotCount: 1,
+    filledGameSlots: 1,
+    availableGameSlots: 0,
+    isFull: true,
   },
   {
+    id: "ggcon-2026-09-saturday-noon",
     eventId: "ggcon-2026-09",
-    label: "Saturday Afternoon",
+    slotKey: "saturday_noon",
+    label: "Saturday Noon",
     startAt: "2026-09-19T14:00:00-06:00",
+    endAt: "2026-09-19T18:00:00-06:00",
+    gameSlotCount: 1,
+    filledGameSlots: 1,
+    availableGameSlots: 0,
+    isFull: true,
   },
   {
+    id: "ggcon-2026-09-saturday-5pm",
     eventId: "ggcon-2026-09",
-    label: "Saturday Evening",
+    slotKey: "saturday_5pm",
+    label: "Saturday 5pm",
     startAt: "2026-09-19T19:30:00-06:00",
+    endAt: "2026-09-19T23:30:00-06:00",
+    gameSlotCount: 1,
+    filledGameSlots: 1,
+    availableGameSlots: 0,
+    isFull: true,
   },
   {
+    id: "ggcon-2026-09-sunday-7am",
     eventId: "ggcon-2026-09",
+    slotKey: "sunday_7am",
     label: "Sunday Morning",
     startAt: "2026-09-20T11:00:00-06:00",
+    endAt: "2026-09-20T15:00:00-06:00",
+    gameSlotCount: 1,
+    filledGameSlots: 1,
+    availableGameSlots: 0,
+    isFull: true,
+  },
+  {
+    id: "ggcon-2026-09-sunday-noon",
+    eventId: "ggcon-2026-09",
+    slotKey: "sunday_noon",
+    label: "Sunday Noon",
+    startAt: "2026-09-20T16:00:00-06:00",
+    endAt: "2026-09-20T20:00:00-06:00",
+    gameSlotCount: 0,
+    filledGameSlots: 0,
+    availableGameSlots: 0,
+    isFull: true,
   },
 ];
 

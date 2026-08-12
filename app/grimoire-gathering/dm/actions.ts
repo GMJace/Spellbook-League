@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { getGrimoireEventById, getSlotsForEvent } from "@/lib/grimoire-server";
+import {
+  buildStoredGameRewardStrings,
+  hasStructuredGameRewardSelectionFields,
+  readGameRewardSelectionsFromFormData,
+} from "@/lib/game-reward-selections";
+import { getGrimoireEventById } from "@/lib/grimoire-server";
 import { prisma } from "@/lib/prisma";
 
 const submissionSchema = z.object({
@@ -13,7 +18,7 @@ const submissionSchema = z.object({
   title: z.string().trim().min(1),
   gameCode: z.string().trim().min(1),
   eventId: z.string().trim().min(1),
-  slotStartAt: z.string().trim().min(1),
+  eventSlotId: z.string().trim().min(1),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   seats: z.number().int().min(1).max(8),
   serviceHours: z.string().trim().optional(),
@@ -52,26 +57,32 @@ function formatSubmissionNotes(data: {
   return sections.length ? sections.join("\n\n") : null;
 }
 
-export async function createGrimoireDmSubmission(payload: {
-  name: string;
-  email: string;
-  discord: string;
-  title: string;
-  gameCode: string;
-  eventId: string;
-  slotStartAt: string;
-  tier: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
-  seats: number;
-  serviceHours: string;
-  downtimeDaysAwarded: string;
-  rewardsSummary: string;
-  magicItemsAwarded: string;
-  consumablesAwarded: string;
-  sessionNotes: string;
-  summary: string;
-  notes: string;
-}) {
-  const parsed = submissionSchema.safeParse(payload);
+export async function createGrimoireDmSubmission(formData: FormData) {
+  const rewardStrings = hasStructuredGameRewardSelectionFields(formData)
+    ? buildStoredGameRewardStrings(readGameRewardSelectionsFromFormData(formData))
+    : {
+        magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
+        consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
+      };
+  const parsed = submissionSchema.safeParse({
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    discord: String(formData.get("discord") ?? ""),
+    title: String(formData.get("title") ?? ""),
+    gameCode: String(formData.get("gameCode") ?? ""),
+    eventId: String(formData.get("eventId") ?? ""),
+    eventSlotId: String(formData.get("eventSlotId") ?? ""),
+    tier: String(formData.get("tier") ?? "TIER_1"),
+    seats: Number(formData.get("seats") ?? 6),
+    serviceHours: String(formData.get("serviceHours") ?? ""),
+    downtimeDaysAwarded: String(formData.get("downtimeDaysAwarded") ?? ""),
+    rewardsSummary: String(formData.get("rewardsSummary") ?? ""),
+    magicItemsAwarded: rewardStrings.magicItemsAwarded,
+    consumablesAwarded: rewardStrings.consumablesAwarded,
+    sessionNotes: String(formData.get("sessionNotes") ?? ""),
+    summary: String(formData.get("summary") ?? ""),
+    notes: String(formData.get("notes") ?? ""),
+  });
 
   if (!parsed.success) {
     return { error: "Please complete all required DM submission fields." };
@@ -83,11 +94,44 @@ export async function createGrimoireDmSubmission(payload: {
     return { error: "Please choose one of the published Grimoire events." };
   }
 
-  const slots = await getSlotsForEvent(event.id);
-  const selectedSlot = slots.find((slot) => slot.startAt === parsed.data.slotStartAt);
+  const selectedSlot = await prisma.grimoireEventSlot.findUnique({
+    where: { id: parsed.data.eventSlotId },
+    select: {
+      eventId: true,
+      gameSlotCount: true,
+      id: true,
+      label: true,
+      startAt: true,
+    },
+  });
 
-  if (!selectedSlot) {
+  if (!selectedSlot || selectedSlot.eventId !== event.id) {
     return { error: "Please choose one of the listed event time slots." };
+  }
+
+  const [curatedGameCount, submissionCount] = await Promise.all([
+    prisma.grimoireCuratedGame.count({
+      where: {
+        eventId: event.id,
+        startAt: selectedSlot.startAt,
+      },
+    }),
+    prisma.grimoireDmSubmission.count({
+      where: {
+        eventId: event.id,
+        slotStartAt: selectedSlot.startAt,
+        status: {
+          in: ["PENDING", "APPROVED"],
+        },
+      },
+    }),
+  ]);
+  const filledGameSlots = curatedGameCount + submissionCount;
+
+  if (filledGameSlots >= selectedSlot.gameSlotCount) {
+    return {
+      error: `${selectedSlot.label} is already full. Choose another event time slot or ask an event admin to open more tables.`,
+    };
   }
 
   await prisma.grimoireDmSubmission.create({
@@ -98,7 +142,7 @@ export async function createGrimoireDmSubmission(payload: {
       title: parsed.data.title,
       gameCode: parsed.data.gameCode,
       eventId: event.id,
-      slotStartAt: new Date(parsed.data.slotStartAt),
+      slotStartAt: selectedSlot.startAt,
       tier: parsed.data.tier,
       seats: parsed.data.seats,
       summary: parsed.data.summary,

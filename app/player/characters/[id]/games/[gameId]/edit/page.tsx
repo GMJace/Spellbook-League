@@ -4,6 +4,7 @@ import {
   type PlayerGameLogInitialValues,
 } from "@/components/player-game-log-form";
 import { requireRole } from "@/lib/auth";
+import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { getCharacterBuildMagicItemOptions, getLeagueLegalBlessingOptions, getLeagueLegalBoonOptions, getLeagueLegalCharmOptions, getLeagueLegalConsumableOptions, getLeagueLegalMagicItemOptions, getLeagueLegalMinorPropertyOptions } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 
@@ -87,7 +88,7 @@ export default async function EditPlayerGameLogPage({
       <section className="panel stack">
         <div>
           <p className="eyebrow">Character logsheet</p>
-          <h1>Edit logged game for {participant.character.name}</h1>
+          <h1>Edit logged game for {getParticipantCharacterLabel(participant.character?.name)}</h1>
           <p className="muted">
             {isDmManagedLog
               ? "Update your personal rewards and notes for this DM-submitted log entry."

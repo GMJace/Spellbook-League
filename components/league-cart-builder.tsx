@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import {
+  getParticipantCharacterLabel,
+  TBD_CHARACTER_OPTION_LABEL,
+  TBD_CHARACTER_VALUE,
+} from "@/lib/game-participants";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { PayPalCheckoutButton } from "@/components/paypal-checkout-button";
 import type { LeaguePayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
@@ -17,6 +23,7 @@ type LeagueCartGame = {
   tier: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
   ticketPrice: string;
   ticketPriceUsd: number;
+  hasTicketAccessCode: boolean;
   seatCapacity: number;
   participantCount: number;
 };
@@ -64,6 +71,7 @@ export function LeagueCartBuilder({
   paypalClientId,
   playerCharacters,
 }: LeagueCartBuilderProps) {
+  const router = useRouter();
   const [selectedGameQuantities, setSelectedGameQuantities] = useState(() =>
     Object.fromEntries(
       initialSelectedGameIds
@@ -75,20 +83,18 @@ export function LeagueCartBuilder({
     Object.fromEntries(
       initialSelectedGameIds
         .filter((id) => games.some((game) => game.id === id))
-        .map((id) => {
-          const matchingGame = games.find((game) => game.id === id);
-          const firstEligibleCharacter = playerCharacters.find(
-            (character) => character.tier === matchingGame?.tier,
-          );
-
-          return [id, firstEligibleCharacter?.id ?? ""];
-        }),
+        .map((id) => [id, TBD_CHARACTER_VALUE]),
     ) as Record<string, string>,
   );
   const [membershipQuantity, setMembershipQuantity] = useState(
     membershipProduct.isActive ? Math.min(Math.max(initialMembershipQuantity, 0), 1) : 0,
   );
   const [guestEmailsByGame, setGuestEmailsByGame] = useState<Record<string, string[]>>({});
+  const [accessCodesByGame, setAccessCodesByGame] = useState<Record<string, string>>({});
+  const [accessCodeMessagesByGame, setAccessCodeMessagesByGame] = useState<Record<string, string>>(
+    {},
+  );
+  const [redeemingGameId, setRedeemingGameId] = useState<string | null>(null);
 
   const updateSelectedQuantity = (gameId: string, quantity: number) => {
     setSelectedGameQuantities((current) => ({
@@ -121,9 +127,13 @@ export function LeagueCartBuilder({
         return current;
       }
 
+      if (currentCharacterId === TBD_CHARACTER_VALUE) {
+        return current;
+      }
+
       return {
         ...current,
-        [gameId]: eligibleCharacters[0]?.id ?? "",
+        [gameId]: TBD_CHARACTER_VALUE,
       };
     });
   };
@@ -140,6 +150,78 @@ export function LeagueCartBuilder({
     });
   };
 
+  const redeemAccessCode = async (game: LeagueCartGame) => {
+    if (!isPlayerSignedIn) {
+      setAccessCodeMessagesByGame((current) => ({
+        ...current,
+        [game.id]: "Sign in with a player account before redeeming an access code.",
+      }));
+      return;
+    }
+
+    const accessCode = accessCodesByGame[game.id]?.trim() ?? "";
+    const selectedCharacterId = selectedCharacterByGame[game.id] || TBD_CHARACTER_VALUE;
+
+    if (!accessCode) {
+      setAccessCodeMessagesByGame((current) => ({
+        ...current,
+        [game.id]: "Enter the game's access code first.",
+      }));
+      return;
+    }
+
+    setRedeemingGameId(game.id);
+    setAccessCodeMessagesByGame((current) => ({
+      ...current,
+      [game.id]: "",
+    }));
+
+    try {
+      const response = await fetch("/api/league/redeem-access-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accessCode,
+          characterId: selectedCharacterId,
+          gameId: game.id,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string; success?: boolean };
+
+      if (!response.ok) {
+        setAccessCodeMessagesByGame((current) => ({
+          ...current,
+          [game.id]: result.error ?? "Unable to redeem that access code.",
+        }));
+        return;
+      }
+
+      setAccessCodeMessagesByGame((current) => ({
+        ...current,
+        [game.id]: "Access code accepted. You are now signed up for this game.",
+      }));
+      setAccessCodesByGame((current) => ({
+        ...current,
+        [game.id]: "",
+      }));
+      setSelectedGameQuantities((current) => ({
+        ...current,
+        [game.id]: 0,
+      }));
+      router.refresh();
+    } catch {
+      setAccessCodeMessagesByGame((current) => ({
+        ...current,
+        [game.id]: "Unable to redeem that access code right now.",
+      }));
+    } finally {
+      setRedeemingGameId(null);
+    }
+  };
+
   const selectedGames = useMemo(
     () => games.filter((game) => (selectedGameQuantities[game.id] ?? 0) > 0),
     [games, selectedGameQuantities],
@@ -147,13 +229,15 @@ export function LeagueCartBuilder({
   const selectedGameCharacterIssues = selectedGames.map((game) => {
     const eligibleCharacters = playerCharacters.filter((character) => character.tier === game.tier);
     const selectedCharacterId = selectedCharacterByGame[game.id] ?? "";
-    const selectedCharacter =
-      eligibleCharacters.find((character) => character.id === selectedCharacterId) ?? null;
+    const selectedCharacter = eligibleCharacters.find(
+      (character) => character.id === selectedCharacterId,
+    );
+    const usesTbd = selectedCharacterId === TBD_CHARACTER_VALUE;
 
     return {
       game,
-      selectedCharacter,
-      valid: isPlayerSignedIn && Boolean(selectedCharacter),
+      selectedCharacter: usesTbd ? null : selectedCharacter ?? null,
+      valid: isPlayerSignedIn && (usesTbd || Boolean(selectedCharacter)),
     };
   });
   const subtotal = selectedGames.reduce(
@@ -182,9 +266,12 @@ export function LeagueCartBuilder({
         .slice(0, Math.max((selectedGameQuantities[game.id] ?? 0) - 1, 0))
         .map((email) => email.trim())
         .filter(Boolean);
-      const characterName =
-        playerCharacters.find((character) => character.id === selectedCharacterByGame[game.id])?.name ??
-        "No character selected";
+      const selectedCharacterId = selectedCharacterByGame[game.id] ?? "";
+      const characterName = getParticipantCharacterLabel(
+        selectedCharacterId === TBD_CHARACTER_VALUE
+          ? null
+          : playerCharacters.find((character) => character.id === selectedCharacterId)?.name,
+      );
 
       const guestEmailSummary = guestEmails.length
         ? `; Guest emails: ${guestEmails.join(", ")}`
@@ -264,9 +351,13 @@ export function LeagueCartBuilder({
                       <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
                         Character:{" "}
                         <strong>
-                          {playerCharacters.find(
-                            (character) => character.id === selectedCharacterByGame[game.id],
-                          )?.name ?? "No character selected"}
+                          {getParticipantCharacterLabel(
+                            (selectedCharacterByGame[game.id] ?? "") === TBD_CHARACTER_VALUE
+                              ? null
+                              : playerCharacters.find(
+                                  (character) => character.id === selectedCharacterByGame[game.id],
+                                )?.name,
+                          )}
                         </strong>
                       </p>
                       {guestEmails.length ? (
@@ -313,7 +404,7 @@ export function LeagueCartBuilder({
             ) : null}
             {isPlayerSignedIn && hasInvalidSelectedCharacters ? (
               <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
-                Choose a character whose tier matches each selected league game.
+                Choose a matching-tier character or select TBD for each league game.
               </p>
             ) : null}
 
@@ -428,7 +519,7 @@ export function LeagueCartBuilder({
                     <label className="stack ggcon-ticket-quantity" style={{ gap: "0.35rem" }}>
                       <span className="muted">Your character</span>
                       <select
-                        disabled={!isPlayerSignedIn || eligibleCharacters.length === 0 || selectedQuantity === 0}
+                        disabled={!isPlayerSignedIn}
                         value={selectedCharacterByGame[game.id] ?? ""}
                         onChange={(event) =>
                           setSelectedCharacterByGame((current) => ({
@@ -438,14 +529,11 @@ export function LeagueCartBuilder({
                         }
                       >
                         <option value="">
-                          {selectedQuantity === 0
-                            ? "Select tickets first"
-                            : !isPlayerSignedIn
-                              ? "Sign in as a player"
-                              : eligibleCharacters.length === 0
-                                ? "No matching-tier character"
-                                : "Choose a character"}
+                          {!isPlayerSignedIn
+                            ? "Sign in as a player"
+                            : "Choose a character or TBD"}
                         </option>
+                        <option value={TBD_CHARACTER_VALUE}>{TBD_CHARACTER_OPTION_LABEL}</option>
                         {eligibleCharacters.map((character) => (
                           <option key={character.id} value={character.id}>
                             {character.name}
@@ -475,6 +563,49 @@ export function LeagueCartBuilder({
                             />
                           </label>
                         ))}
+                      </div>
+                    ) : null}
+                    {game.hasTicketAccessCode ? (
+                      <div className="stack league-cart-guest-email-group" style={{ gap: "0.5rem" }}>
+                        <span className="muted ggcon-meta-note">
+                          Have a DM access code? Redeem one player seat here without buying a
+                          ticket.
+                        </span>
+                        <label
+                          className="stack league-cart-guest-email-field"
+                          style={{ gap: "0.35rem" }}
+                        >
+                          <span className="muted">Access code</span>
+                          <input
+                            autoComplete="off"
+                            onChange={(event) =>
+                              setAccessCodesByGame((current) => ({
+                                ...current,
+                                [game.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Enter game access code"
+                            type="text"
+                            value={accessCodesByGame[game.id] ?? ""}
+                          />
+                        </label>
+                        <div className="inline-actions" style={{ flexWrap: "wrap" }}>
+                          <button
+                            className="button secondary"
+                            disabled={redeemingGameId === game.id || !isPlayerSignedIn}
+                            onClick={() => {
+                              void redeemAccessCode(game);
+                            }}
+                            type="button"
+                          >
+                            {redeemingGameId === game.id ? "Redeeming..." : "Redeem access code"}
+                          </button>
+                        </div>
+                        {accessCodeMessagesByGame[game.id] ? (
+                          <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                            {accessCodeMessagesByGame[game.id]}
+                          </p>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>

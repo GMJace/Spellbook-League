@@ -218,8 +218,10 @@ model Game {
   adventureCode       String
   gameSummary         String            @default("")
   ticketPrice         String            @default("Free")
+  ticketAccessCodeHash String?
   adventureImagePath  String?
   datePlayed          DateTime
+  duration            String            @default("")
   tier                Tier
   seatCapacity        Int               @default(6)
   serviceHours        Float             @default(0)
@@ -240,7 +242,7 @@ model Game {
 model GameParticipant {
   id                    String               @id @default(cuid())
   gameId                String
-  characterId           String
+  characterId           String?
   userId                String
   logStatus             ParticipantLogStatus @default(APPROVED)
   approvedAt            DateTime?
@@ -250,7 +252,7 @@ model GameParticipant {
   logSessionNotes       String?
   createdAt             DateTime             @default(now())
   game                  Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  character             Character            @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character             Character?           @relation(fields: [characterId], references: [id], onDelete: SetNull)
   user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([gameId, characterId])
@@ -391,12 +393,16 @@ model GrimoireEvent {
 model GrimoireEventSlot {
   id        String        @id @default(cuid())
   eventId   String
+  slotKey   String
   label     String
   startAt   DateTime
+  endAt     DateTime
+  gameSlotCount Int       @default(0)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   event     GrimoireEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
+  @@unique([eventId, slotKey])
   @@unique([eventId, startAt])
   @@index([eventId, startAt])
 }

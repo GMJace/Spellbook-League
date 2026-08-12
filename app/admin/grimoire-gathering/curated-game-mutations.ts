@@ -8,11 +8,10 @@ import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
 
 const curatedGameSchema = z.object({
-  eventId: z.string().trim().min(1),
+  eventSlotId: z.string().trim().min(1),
   title: z.string().trim().min(1).max(120),
   summary: z.string().trim().min(1),
   details: z.string().trim().min(1),
-  startAt: z.string().trim().min(1),
   dm: z.string().trim().min(1).max(80),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   ticketPrice: z.string().trim().min(1).max(40),
@@ -28,11 +27,10 @@ const deleteGameSchema = z.object({
 const MAX_GRIMOIRE_COVER_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const grimoireCuratedGameFieldLabels: Record<string, string> = {
-  eventId: "Event",
+  eventSlotId: "Event time slot",
   title: "Game title",
   summary: "Summary",
   details: "Game details",
-  startAt: "Start time",
   dm: "Dungeon Master",
   tier: "Tier",
   ticketPrice: "Ticket display price",
@@ -48,10 +46,13 @@ type ExistingCuratedGameRecord = {
   slug: string;
 };
 
-function parseDateOrNull(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
+type EventSlotRecord = {
+  eventId: string;
+  gameSlotCount: number;
+  id: string;
+  label: string;
+  startAt: Date;
+};
 
 function isUploadedFile(value: FormDataEntryValue | null): value is File {
   return (
@@ -168,13 +169,69 @@ function buildGrimoireGameRedirect({
   return `/admin/grimoire-gathering?${params.toString()}${hash}`;
 }
 
+async function getEventSlotAvailability(
+  eventSlotId: string,
+  options?: {
+    excludeCuratedGameId?: string;
+  },
+) {
+  const selectedSlot = await prisma.grimoireEventSlot.findUnique({
+    where: { id: eventSlotId },
+    select: {
+      eventId: true,
+      gameSlotCount: true,
+      id: true,
+      label: true,
+      startAt: true,
+    },
+  });
+
+  if (!selectedSlot) {
+    return null;
+  }
+
+  const [curatedGameCount, submissionCount] = await Promise.all([
+    prisma.grimoireCuratedGame.count({
+      where: {
+        eventId: selectedSlot.eventId,
+        startAt: selectedSlot.startAt,
+        ...(options?.excludeCuratedGameId
+          ? {
+              id: {
+                not: options.excludeCuratedGameId,
+              },
+            }
+          : {}),
+      },
+    }),
+    prisma.grimoireDmSubmission.count({
+      where: {
+        eventId: selectedSlot.eventId,
+        slotStartAt: selectedSlot.startAt,
+        status: {
+          in: ["PENDING", "APPROVED"],
+        },
+      },
+    }),
+  ]);
+
+  const filledGameSlots = curatedGameCount + submissionCount;
+  const availableGameSlots = Math.max(selectedSlot.gameSlotCount - filledGameSlots, 0);
+
+  return {
+    ...selectedSlot,
+    availableGameSlots,
+    filledGameSlots,
+    isFull: availableGameSlots <= 0,
+  };
+}
+
 export async function createCuratedGameRedirectPath(formData: FormData) {
   const parsed = curatedGameSchema.safeParse({
-    eventId: formData.get("eventId"),
+    eventSlotId: formData.get("eventSlotId"),
     title: formData.get("title"),
     summary: formData.get("summary"),
     details: formData.get("details"),
-    startAt: formData.get("startAt"),
     dm: formData.get("dm"),
     tier: formData.get("tier"),
     ticketPrice: formData.get("ticketPrice"),
@@ -193,7 +250,6 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
   }
 
   const normalizedSlug = slugifyGrimoireEventTitle(parsed.data.title);
-  const startAt = parseDateOrNull(parsed.data.startAt);
   const adventureImageFile = formData.get("adventureImage");
   let adventureImagePath: string | null = null;
 
@@ -204,21 +260,19 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
     });
   }
 
-  if (!startAt) {
+  const selectedSlot = await getEventSlotAvailability(parsed.data.eventSlotId);
+
+  if (!selectedSlot) {
     return buildGrimoireGameRedirect({
-      details: "Start time: Enter a valid date and time.",
+      details: "Event time slot: Choose one of the available event time slots.",
       status: "invalid",
     });
   }
 
-  const eventExists = await prisma.grimoireEvent.findUnique({
-    where: { id: parsed.data.eventId },
-    select: { id: true },
-  });
-
-  if (!eventExists) {
+  if (selectedSlot.isFull) {
     return buildGrimoireGameRedirect({
-      details: "Event: Choose an existing Grimoire event.",
+      details: `${selectedSlot.label}: This event time slot is already full.`,
+      editEventId: selectedSlot.eventId,
       status: "invalid",
     });
   }
@@ -229,7 +283,7 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
     if ("error" in uploadResult) {
       return buildGrimoireGameRedirect({
         details: uploadResult.error,
-        editEventId: parsed.data.eventId,
+        editEventId: selectedSlot.eventId,
         status: "invalid",
       });
     }
@@ -258,13 +312,13 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
         updatedAt
       ) VALUES (
         ${crypto.randomUUID()},
-        ${parsed.data.eventId},
+        ${selectedSlot.eventId},
         ${normalizedSlug},
         ${parsed.data.title},
         ${parsed.data.summary},
         ${JSON.stringify(parseTextareaLines(parsed.data.details))},
         ${adventureImagePath},
-        ${startAt},
+        ${selectedSlot.startAt},
         ${parsed.data.dm},
         ${parsed.data.tier},
         ${parsed.data.ticketPrice},
@@ -283,7 +337,7 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
           error.code === "P2002"
             ? `Game title: \`${parsed.data.title}\` creates a slug that is already in use.`
             : "The curated game could not be saved.",
-        editEventId: parsed.data.eventId,
+        editEventId: selectedSlot.eventId,
         status: "invalid",
       });
     }
@@ -292,12 +346,12 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
   }
 
   revalidateGrimoirePaths({
-    eventId: parsed.data.eventId,
+    eventId: selectedSlot.eventId,
     gameSlugs: [normalizedSlug],
   });
 
   return buildGrimoireGameRedirect({
-    editEventId: parsed.data.eventId,
+    editEventId: selectedSlot.eventId,
     status: "created",
   });
 }
@@ -309,11 +363,10 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
   });
 
   const parsed = curatedGameSchema.safeParse({
-    eventId: formData.get("eventId"),
+    eventSlotId: formData.get("eventSlotId"),
     title: formData.get("title"),
     summary: formData.get("summary"),
     details: formData.get("details"),
-    startAt: formData.get("startAt"),
     dm: formData.get("dm"),
     tier: formData.get("tier"),
     ticketPrice: formData.get("ticketPrice"),
@@ -336,7 +389,6 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
   }
 
   const normalizedSlug = slugifyGrimoireEventTitle(parsed.data.title);
-  const startAt = parseDateOrNull(parsed.data.startAt);
   const adventureImageFile = formData.get("adventureImage");
 
   if (!normalizedSlug) {
@@ -347,31 +399,38 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
     });
   }
 
-  if (!startAt) {
+  const existingGameRows = await prisma.$queryRaw<ExistingCuratedGameRecord[]>`
+    SELECT id, eventId, slug, adventureImagePath
+    FROM GrimoireCuratedGame
+    WHERE id = ${parsedGameId.data.gameId}
+    LIMIT 1
+  `;
+  const existingGame = existingGameRows[0] ?? null;
+
+  if (!existingGame) {
     return buildGrimoireGameRedirect({
-      details: "Start time: Enter a valid date and time.",
+      details: "The selected curated game could not be found.",
       editGameId: parsedGameId.data.gameId,
       status: "invalid",
     });
   }
 
-  const [existingGameRows, eventExists] = await Promise.all([
-    prisma.$queryRaw<ExistingCuratedGameRecord[]>`
-      SELECT id, eventId, slug, adventureImagePath
-      FROM GrimoireCuratedGame
-      WHERE id = ${parsedGameId.data.gameId}
-      LIMIT 1
-    `,
-    prisma.grimoireEvent.findUnique({
-      where: { id: parsed.data.eventId },
-      select: { id: true },
-    }),
-  ]);
-  const existingGame = existingGameRows[0] ?? null;
+  const selectedSlot = await getEventSlotAvailability(parsed.data.eventSlotId, {
+    excludeCuratedGameId: existingGame.id,
+  });
 
-  if (!existingGame || !eventExists) {
+  if (!selectedSlot) {
     return buildGrimoireGameRedirect({
-      details: "Event: Choose an existing Grimoire event.",
+      details: "Event time slot: Choose one of the available event time slots.",
+      editGameId: parsedGameId.data.gameId,
+      status: "invalid",
+    });
+  }
+
+  if (selectedSlot.isFull) {
+    return buildGrimoireGameRedirect({
+      details: `${selectedSlot.label}: This event time slot is already full.`,
+      editEventId: selectedSlot.eventId,
       editGameId: parsedGameId.data.gameId,
       status: "invalid",
     });
@@ -385,7 +444,7 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
     if ("error" in uploadResult) {
       return buildGrimoireGameRedirect({
         details: uploadResult.error,
-        editEventId: parsed.data.eventId,
+        editEventId: selectedSlot.eventId,
         editGameId: parsedGameId.data.gameId,
         status: "invalid",
       });
@@ -398,13 +457,13 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
     await prisma.$executeRaw`
       UPDATE GrimoireCuratedGame
       SET
-        eventId = ${parsed.data.eventId},
+        eventId = ${selectedSlot.eventId},
         slug = ${normalizedSlug},
         title = ${parsed.data.title},
         summary = ${parsed.data.summary},
         details = ${JSON.stringify(parseTextareaLines(parsed.data.details))},
         adventureImagePath = ${adventureImagePath},
-        startAt = ${startAt},
+        startAt = ${selectedSlot.startAt},
         dm = ${parsed.data.dm},
         tier = ${parsed.data.tier},
         ticketPrice = ${parsed.data.ticketPrice},
@@ -422,7 +481,7 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
           error.code === "P2002"
             ? `Game title: \`${parsed.data.title}\` creates a slug that is already in use.`
             : "The curated game could not be saved.",
-        editEventId: parsed.data.eventId,
+        editEventId: selectedSlot.eventId,
         editGameId: parsedGameId.data.gameId,
         status: "invalid",
       });
@@ -436,12 +495,12 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
     gameSlugs: [existingGame.slug],
   });
   revalidateGrimoirePaths({
-    eventId: parsed.data.eventId,
+    eventId: selectedSlot.eventId,
     gameSlugs: [normalizedSlug],
   });
 
   return buildGrimoireGameRedirect({
-    editEventId: parsed.data.eventId,
+    editEventId: selectedSlot.eventId,
     status: "updated",
   });
 }

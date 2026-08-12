@@ -91,12 +91,13 @@ export function DmGameCreationSwitcher({
                     published slots and submit your table for admin review.
                   </p>
                 </div>
-                <GrimoireDmSubmissionForm
-                  events={eventOptions}
-                  initialEventId={initialEventId}
-                  initialValues={dmProfile}
-                  slotsByEvent={slotsByEvent}
-                />
+              <GrimoireDmSubmissionForm
+                events={eventOptions}
+                initialEventId={initialEventId}
+                initialValues={dmProfile}
+                legalRewardsJson={legalRewardsJson}
+                slotsByEvent={slotsByEvent}
+              />
               </section>
             </>
           ) : (
