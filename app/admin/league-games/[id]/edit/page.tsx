@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { AdminLeagueGameEditForm } from "@/components/admin-league-game-edit-form";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { requireAdminUser } from "@/lib/admin";
-import { getLeaguePlayers } from "@/lib/data";
 import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { prisma } from "@/lib/prisma";
 
@@ -30,7 +29,21 @@ export default async function AdminLeagueGameEditPage({ params }: PageProps) {
 
   const { id } = await params;
   const [players, game] = await Promise.all([
-    getLeaguePlayers(),
+    prisma.user.findMany({
+      where: {
+        roles: {
+          some: {
+            role: "PLAYER",
+          },
+        },
+      },
+      include: {
+        characters: {
+          orderBy: { name: "asc" },
+        },
+      },
+      orderBy: { name: "asc" },
+    }),
     prisma.game.findUnique({
       where: { id },
       include: {
