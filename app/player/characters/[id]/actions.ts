@@ -108,6 +108,7 @@ export async function updateCharacter(
 
   const tokenImageFile = getTokenImageUpload(formData.get("tokenImage"));
   const removeTokenImage = formData.get("removeTokenImage") === "1";
+  const isPubliclyViewable = formData.get("isPubliclyViewable") === "true";
   const [
     legalSubclassOptions,
     legalMagicItemOptions,
@@ -383,6 +384,7 @@ export async function updateCharacter(
     where: { id: characterId },
     data: {
       name: parsed.data.name,
+      isPubliclyViewable,
       characterSheetLink: parsed.data.characterSheetLink || null,
       armorClass: parsed.data.armorClass ?? null,
       spellSaveDc: parsed.data.spellSaveDc ?? null,
@@ -424,8 +426,48 @@ export async function updateCharacter(
   revalidatePath(`/player/characters/${characterId}`);
   revalidatePath(`/player/characters/${characterId}/edit`);
   revalidatePath("/player/characters/new");
+  revalidatePath("/");
+  revalidatePath("/dm/players");
+  revalidatePath("/dm/achievements");
 
   redirect(`/player/characters/${characterId}?updated=1`);
+}
+
+export async function deleteCharacter(characterId: string) {
+  const user = await requireRole("PLAYER");
+
+  const existingCharacter = await prisma.character.findFirst({
+    where: {
+      id: characterId,
+      userId: user.id,
+    },
+    select: {
+      id: true,
+      tokenImagePath: true,
+    },
+  });
+
+  if (!existingCharacter) {
+    redirect("/player");
+  }
+
+  if (existingCharacter.tokenImagePath) {
+    await removeTokenImageUpload(existingCharacter.tokenImagePath);
+  }
+
+  await prisma.character.delete({
+    where: {
+      id: existingCharacter.id,
+    },
+  });
+
+  revalidatePath("/player");
+  revalidatePath("/player/characters/new");
+  revalidatePath("/");
+  revalidatePath("/dm/players");
+  revalidatePath("/dm/achievements");
+
+  redirect("/player");
 }
 
 export async function approvePendingGameLog(

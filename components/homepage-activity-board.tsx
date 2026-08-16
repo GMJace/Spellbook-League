@@ -27,6 +27,13 @@ type PlayerRow = {
   gamesPlayed: number;
 };
 
+type PlayerColumnFilters = {
+  player: string;
+  character: string;
+  build: string;
+  tier: string;
+};
+
 type DmRow = {
   id: string;
   name: string;
@@ -35,20 +42,37 @@ type DmRow = {
 
 const MIN_VISIBLE_ACTIVITY_ROWS = 10;
 
-function filterPlayerRows(rows: PlayerRow[], query: string) {
+function matchesFilter(value: string, query: string) {
   const normalized = query.trim().toLowerCase();
 
   if (!normalized) {
-    return rows;
+    return true;
   }
 
-  return rows.filter((row) => {
-    const build = formatClassSummary(row).toLowerCase();
+  return value.toLowerCase().includes(normalized);
+}
 
-    return (
+function filterPlayerRows(rows: PlayerRow[], query: string, filters: PlayerColumnFilters) {
+  const normalized = query.trim().toLowerCase();
+
+  return rows.filter((row) => {
+    const build = formatClassSummary(row);
+    const totalLevel = getCharacterTotalLevel(row);
+    const tierLabel = `Tier ${getCharacterTier(totalLevel)}`;
+    const globalMatch =
+      !normalized ||
       row.playerName.toLowerCase().includes(normalized) ||
       row.characterName.toLowerCase().includes(normalized) ||
-      build.includes(normalized)
+      build.toLowerCase().includes(normalized) ||
+      tierLabel.toLowerCase().includes(normalized) ||
+      String(row.gamesPlayed).includes(normalized);
+
+    return (
+      globalMatch &&
+      matchesFilter(row.playerName, filters.player) &&
+      matchesFilter(row.characterName, filters.character) &&
+      matchesFilter(build, filters.build) &&
+      matchesFilter(tierLabel, filters.tier)
     );
   });
 }
@@ -69,15 +93,28 @@ export function HomepagePlayerActivityCard({
   playerRoster: PlayerRow[];
 }) {
   const [playerSearch, setPlayerSearch] = useState("");
+  const [playerFilters, setPlayerFilters] = useState<PlayerColumnFilters>({
+    player: "",
+    character: "",
+    build: "",
+    tier: "",
+  });
 
   const filteredPlayers = useMemo(
-    () => filterPlayerRows(playerRoster, playerSearch),
-    [playerRoster, playerSearch]
+    () => filterPlayerRows(playerRoster, playerSearch, playerFilters),
+    [playerFilters, playerRoster, playerSearch]
   );
   const playerPlaceholderCount = Math.max(
     0,
     MIN_VISIBLE_ACTIVITY_ROWS - filteredPlayers.length
   );
+
+  function updatePlayerFilter(key: keyof PlayerColumnFilters, value: string) {
+    setPlayerFilters((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
 
   return (
     <section className="card ledger-panel stack homepage-player-activity-card">
@@ -107,6 +144,50 @@ export function HomepagePlayerActivityCard({
                 <th>Tier</th>
                 <th>Games</th>
                 <th>Record</th>
+              </tr>
+              <tr className="table-filter-row">
+                <th>
+                  <input
+                    aria-label="Filter player roster by player"
+                    className="input table-filter-input"
+                    onChange={(event) => updatePlayerFilter("player", event.target.value)}
+                    placeholder="Filter player"
+                    type="search"
+                    value={playerFilters.player}
+                  />
+                </th>
+                <th>
+                  <input
+                    aria-label="Filter player roster by character"
+                    className="input table-filter-input"
+                    onChange={(event) => updatePlayerFilter("character", event.target.value)}
+                    placeholder="Filter character"
+                    type="search"
+                    value={playerFilters.character}
+                  />
+                </th>
+                <th>
+                  <input
+                    aria-label="Filter player roster by build"
+                    className="input table-filter-input"
+                    onChange={(event) => updatePlayerFilter("build", event.target.value)}
+                    placeholder="Filter build"
+                    type="search"
+                    value={playerFilters.build}
+                  />
+                </th>
+                <th>
+                  <input
+                    aria-label="Filter player roster by tier"
+                    className="input table-filter-input"
+                    onChange={(event) => updatePlayerFilter("tier", event.target.value)}
+                    placeholder="Filter tier"
+                    type="search"
+                    value={playerFilters.tier}
+                  />
+                </th>
+                <th aria-hidden="true" />
+                <th />
               </tr>
             </thead>
             <tbody>

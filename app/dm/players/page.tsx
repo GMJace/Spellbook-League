@@ -1,8 +1,13 @@
 // @ts-nocheck
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { CharacterBuildDisplay } from "@/components/character-build-display";
-import { requireRole } from "@/lib/auth";
+import { DmPlayerRosterTable } from "@/components/dm-player-roster-table";
+import { requireUser } from "@/lib/auth";
+import {
+  canViewPrivateCharacterRoster,
+  isCharacterRosterAdmin,
+} from "@/lib/character-visibility";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -12,85 +17,36 @@ type PageProps = {
 };
 
 export default async function DmPlayersPage({ searchParams }: PageProps) {
-  await requireRole("DM");
+  const currentUser = await requireUser({ allowMissingDiscord: true });
+  const isDm = currentUser.roles.includes("DM");
+  const isAdminViewer = isCharacterRosterAdmin(currentUser.roles);
+
+  if (!isDm && !isAdminViewer) {
+    redirect("/");
+  }
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const query = resolvedSearchParams?.q?.trim() ?? "";
+  const canSeePrivateCharacters = await canViewPrivateCharacterRoster(currentUser);
 
   const characters = await prisma.character.findMany({
     where: {
+      ...(canSeePrivateCharacters ? {} : { isPubliclyViewable: true }),
       user: {
         roles: {
           some: {
-          role: "PLAYER",
+            role: "PLAYER",
           },
         },
       },
-      ...(query
-        ? {
-            OR: [
-              {
-                name: {
-                  contains: query,
-                },
-              },
-              {
-                class1Name: {
-                  contains: query,
-                },
-              },
-              {
-                class1Subclass: {
-                  contains: query,
-                },
-              },
-              {
-                class2Name: {
-                  contains: query,
-                },
-              },
-              {
-                class2Subclass: {
-                  contains: query,
-                },
-              },
-              {
-                class3Name: {
-                  contains: query,
-                },
-              },
-              {
-                class3Subclass: {
-                  contains: query,
-                },
-              },
-              {
-                user: {
-                  name: {
-                    contains: query,
-                  },
-                },
-              },
-              {
-                user: {
-                  email: {
-                    contains: query,
-                  },
-                },
-              },
-              {
-                user: {
-                  discordHandle: {
-                    contains: query,
-                  },
-                },
-              },
-            ],
-          }
-        : {}),
     },
     include: {
-      user: true,
+      user: {
+        select: {
+          name: true,
+          discordHandle: true,
+        },
+      },
       _count: {
         select: {
           participants: true,
@@ -100,82 +56,35 @@ export default async function DmPlayersPage({ searchParams }: PageProps) {
     orderBy: [{ user: { name: "asc" } }, { name: "asc" }],
   });
 
+  const rosterRows = characters.map((character) => ({
+    id: character.id,
+    playerName: character.user.name,
+    discordHandle: character.user.discordHandle,
+    characterName: character.name,
+    class1Name: character.class1Name,
+    class1Subclass: character.class1Subclass,
+    class1Level: character.class1Level,
+    class2Name: character.class2Name,
+    class2Subclass: character.class2Subclass,
+    class2Level: character.class2Level,
+    class3Name: character.class3Name,
+    class3Subclass: character.class3Subclass,
+    class3Level: character.class3Level,
+    games: character._count.participants,
+  }));
+
   return (
     <main className="page-shell">
       <section className="stack">
         <div className="list-card stack">
           <div className="section-heading">
             <h2 style={{ margin: 0 }}>PLAYER ROSTER</h2>
-            <Link className="button secondary" href="/dm">
+            <Link className="button secondary" href={isAdminViewer && !isDm ? "/admin/users" : "/dm"}>
               Back to DM page
             </Link>
           </div>
 
-          <form
-            className="search-row"
-            method="get"
-          >
-            <input
-              aria-label="Search players"
-              className="input"
-              defaultValue={query}
-              name="q"
-              placeholder="Search players, characters, or classes"
-              type="search"
-            />
-            <button
-              className="button button-secondary"
-              type="submit"
-            >
-              Search
-            </button>
-          </form>
-
-          <div className="table-wrap dm-player-roster-table-wrap">
-            <table className="ledger-table">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>Discord Handle</th>
-                  <th>Character</th>
-                  <th>Build</th>
-                  <th>Games</th>
-                  <th>Record</th>
-                </tr>
-              </thead>
-              <tbody>
-                {characters.length ? (
-                  characters.map((character) => {
-                    return (
-                      <tr key={character.id}>
-                        <td>{character.user.name}</td>
-                        <td>{character.user.discordHandle || "Not provided"}</td>
-                        <td>{character.name}</td>
-                        <td>
-                          <CharacterBuildDisplay character={character} compact />
-                        </td>
-                        <td>{character._count.participants}</td>
-                        <td>
-                          <Link
-                            className="button button-secondary button-small"
-                            href={`/player/characters/${character.id}`}
-                          >
-                            View record
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={6}>
-                      No matching players found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DmPlayerRosterTable initialSearch={query} rows={rosterRows} />
         </div>
       </section>
     </main>

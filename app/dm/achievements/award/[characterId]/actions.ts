@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireRole } from "@/lib/auth";
+import { canViewPrivateCharacterRoster } from "@/lib/character-visibility";
 import { prisma } from "@/lib/prisma";
 
 export type AwardAchievementState = {
@@ -15,6 +16,7 @@ export async function awardAchievement(
   formData: FormData
 ): Promise<AwardAchievementState> {
   const user = await requireRole("DM");
+  const canSeePrivateCharacters = await canViewPrivateCharacterRoster(user);
   const characterId = String(formData.get("characterId") ?? "").trim();
   const achievementId = String(formData.get("achievementId") ?? "").trim();
   const gameCode = String(formData.get("gameCode") ?? "").trim();
@@ -41,7 +43,7 @@ export async function awardAchievement(
   const [character, achievement] = await Promise.all([
     prisma.character.findUnique({
       where: { id: characterId },
-      select: { id: true },
+      select: { id: true, isPubliclyViewable: true },
     }),
     prisma.achievement.findUnique({
       where: { id: achievementId },
@@ -51,6 +53,10 @@ export async function awardAchievement(
 
   if (!character || !achievement) {
     return { error: "That character or badge could not be found." };
+  }
+
+  if (!character.isPubliclyViewable && !canSeePrivateCharacters) {
+    return { error: "That character is not available in the current roster." };
   }
 
   await prisma.characterAchievement.create({

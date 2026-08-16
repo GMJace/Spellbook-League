@@ -1,12 +1,13 @@
 // @ts-nocheck
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { awardAchievement } from "./actions";
 import { AchievementAwardDialog } from "@/components/achievement-award-dialog";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { requireRole } from "@/lib/auth";
 import { getCharacterTier, getCharacterTotalLevel } from "@/lib/character";
+import { canViewPrivateCharacterRoster } from "@/lib/character-visibility";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ type PageProps = {
 export default async function AwardAchievementPage({ params }: PageProps) {
   const currentUser = await requireRole("DM");
   const { characterId } = await params;
+  const canSeePrivateCharacters = await canViewPrivateCharacterRoster(currentUser);
 
   const [character, achievements] = await Promise.all([
     prisma.character.findUnique({
@@ -43,6 +45,10 @@ export default async function AwardAchievementPage({ params }: PageProps) {
 
   if (!character) {
     notFound();
+  }
+
+  if (!character.isPubliclyViewable && !canSeePrivateCharacters) {
+    redirect("/dm/achievements");
   }
 
   const availableAchievements = achievements as Array<{

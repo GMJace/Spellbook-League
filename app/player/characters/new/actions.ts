@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   getCharmSlotCount,
@@ -98,6 +99,7 @@ export async function createCharacter(
   }
 
   const tokenImageFile = getTokenImageUpload(formData.get("tokenImage"));
+  const isPubliclyViewable = formData.get("isPubliclyViewable") === "true";
   const [
     legalSubclassOptions,
     legalMagicItemOptions,
@@ -367,6 +369,7 @@ export async function createCharacter(
     data: {
       name: parsed.data.name,
       userId: user.id,
+      isPubliclyViewable,
       characterSheetLink: parsed.data.characterSheetLink || null,
       armorClass: parsed.data.armorClass ?? null,
       spellSaveDc: parsed.data.spellSaveDc ?? null,
@@ -403,6 +406,10 @@ export async function createCharacter(
       charms: JSON.stringify(parsed.data.charms),
     },
   });
+
+  revalidatePath("/");
+  revalidatePath("/dm/players");
+  revalidatePath("/dm/achievements");
 
   redirect(`/player/characters/${character.id}/edit?created=1`);
 }

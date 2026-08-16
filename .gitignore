@@ -1,11 +1,15 @@
 .next
+.next-stale-*/
 node_modules
 coverage
 dist
 *.log
+.codex-*.json
 .env
 .env.local
 .env.production
 prisma/*.db
 prisma/*.db-journal
+prisma/*.backup*
+prisma/*.db.*
 tsconfig.tsbuildinfo

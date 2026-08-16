@@ -12,6 +12,11 @@ const adminNavigationLinks = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/modules",
+    label: "Modules",
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/achievements",
     label: "Achievements",
     roles: ["ADMIN"],

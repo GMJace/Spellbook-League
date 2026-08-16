@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   parseStoredGameRewardSelections,
@@ -301,21 +301,25 @@ export function GameRewardFields({
   legalConsumableOptions: string[];
   legalMinorPropertyOptions: string[];
 }) {
-  const initialSelections = parseStoredGameRewardSelections(
-    {
-      magicItemsAwarded: initialMagicItemsAwarded,
-      consumablesAwarded: initialConsumablesAwarded,
-    },
-    {
-      legalBuildMagicItemOptions,
-      legalCommonMagicItemOptions,
-      legalConsumableOptions,
-      legalBoonOptions,
-      legalBlessingOptions,
-      legalCharmOptions,
-      legalMinorPropertyOptions,
-    } satisfies LegalRewardOptions
-  );
+  function buildSelections() {
+    return parseStoredGameRewardSelections(
+      {
+        magicItemsAwarded: initialMagicItemsAwarded,
+        consumablesAwarded: initialConsumablesAwarded,
+      },
+      {
+        legalBuildMagicItemOptions,
+        legalCommonMagicItemOptions,
+        legalConsumableOptions,
+        legalBoonOptions,
+        legalBlessingOptions,
+        legalCharmOptions,
+        legalMinorPropertyOptions,
+      } satisfies LegalRewardOptions
+    );
+  }
+
+  const initialSelections = buildSelections();
   const [buildMagicItems, setBuildMagicItems] = useState(initialSelections.buildMagicItems);
   const [buildMagicItemNames, setBuildMagicItemNames] = useState(
     initialSelections.buildMagicItemNames
@@ -346,6 +350,35 @@ export function GameRewardFields({
   const [additionalConsumableNotes, setAdditionalConsumableNotes] = useState(
     initialSelections.additionalConsumableNotes
   );
+
+  useEffect(() => {
+    const nextSelections = buildSelections();
+
+    setBuildMagicItems(nextSelections.buildMagicItems);
+    setBuildMagicItemNames(nextSelections.buildMagicItemNames);
+    setBuildMagicItemMinorProperties(nextSelections.buildMagicItemMinorProperties);
+    setBuildMagicItemFlavors(nextSelections.buildMagicItemFlavors);
+    setCommonMagicItems(nextSelections.commonMagicItems);
+    setCommonMagicItemNames(nextSelections.commonMagicItemNames);
+    setCommonMagicItemMinorProperties(nextSelections.commonMagicItemMinorProperties);
+    setCommonMagicItemFlavors(nextSelections.commonMagicItemFlavors);
+    setConsumables(nextSelections.consumables);
+    setBoons(nextSelections.boons);
+    setBlessings(nextSelections.blessings);
+    setCharms(nextSelections.charms);
+    setAdditionalMagicRewardNotes(nextSelections.additionalMagicRewardNotes);
+    setAdditionalConsumableNotes(nextSelections.additionalConsumableNotes);
+  }, [
+    initialConsumablesAwarded,
+    initialMagicItemsAwarded,
+    legalBlessingOptions,
+    legalBoonOptions,
+    legalBuildMagicItemOptions,
+    legalCharmOptions,
+    legalCommonMagicItemOptions,
+    legalConsumableOptions,
+    legalMinorPropertyOptions,
+  ]);
 
   return (
     <div className="stack">

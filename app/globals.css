@@ -1486,6 +1486,17 @@ button.button-small {
   z-index: 1;
 }
 
+.table-filter-row th {
+  padding-top: 0.55rem;
+  padding-bottom: 0.7rem;
+  vertical-align: top;
+}
+
+.table-filter-input {
+  width: 100%;
+  min-width: 8rem;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

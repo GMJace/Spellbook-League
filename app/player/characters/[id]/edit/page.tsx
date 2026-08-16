@@ -150,6 +150,7 @@ export default async function EditCharacterPage({
           initialValues={{
             name: character.name,
             characterSheetLink: character.characterSheetLink,
+            isPubliclyViewable: character.isPubliclyViewable,
             armorClass: character.armorClass,
             spellSaveDc: character.spellSaveDc,
             tokenImagePath: character.tokenImagePath,

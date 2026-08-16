@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { requireRole } from "@/lib/auth";
+import { canViewPrivateCharacterRoster } from "@/lib/character-visibility";
 import {
   formatClassSummary,
   getCharacterTier,
@@ -17,7 +18,8 @@ type PageProps = {
 };
 
 export default async function DmAchievementsPage({ searchParams }: PageProps) {
-  await requireRole("DM");
+  const currentUser = await requireRole("DM");
+  const canSeePrivateCharacters = await canViewPrivateCharacterRoster(currentUser);
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const query = resolvedSearchParams?.q?.trim() ?? "";
 
@@ -34,6 +36,7 @@ export default async function DmAchievementsPage({ searchParams }: PageProps) {
 
   const characters = await prisma.character.findMany({
     where: {
+      ...(canSeePrivateCharacters ? {} : { isPubliclyViewable: true }),
       user: {
         roles: {
           some: {

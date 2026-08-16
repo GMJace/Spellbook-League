@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
   createPlayerGameLog,
   updatePlayerGameLog,
 } from "@/app/player/characters/[id]/games/actions";
+import { lookupAdventureCatalogAutofill } from "@/lib/adventure-catalog-client";
 import { BulletTextarea } from "@/components/bullet-textarea";
 import { DatePickerField } from "@/components/date-picker-field";
 import { GameRewardFields } from "@/components/game-reward-fields";
@@ -66,7 +68,60 @@ export function PlayerGameLogForm({
 }) {
   const formAction = gameId ? updatePlayerGameLog : createPlayerGameLog;
   const fieldBlockStyle = { gap: "0.35rem" } as const;
-  const resolvedTier = initialValues?.tier ?? "TIER_1";
+  const [titleValue, setTitleValue] = useState(initialValues?.title ?? "");
+  const [adventureCodeValue, setAdventureCodeValue] = useState(
+    initialValues?.adventureCode ?? ""
+  );
+  const [tierValue, setTierValue] = useState(initialValues?.tier ?? "TIER_1");
+  const [rewardsSummaryValue, setRewardsSummaryValue] = useState(
+    initialValues?.rewardsSummary ?? ""
+  );
+  const [magicItemsAwardedValue, setMagicItemsAwardedValue] = useState(
+    initialValues?.magicItemsAwarded ?? ""
+  );
+  const [consumablesAwardedValue, setConsumablesAwardedValue] = useState(
+    initialValues?.consumablesAwarded ?? ""
+  );
+  const [sessionNotesValue, setSessionNotesValue] = useState(
+    initialValues?.sessionNotes ?? ""
+  );
+  const [autofillMessage, setAutofillMessage] = useState("");
+  const [dmNameValue, setDmNameValue] = useState(initialValues?.dmName ?? "");
+  const resolvedTier = tierValue;
+
+  async function autofillAdventureDetails() {
+    if (!titleValue.trim() && !adventureCodeValue.trim()) {
+      setAutofillMessage("");
+      return;
+    }
+
+    try {
+      const { match } = await lookupAdventureCatalogAutofill({
+        adventureCode: adventureCodeValue,
+        title: titleValue,
+      });
+
+      if (!match) {
+        setAutofillMessage("No saved adventure matched that title or code yet.");
+        return;
+      }
+
+      setTitleValue(match.title);
+      setAdventureCodeValue(match.adventureCode);
+      setTierValue(match.tier);
+      setRewardsSummaryValue(match.rewardsSummary);
+      setMagicItemsAwardedValue(match.magicItemsAwarded);
+      setConsumablesAwardedValue(match.consumablesAwarded);
+      setSessionNotesValue(match.sessionNotes);
+      setAutofillMessage(`Loaded adventure details for ${match.adventureCode}.`);
+    } catch (lookupError) {
+      setAutofillMessage(
+        lookupError instanceof Error
+          ? lookupError.message
+          : "Unable to look up that adventure right now.",
+      );
+    }
+  }
 
   return (
     <form action={formAction} className="form-stack">
@@ -93,8 +148,17 @@ export function PlayerGameLogForm({
             Game title
             <input
               readOnly={metadataLocked}
-              defaultValue={initialValues?.title ?? ""}
+              value={titleValue}
               name="title"
+              onBlur={() => {
+                if (!metadataLocked) {
+                  void autofillAdventureDetails();
+                }
+              }}
+              onChange={(event) => {
+                setTitleValue(event.target.value);
+                setAutofillMessage("");
+              }}
               required
               type="text"
             />
@@ -105,8 +169,17 @@ export function PlayerGameLogForm({
             Adventure code
             <input
               readOnly={metadataLocked}
-              defaultValue={initialValues?.adventureCode ?? ""}
+              value={adventureCodeValue}
               name="adventureCode"
+              onBlur={() => {
+                if (!metadataLocked) {
+                  void autofillAdventureDetails();
+                }
+              }}
+              onChange={(event) => {
+                setAdventureCodeValue(event.target.value);
+                setAutofillMessage("");
+              }}
               required
               type="text"
             />
@@ -125,7 +198,13 @@ export function PlayerGameLogForm({
           <div className="stack" style={fieldBlockStyle}>
             <label>
               Tier
-              <select defaultValue={resolvedTier} name="tier">
+              <select
+                name="tier"
+                value={resolvedTier}
+                onChange={(event) => {
+                  setTierValue(event.target.value as PlayerGameLogInitialValues["tier"]);
+                }}
+              >
                 {tiers.map((tier) => (
                   <option key={tier.value} value={tier.value}>
                     {tier.label}
@@ -140,8 +219,11 @@ export function PlayerGameLogForm({
             Dungeon Master
             <input
               readOnly={metadataLocked}
-              defaultValue={initialValues?.dmName ?? ""}
+              value={dmNameValue}
               name="dmName"
+              onChange={(event) => {
+                setDmNameValue(event.target.value);
+              }}
               required
               placeholder="Name of the Dungeon Master"
               type="text"
@@ -149,14 +231,18 @@ export function PlayerGameLogForm({
           </label>
         </div>
       </div>
+      {autofillMessage ? <p className="muted" style={{ margin: 0 }}>{autofillMessage}</p> : null}
 
       <div className="form-grid">
         <div className="stack" style={fieldBlockStyle}>
           <label>
             Awarded Gold (Total in GP)
             <input
-              defaultValue={initialValues?.rewardsSummary ?? ""}
+              value={rewardsSummaryValue}
               name="rewardsSummary"
+              onChange={(event) => {
+                setRewardsSummaryValue(event.target.value);
+              }}
               type="text"
             />
           </label>
@@ -164,8 +250,8 @@ export function PlayerGameLogForm({
       </div>
 
       <GameRewardFields
-        initialConsumablesAwarded={initialValues?.consumablesAwarded ?? ""}
-        initialMagicItemsAwarded={initialValues?.magicItemsAwarded ?? ""}
+        initialConsumablesAwarded={consumablesAwardedValue}
+        initialMagicItemsAwarded={magicItemsAwardedValue}
         legalBlessingOptions={legalBlessingOptions}
         legalBoonOptions={legalBoonOptions}
         legalBuildMagicItemOptions={legalBuildMagicItemOptions}
@@ -178,7 +264,8 @@ export function PlayerGameLogForm({
       <label>
         Session notes/Story Awards
         <BulletTextarea
-          defaultValue={initialValues?.sessionNotes ?? ""}
+          key={`player-session-notes-${sessionNotesValue}`}
+          defaultValue={sessionNotesValue}
           name="sessionNotes"
         />
       </label>

@@ -2,9 +2,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { auth } from "@/auth";
-import { approvePendingGameLog } from "@/app/player/characters/[id]/actions";
+import {
+  approvePendingGameLog,
+  deleteCharacter,
+} from "@/app/player/characters/[id]/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import {
   COMMON_MAGIC_ITEM_SLOT_COUNT,
@@ -19,6 +22,12 @@ import {
   hasBoonSlot,
   parseMagicItemFlavorDetails,
 } from "@/lib/character";
+import {
+  canViewPrivateCharacterRoster,
+  canViewPublicCharacterRoster,
+  isCharacterRosterAdmin,
+} from "@/lib/character-visibility";
+import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -154,22 +163,7 @@ export default async function CharacterLogsheetPage({
   params,
   searchParams,
 }: PageProps) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      roles: true,
-    },
-  });
-
-  if (!currentUser) {
-    redirect("/login");
-  }
+  const currentUser = await requireUser({ allowMissingDiscord: true });
 
   const { id } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
@@ -208,10 +202,22 @@ export default async function CharacterLogsheetPage({
     notFound();
   }
 
-  const isDm = currentUser.roles.some((entry: { role: string }) => entry.role === "DM");
   const isOwner = character.userId === currentUser.id;
+  const isDm = currentUser.roles.includes("DM");
+  const isAdminViewer = isCharacterRosterAdmin(currentUser.roles);
+  const canSeePrivateCharacters = await canViewPrivateCharacterRoster(currentUser);
+  const canSeePublicCharacter =
+    character.isPubliclyViewable && canViewPublicCharacterRoster(currentUser);
 
-  if (!isOwner && !isDm) {
+  if (!isOwner && !canSeePrivateCharacters && !canSeePublicCharacter) {
+    if (isDm) {
+      redirect("/dm/players");
+    }
+
+    if (isAdminViewer) {
+      redirect("/admin/users");
+    }
+
     redirect("/player");
   }
 
@@ -293,7 +299,7 @@ export default async function CharacterLogsheetPage({
   const gameLog = [...visibleGameLog].sort((left, right) => {
     return right.game.datePlayed.getTime() - left.game.datePlayed.getTime();
   });
-  const backHref = isOwner ? "/player" : "/dm/players";
+  const backHref = isOwner ? "/player" : isDm ? "/dm/players" : isAdminViewer ? "/admin/users" : "/";
 
   return (
     <main className="page-shell">
@@ -377,6 +383,14 @@ export default async function CharacterLogsheetPage({
                 >
                   Edit character log
                 </Link>
+                <form action={deleteCharacter.bind(null, character.id)}>
+                  <ConfirmSubmitButton
+                    className="button button-danger"
+                    message="Delete this character? This cannot be undone."
+                  >
+                    Delete character
+                  </ConfirmSubmitButton>
+                </form>
               </>
             ) : null}
           </div>

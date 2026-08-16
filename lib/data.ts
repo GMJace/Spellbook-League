@@ -24,6 +24,7 @@ export async function getHomepageData() {
   const characters = await prisma.character.findMany({
     where: {
       id: { in: grouped.flatMap((entry) => (entry.characterId ? [entry.characterId] : [])) },
+      isPubliclyViewable: true,
     },
     include: {
       user: true,
@@ -55,6 +56,9 @@ export async function getHomepageData() {
     .slice(0, 10);
 
   const playerActivityCharacters = await prisma.character.findMany({
+    where: {
+      isPubliclyViewable: true,
+    },
     include: {
       user: true,
       participants: true,
@@ -149,7 +153,7 @@ export async function getHandbookBySlug(slug: string) {
   });
 }
 
-export async function getLeaguePlayers() {
+export async function getLeaguePlayers(options?: { includePrivateCharacters?: boolean }) {
   return prisma.user.findMany({
     where: {
       roles: {
@@ -160,6 +164,11 @@ export async function getLeaguePlayers() {
     },
     include: {
       characters: {
+        where: options?.includePrivateCharacters
+          ? {}
+          : {
+              isPubliclyViewable: true,
+            },
         orderBy: { name: "asc" },
       },
     },

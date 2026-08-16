@@ -52,6 +52,7 @@ type CharacterFormValues = {
   name: string;
   characterSheetLink: string | null;
   armorClass: number | null;
+  isPubliclyViewable: boolean;
   spellSaveDc: number | null;
   tokenImagePath: string | null;
   class1Name: string;
@@ -824,6 +825,16 @@ export function CharacterForm({
           placeholder="https://..."
           defaultValue={initialValues?.characterSheetLink ?? ""}
         />
+      </label>
+
+      <label className="checkbox-row compact-checkbox-row">
+        <input
+          defaultChecked={initialValues?.isPubliclyViewable ?? true}
+          name="isPubliclyViewable"
+          type="checkbox"
+          value="true"
+        />
+        <span>Make publicly viewable (Note: admin will still have access)</span>
       </label>
 
       <div className="form-grid">

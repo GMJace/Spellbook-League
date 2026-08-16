@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 
+import { lookupAdventureCatalogAutofill } from "@/lib/adventure-catalog-client";
 import { BulletTextarea } from "@/components/bullet-textarea";
 import { DatePickerField } from "@/components/date-picker-field";
 import { GameRewardFields } from "@/components/game-reward-fields";
@@ -191,12 +192,29 @@ export function GameForm({
   submitLabel = "Save game",
 }: GameFormProps) {
   const [search, setSearch] = useState("");
+  const [titleValue, setTitleValue] = useState(initialValues?.title ?? "");
+  const [adventureCodeValue, setAdventureCodeValue] = useState(initialValues?.adventureCode ?? "");
+  const [durationValue, setDurationValue] = useState(initialValues?.duration ?? "");
+  const [tierValue, setTierValue] = useState(initialValues?.tier ?? "TIER_1");
+  const [rewardsSummaryValue, setRewardsSummaryValue] = useState(
+    initialValues?.rewardsSummary ?? ""
+  );
+  const [magicItemsAwardedValue, setMagicItemsAwardedValue] = useState(
+    initialValues?.magicItemsAwarded ?? ""
+  );
+  const [consumablesAwardedValue, setConsumablesAwardedValue] = useState(
+    initialValues?.consumablesAwarded ?? ""
+  );
+  const [sessionNotesValue, setSessionNotesValue] = useState(
+    initialValues?.sessionNotes ?? ""
+  );
   const [selectedUserId, setSelectedUserId] = useState(players[0]?.id ?? "");
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
   const [participants, setParticipants] = useState<Participant[]>(
     initialValues?.participants ?? [],
   );
   const [error, setError] = useState("");
+  const [autofillMessage, setAutofillMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<GameFormFieldName, string>>>({});
   const [isPending, startTransition] = useTransition();
   const resolvedTicketPrice = initialValues?.ticketPrice ?? "Free";
@@ -212,6 +230,48 @@ export function GameForm({
 
   const errorTextStyle = { color: "#8f341b", margin: 0 };
   const fieldBlockStyle = { gap: "0.35rem" };
+
+  async function autofillAdventureDetails() {
+    if (!titleValue.trim() && !adventureCodeValue.trim()) {
+      setAutofillMessage("");
+      return;
+    }
+
+    try {
+      const { match } = await lookupAdventureCatalogAutofill({
+        adventureCode: adventureCodeValue,
+        title: titleValue,
+        tier: tierValue,
+      });
+
+      if (!match) {
+        setAutofillMessage("No saved adventure matched that title or code yet.");
+        return;
+      }
+
+      setTitleValue(match.title);
+      setAdventureCodeValue(match.adventureCode);
+      setDurationValue(match.duration);
+      setTierValue(match.tier);
+      setRewardsSummaryValue(match.rewardsSummary);
+      setMagicItemsAwardedValue(match.magicItemsAwarded);
+      setConsumablesAwardedValue(match.consumablesAwarded);
+      setSessionNotesValue(match.sessionNotes);
+      setAutofillMessage(`Loaded adventure details for ${match.adventureCode}.`);
+      clearFieldError("title");
+      clearFieldError("adventureCode");
+      clearFieldError("duration");
+      clearFieldError("tier");
+      clearFieldError("rewardsSummary");
+      clearFieldError("sessionNotes");
+    } catch (lookupError) {
+      setAutofillMessage(
+        lookupError instanceof Error
+          ? lookupError.message
+          : "Unable to look up that adventure right now.",
+      );
+    }
+  }
 
   function getFieldError(name: GameFormFieldName) {
     return fieldErrors[name] ?? "";
@@ -299,8 +359,16 @@ export function GameForm({
             Game title
             <input
               aria-invalid={Boolean(getFieldError("title"))}
-              defaultValue={initialValues?.title ?? ""}
+              value={titleValue}
               name="title"
+              onBlur={() => {
+                void autofillAdventureDetails();
+              }}
+              onChange={(event) => {
+                setTitleValue(event.target.value);
+                clearFieldError("title");
+                setAutofillMessage("");
+              }}
               type="text"
               required
             />
@@ -312,8 +380,16 @@ export function GameForm({
             Adventure code
             <input
               aria-invalid={Boolean(getFieldError("adventureCode"))}
-              defaultValue={initialValues?.adventureCode ?? ""}
+              value={adventureCodeValue}
               name="adventureCode"
+              onBlur={() => {
+                void autofillAdventureDetails();
+              }}
+              onChange={(event) => {
+                setAdventureCodeValue(event.target.value);
+                clearFieldError("adventureCode");
+                setAutofillMessage("");
+              }}
               type="text"
               required
             />
@@ -409,8 +485,12 @@ export function GameForm({
             Duration
             <input
               aria-invalid={Boolean(getFieldError("duration"))}
-              defaultValue={initialValues?.duration ?? ""}
+              value={durationValue}
               name="duration"
+              onChange={(event) => {
+                setDurationValue(event.target.value);
+                clearFieldError("duration");
+              }}
               placeholder="4 hours"
               type="text"
             />
@@ -425,7 +505,11 @@ export function GameForm({
             <select
               aria-invalid={Boolean(getFieldError("tier"))}
               name="tier"
-              defaultValue={initialValues?.tier ?? "TIER_1"}
+              value={tierValue}
+              onChange={(event) => {
+                setTierValue(event.target.value as GameFormInitialValues["tier"]);
+                clearFieldError("tier");
+              }}
             >
               {tiers.map((tier) => (
                 <option key={tier.value} value={tier.value}>
@@ -476,6 +560,7 @@ export function GameForm({
           <div className="metric-value">{participants.length}</div>
         </div>
       </div>
+      {autofillMessage ? <p className="muted" style={{ margin: 0 }}>{autofillMessage}</p> : null}
 
       <label>
         Adventure cover / badge
@@ -561,8 +646,12 @@ export function GameForm({
             Awarded Gold (Total in GP)
             <input
               aria-invalid={Boolean(getFieldError("rewardsSummary"))}
-              defaultValue={initialValues?.rewardsSummary ?? ""}
+              value={rewardsSummaryValue}
               name="rewardsSummary"
+              onChange={(event) => {
+                setRewardsSummaryValue(event.target.value);
+                clearFieldError("rewardsSummary");
+              }}
               type="text"
             />
           </label>
@@ -572,8 +661,8 @@ export function GameForm({
         </div>
       </div>
       <GameRewardFields
-        initialConsumablesAwarded={initialValues?.consumablesAwarded ?? ""}
-        initialMagicItemsAwarded={initialValues?.magicItemsAwarded ?? ""}
+        initialConsumablesAwarded={consumablesAwardedValue}
+        initialMagicItemsAwarded={magicItemsAwardedValue}
         legalBlessingOptions={legalBlessingOptions}
         legalBoonOptions={legalBoonOptions}
         legalBuildMagicItemOptions={legalBuildMagicItemOptions}
@@ -591,9 +680,13 @@ export function GameForm({
       <label>
         Session notes/Story Awards
         <BulletTextarea
+          key={`session-notes-${sessionNotesValue}`}
           aria-invalid={Boolean(getFieldError("sessionNotes"))}
-          defaultValue={initialValues?.sessionNotes ?? ""}
+          defaultValue={sessionNotesValue}
           name="sessionNotes"
+          onBlur={() => {
+            clearFieldError("sessionNotes");
+          }}
         />
       </label>
       {getFieldError("sessionNotes") ? (

@@ -144,6 +144,7 @@ model Character {
   id           String            @id @default(cuid())
   userId       String
   name         String
+  isPubliclyViewable Boolean     @default(true)
   characterSheetLink String?
   armorClass   Int?
   spellSaveDc  Int?
@@ -256,6 +257,36 @@ model GameParticipant {
   user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([gameId, characterId])
+}
+
+model AdventureCatalog {
+  id                    String   @id @default(cuid())
+  adventureCode         String
+  lookupCode            String
+  title                 String
+  lookupTitle           String
+  tier                  Tier
+  duration              String   @default("")
+  gold                  String   @default("")
+  spellbook             String   @default("")
+  storyAwards           String   @default("")
+  pageNumbers           String   @default("")
+  sourceSheet           String   @default("")
+  sourceNotes           String   @default("")
+  consumablesJson       String   @default("[]")
+  commonMagicItemsJson  String   @default("[]")
+  uncommonMagicItemsJson String  @default("[]")
+  rareMagicItemsJson    String   @default("[]")
+  veryRareMagicItemsJson String  @default("[]")
+  legendaryMagicItemsJson String @default("[]")
+  uniqueMagicItemsJson  String   @default("[]")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([lookupCode, lookupTitle, tier])
+  @@index([lookupCode, tier])
+  @@index([adventureCode, tier])
+  @@index([lookupTitle])
 }
 
 model Handbook {
