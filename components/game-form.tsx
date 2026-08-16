@@ -30,6 +30,7 @@ export type GameFormInitialValues = {
   id?: string;
   title: string;
   adventureCode: string;
+  source: string;
   gameSummary: string;
   ticketPrice: string;
   hasTicketAccessCode?: boolean;
@@ -42,6 +43,7 @@ export type GameFormInitialValues = {
   rewardsSummary: string;
   magicItemsAwarded: string;
   consumablesAwarded: string;
+  spellbookAwarded: string;
   sessionNotes: string;
   status: "SCHEDULED" | "COMPLETED" | "CANCELLED";
   adventureImagePath?: string | null;
@@ -75,6 +77,7 @@ type GameFormProps = {
 type GameFormFieldName =
   | "title"
   | "adventureCode"
+  | "source"
   | "gameSummary"
   | "ticketPrice"
   | "ticketAccessCode"
@@ -87,6 +90,7 @@ type GameFormFieldName =
   | "rewardsSummary"
   | "magicItemsAwarded"
   | "consumablesAwarded"
+  | "spellbookAwarded"
   | "sessionNotes"
   | "status"
   | "participants"
@@ -194,8 +198,14 @@ export function GameForm({
   const [search, setSearch] = useState("");
   const [titleValue, setTitleValue] = useState(initialValues?.title ?? "");
   const [adventureCodeValue, setAdventureCodeValue] = useState(initialValues?.adventureCode ?? "");
+  const [sourceValue, setSourceValue] = useState(initialValues?.source ?? "");
+  const [gameSummaryValue, setGameSummaryValue] = useState(initialValues?.gameSummary ?? "");
   const [durationValue, setDurationValue] = useState(initialValues?.duration ?? "");
   const [tierValue, setTierValue] = useState(initialValues?.tier ?? "TIER_1");
+  const [serviceHoursValue, setServiceHoursValue] = useState(initialValues?.serviceHours ?? "");
+  const [downtimeDaysAwardedValue, setDowntimeDaysAwardedValue] = useState(
+    initialValues?.downtimeDaysAwarded ?? "0"
+  );
   const [rewardsSummaryValue, setRewardsSummaryValue] = useState(
     initialValues?.rewardsSummary ?? ""
   );
@@ -204,6 +214,9 @@ export function GameForm({
   );
   const [consumablesAwardedValue, setConsumablesAwardedValue] = useState(
     initialValues?.consumablesAwarded ?? ""
+  );
+  const [spellbookAwardedValue, setSpellbookAwardedValue] = useState(
+    initialValues?.spellbookAwarded ?? ""
   );
   const [sessionNotesValue, setSessionNotesValue] = useState(
     initialValues?.sessionNotes ?? ""
@@ -219,6 +232,9 @@ export function GameForm({
   const [isPending, startTransition] = useTransition();
   const resolvedTicketPrice = initialValues?.ticketPrice ?? "Free";
   const [selectedTicketPrice, setSelectedTicketPrice] = useState(resolvedTicketPrice);
+  const [adventureImagePreviewPath, setAdventureImagePreviewPath] = useState(
+    initialValues?.adventureImagePath ?? null
+  );
   const hasCustomTicketPrice = !ticketPriceOptions.some(
     (option) => option.value === resolvedTicketPrice,
   );
@@ -251,17 +267,29 @@ export function GameForm({
 
       setTitleValue(match.title);
       setAdventureCodeValue(match.adventureCode);
+      setSourceValue(match.source);
+      setGameSummaryValue(match.gameSummary);
       setDurationValue(match.duration);
       setTierValue(match.tier);
+      setServiceHoursValue(match.serviceHours);
+      setDowntimeDaysAwardedValue(match.downtimeDaysAwarded);
       setRewardsSummaryValue(match.rewardsSummary);
       setMagicItemsAwardedValue(match.magicItemsAwarded);
       setConsumablesAwardedValue(match.consumablesAwarded);
+      setSpellbookAwardedValue(match.spellbookAwarded);
       setSessionNotesValue(match.sessionNotes);
+      if (!initialValues?.id) {
+        setAdventureImagePreviewPath(match.adventureImagePath);
+      }
       setAutofillMessage(`Loaded adventure details for ${match.adventureCode}.`);
       clearFieldError("title");
       clearFieldError("adventureCode");
+      clearFieldError("source");
+      clearFieldError("gameSummary");
       clearFieldError("duration");
       clearFieldError("tier");
+      clearFieldError("serviceHours");
+      clearFieldError("downtimeDaysAwarded");
       clearFieldError("rewardsSummary");
       clearFieldError("sessionNotes");
     } catch (lookupError) {
@@ -345,11 +373,11 @@ export function GameForm({
       {initialValues?.id ? (
         <input name="gameId" type="hidden" value={initialValues.id} />
       ) : null}
-      {!initialValues?.id && initialValues?.adventureImagePath ? (
+      {!initialValues?.id && adventureImagePreviewPath ? (
         <input
           name="reuseAdventureImagePath"
           type="hidden"
-          value={initialValues.adventureImagePath}
+          value={adventureImagePreviewPath}
         />
       ) : null}
 
@@ -397,6 +425,22 @@ export function GameForm({
           {getFieldError("adventureCode") ? (
             <p style={errorTextStyle}>{getFieldError("adventureCode")}</p>
           ) : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Source (DM's Guild link)
+            <input
+              aria-invalid={Boolean(getFieldError("source"))}
+              value={sourceValue}
+              name="source"
+              onChange={(event) => {
+                setSourceValue(event.target.value);
+                clearFieldError("source");
+              }}
+              type="text"
+            />
+          </label>
+          {getFieldError("source") ? <p style={errorTextStyle}>{getFieldError("source")}</p> : null}
         </div>
         <div className="stack" style={fieldBlockStyle}>
           <label>
@@ -574,13 +618,13 @@ export function GameForm({
       {getFieldError("adventureImage") ? (
         <p style={errorTextStyle}>{getFieldError("adventureImage")}</p>
       ) : null}
-      {initialValues?.adventureImagePath ? (
+      {adventureImagePreviewPath ? (
         <div className="list-card stack" style={{ gap: "0.6rem" }}>
           <span className="muted">Current cover / badge</span>
           <img
-            alt={`${initialValues.title} cover art`}
+            alt={`${titleValue || initialValues?.title || "Adventure"} cover art`}
             className="dm-game-detail-image"
-            src={initialValues.adventureImagePath}
+            src={adventureImagePreviewPath}
           />
           <span className="muted">
             Upload a new image above only if you want to replace the current one.
@@ -592,8 +636,12 @@ export function GameForm({
         Game summary (Include themes and content advisories)
         <textarea
           aria-invalid={Boolean(getFieldError("gameSummary"))}
-          defaultValue={initialValues?.gameSummary ?? ""}
+          value={gameSummaryValue}
           name="gameSummary"
+          onChange={(event) => {
+            setGameSummaryValue(event.target.value);
+            clearFieldError("gameSummary");
+          }}
         />
       </label>
       {getFieldError("gameSummary") ? (
@@ -607,9 +655,13 @@ export function GameForm({
         Service hours (AL DM rewards)
         <input
           aria-invalid={Boolean(getFieldError("serviceHours"))}
-          defaultValue={initialValues?.serviceHours ?? ""}
+          value={serviceHoursValue}
           inputMode="decimal"
           name="serviceHours"
+          onChange={(event) => {
+            setServiceHoursValue(event.target.value);
+            clearFieldError("serviceHours");
+          }}
           placeholder="4"
           type="text"
         />
@@ -628,10 +680,14 @@ export function GameForm({
             Downtime days awarded
             <input
               aria-invalid={Boolean(getFieldError("downtimeDaysAwarded"))}
-              defaultValue={initialValues?.downtimeDaysAwarded ?? "0"}
+              value={downtimeDaysAwardedValue}
               inputMode="numeric"
               min="0"
               name="downtimeDaysAwarded"
+              onChange={(event) => {
+                setDowntimeDaysAwardedValue(event.target.value);
+                clearFieldError("downtimeDaysAwarded");
+              }}
               placeholder="0"
               type="number"
             />
@@ -663,6 +719,7 @@ export function GameForm({
       <GameRewardFields
         initialConsumablesAwarded={consumablesAwardedValue}
         initialMagicItemsAwarded={magicItemsAwardedValue}
+        initialSpellbookAwarded={spellbookAwardedValue}
         legalBlessingOptions={legalBlessingOptions}
         legalBoonOptions={legalBoonOptions}
         legalBuildMagicItemOptions={legalBuildMagicItemOptions}
@@ -676,6 +733,9 @@ export function GameForm({
       ) : null}
       {getFieldError("consumablesAwarded") ? (
         <p style={errorTextStyle}>{getFieldError("consumablesAwarded")}</p>
+      ) : null}
+      {getFieldError("spellbookAwarded") ? (
+        <p style={errorTextStyle}>{getFieldError("spellbookAwarded")}</p>
       ) : null}
       <label>
         Session notes/Story Awards

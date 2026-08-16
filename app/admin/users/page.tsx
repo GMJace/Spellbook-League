@@ -16,6 +16,7 @@ import {
   removeLeagueAdminRole,
   removePatronRole,
   removeProDmFromRoster,
+  updateUserStoreCredit,
   updateProDmRating,
 } from "@/app/admin/users/actions";
 import { requireAdminUser } from "@/lib/admin";
@@ -69,6 +70,7 @@ export default async function AdminUsersPage({
     eventAdmin?: string;
     leagueAdmin?: string;
     patron?: string;
+    credit?: string;
   }>;
 }) {
   const adminUser = await requireAdminUser();
@@ -169,6 +171,12 @@ export default async function AdminUsersPage({
     invalid: "The requested Patron change could not be completed.",
   };
   const patronMessage = params.patron ? patronMessageMap[params.patron] : "";
+  const creditMessageMap: Record<string, string> = {
+    held: "That credit change would drop the balance below the user's held checkout credit.",
+    invalid: "The requested account credit change could not be completed.",
+    updated: "Account credit updated.",
+  };
+  const creditMessage = params.credit ? creditMessageMap[params.credit] : "";
 
   return (
     <main className="page-shell">
@@ -193,6 +201,9 @@ export default async function AdminUsersPage({
         ) : null}
         {patronMessage ? (
           <p style={{ color: "#ffffff", margin: 0 }}>{patronMessage}</p>
+        ) : null}
+        {creditMessage ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>{creditMessage}</p>
         ) : null}
 
         <AdminPageHeader
@@ -505,7 +516,7 @@ export default async function AdminUsersPage({
                   <th>Name</th>
                   <th>Email</th>
                   <th>Discord Handle</th>
-                  <th>Roles</th>
+                  <th>Store credit</th>
                   <th>Event Admin</th>
                   <th>League Admin</th>
                   <th>Patron</th>
@@ -520,13 +531,7 @@ export default async function AdminUsersPage({
                     <td>{user.name}</td>
                     <td>{user.email}</td>
                     <td>{user.discordHandle || "Not provided"}</td>
-                    <td>
-                      {user.roles.length
-                        ? user.roles
-                            .map((role: AdminUserRow["roles"][number]) => role.role)
-                            .join(", ")
-                        : "None"}
-                    </td>
+                    <td>${user.storeCreditUsd.toFixed(2)}</td>
                     <td>
                       {user.roles.some((role: AdminUserRow["roles"][number]) => role.role === "EVENT_ADMIN")
                         ? "Yes"
@@ -546,9 +551,39 @@ export default async function AdminUsersPage({
                     <td>{formatDate(user.createdAt)}</td>
                     <td>
                       {user.id === adminUser.id ? (
-                        <span className="muted">Current account</span>
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/admin/users/${user.id}`}
+                          >
+                            View profile
+                          </Link>
+                          <span className="muted">Current account</span>
+                        </div>
                       ) : (
                         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/admin/users/${user.id}`}
+                          >
+                            View profile
+                          </Link>
+                          <form action={updateUserStoreCredit} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                            <input name="targetUserId" type="hidden" value={user.id} />
+                            <input name="mode" type="hidden" value="ADJUST" />
+                            <input name="returnTo" type="hidden" value="/admin/users" />
+                            <input
+                              defaultValue="0"
+                              inputMode="decimal"
+                              name="amountUsd"
+                              step="0.01"
+                              style={{ maxWidth: "7rem" }}
+                              type="number"
+                            />
+                            <button className="button-secondary button-small" type="submit">
+                              Adjust credit
+                            </button>
+                          </form>
                           {user.roles.some(
                             (role: AdminUserRow["roles"][number]) => role.role === "EVENT_ADMIN"
                           ) ? (

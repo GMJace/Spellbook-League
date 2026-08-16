@@ -1,14 +1,14 @@
 import Link from "next/link";
 
 import {
-  createTicketPayout,
+  createPendingDmPayouts,
+  createSpellbookExpenseReceipt,
   createTicketRefund,
   saveDmPaymentProfile,
   saveTicketSalesSettings,
-  updateTicketPayout,
+  updateTicketPayoutGroup,
 } from "@/app/admin/ticket-sales/actions";
 import { AdminPageHeader } from "@/components/admin-page-header";
-import { isAdminEmail } from "@/lib/admin-access";
 import { requireTicketSalesAdminUser } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import {
@@ -17,14 +17,18 @@ import {
   buildKnownDmCandidates,
   buildLeagueTicketSaleRows,
   buildMembershipSaleRows,
+  calculatePayoutAmount,
   calculateTaxAmount,
   createDmPaymentLookupKey,
   DmPaymentProfileRecord,
   sumAmounts,
   TICKET_PAYOUT_STATUSES,
-  TICKET_SALE_SOURCE_TYPES,
 } from "@/lib/ticket-sales";
-import { formatDateTime, formatUsd } from "@/lib/utils";
+import {
+  getCombinedSalesTaxRatePct,
+  normalizeTicketSalesRateSettings,
+} from "@/lib/checkout-pricing";
+import { formatDate, formatDateTime, formatUsd } from "@/lib/utils";
 
 function formatPercent(value: number) {
   return `${value.toFixed(value % 1 === 0 ? 0 : 2)}%`;
@@ -83,6 +87,9 @@ function getTicketSalesPrisma() {
     ticketRefund?: {
       findMany?: (...args: any[]) => Promise<any[]>;
     };
+    spellbookExpenseReceipt?: {
+      findMany?: (...args: any[]) => Promise<any[]>;
+    };
     ticketSalesSettings?: {
       findUnique?: (...args: any[]) => Promise<any>;
     };
@@ -129,14 +136,11 @@ export default async function AdminTicketSalesPage({
     payout?: string;
     refund?: string;
     settings?: string;
+    "spellbook-expense"?: string;
   }>;
 }) {
-  const currentUser = await requireTicketSalesAdminUser();
+  await requireTicketSalesAdminUser();
   const params = await searchParams;
-  const navigationRole =
-    !isAdminEmail(currentUser.email) && currentUser.roles.includes("EVENT_ADMIN")
-      ? "EVENT_ADMIN"
-      : "ADMIN";
   const prismaTicketSales = getTicketSalesPrisma();
   const ticketSalesFeatureReady = Boolean(
     prismaTicketSales.dmPaymentProfile &&
@@ -152,6 +156,7 @@ export default async function AdminTicketSalesPage({
     grimoireGames,
     paymentProfiles,
     refunds,
+    spellbookExpenseReceipts,
     settings,
     payouts,
   ] = await Promise.all([
@@ -168,6 +173,7 @@ export default async function AdminTicketSalesPage({
         itemDataJson: true,
         payerEmail: true,
         paypalOrderId: true,
+        receiptNumber: true,
         status: true,
         summaryText: true,
       },
@@ -215,7 +221,9 @@ export default async function AdminTicketSalesPage({
       include: {
         checkoutOrder: {
           select: {
+            payerEmail: true,
             paypalOrderId: true,
+            receiptNumber: true,
             summaryText: true,
           },
         },
@@ -226,6 +234,16 @@ export default async function AdminTicketSalesPage({
         },
       },
       orderBy: [{ refundedAt: "desc" }, { createdAt: "desc" }],
+    }),
+    safeFindMany(prismaTicketSales.spellbookExpenseReceipt, {
+      include: {
+        createdBy: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ expenseDate: "desc" }, { createdAt: "desc" }],
     }),
     safeFindUnique(prismaTicketSales.ticketSalesSettings, {
       where: {
@@ -268,11 +286,8 @@ export default async function AdminTicketSalesPage({
     leagueRows,
     paymentProfiles,
   });
-  const activeSettings = settings ?? {
-    defaultDmPayoutRatePct: 0,
-    federalTaxRatePct: 5,
-    provincialTaxRatePct: 0,
-  };
+  const activeSettings = normalizeTicketSalesRateSettings(settings);
+  const combinedSalesTaxRatePct = getCombinedSalesTaxRatePct(activeSettings);
 
   const leagueGrossUsd = sumAmounts(leagueRows.map((row) => row.totalUsd));
   const grimoireGrossUsd = sumAmounts(grimoireRows.map((row) => row.totalUsd));
@@ -321,6 +336,138 @@ export default async function AdminTicketSalesPage({
         }),
       ),
   );
+  const payoutCandidateDmRollups = Array.from(
+    openPayoutCandidates
+      .reduce(
+        (rollups, candidate) => {
+          const existingRollup = rollups.get(candidate.dmLookupKey) ?? {
+            combinedEstimatedPayoutUsd: 0,
+            dmLookupKey: candidate.dmLookupKey,
+            dmName: candidate.dmName,
+            eventTicketSalesUsd: 0,
+            leagueTicketSalesUsd: 0,
+          };
+
+          if (candidate.checkoutType === "LEAGUE") {
+            existingRollup.leagueTicketSalesUsd += candidate.grossTicketSalesUsd;
+            existingRollup.combinedEstimatedPayoutUsd += calculatePayoutAmount(
+              candidate.grossTicketSalesUsd,
+              activeSettings.leagueGameDmPayoutRatePct,
+            );
+          } else {
+            existingRollup.eventTicketSalesUsd += candidate.grossTicketSalesUsd;
+            existingRollup.combinedEstimatedPayoutUsd += calculatePayoutAmount(
+              candidate.grossTicketSalesUsd,
+              activeSettings.eventGameDmPayoutRatePct,
+            );
+          }
+
+          rollups.set(candidate.dmLookupKey, existingRollup);
+
+          return rollups;
+        },
+        new Map<
+          string,
+          {
+            combinedEstimatedPayoutUsd: number;
+            dmLookupKey: string;
+            dmName: string;
+            eventTicketSalesUsd: number;
+            leagueTicketSalesUsd: number;
+          }
+        >(),
+      )
+      .values(),
+  )
+    .map((rollup) => ({
+      ...rollup,
+      combinedEstimatedPayoutUsd: sumAmounts([rollup.combinedEstimatedPayoutUsd]),
+      eventTicketSalesUsd: sumAmounts([rollup.eventTicketSalesUsd]),
+      leagueTicketSalesUsd: sumAmounts([rollup.leagueTicketSalesUsd]),
+    }))
+    .sort((left, right) => left.dmName.localeCompare(right.dmName));
+  const payoutLogRowMap = payouts.reduce(
+    (rows, payout) => {
+      const rowKey = payout.groupKey ?? payout.id;
+      const existingRow = rows.get(rowKey) ?? {
+        combinedPayoutUsd: 0,
+        createdAt: payout.createdAt,
+        dmName: payout.dmName,
+        dmPaymentProfileId: payout.dmPaymentProfileId ?? "",
+        dmUserId: payout.dmUserId ?? null,
+        eventTicketSalesUsd: 0,
+        groupKeyOrPayoutId: rowKey,
+        isGrouped: Boolean(payout.groupKey),
+        leagueTicketSalesUsd: 0,
+        notes: payout.notes ?? "",
+        status: payout.status,
+      };
+
+      if (payout.createdAt < existingRow.createdAt) {
+        existingRow.createdAt = payout.createdAt;
+      }
+
+      if (payout.checkoutType === "LEAGUE") {
+        existingRow.leagueTicketSalesUsd += payout.grossTicketSalesUsd;
+      } else {
+        existingRow.eventTicketSalesUsd += payout.grossTicketSalesUsd;
+      }
+
+      existingRow.combinedPayoutUsd += payout.payoutAmountUsd;
+      existingRow.dmPaymentProfileId = payout.dmPaymentProfileId ?? existingRow.dmPaymentProfileId;
+      existingRow.notes = payout.notes ?? existingRow.notes;
+      existingRow.status =
+        existingRow.status === payout.status ? existingRow.status : "PENDING";
+
+      rows.set(rowKey, existingRow);
+
+      return rows;
+    },
+    new Map<
+      string,
+      {
+        combinedPayoutUsd: number;
+        createdAt: Date;
+        dmName: string;
+        dmPaymentProfileId: string;
+        dmUserId: null | string;
+        eventTicketSalesUsd: number;
+        groupKeyOrPayoutId: string;
+        isGrouped: boolean;
+        leagueTicketSalesUsd: number;
+        notes: string;
+        status: "CANCELLED" | "PAID" | "PENDING";
+      }
+    >(),
+  );
+  const payoutLogRowValues = Array.from(payoutLogRowMap.values()) as Array<{
+    combinedPayoutUsd: number;
+    createdAt: Date;
+    dmName: string;
+    dmPaymentProfileId: string;
+    dmUserId: null | string;
+    eventTicketSalesUsd: number;
+    groupKeyOrPayoutId: string;
+    isGrouped: boolean;
+    leagueTicketSalesUsd: number;
+    notes: string;
+    status: "CANCELLED" | "PAID" | "PENDING";
+  }>;
+  const payoutLogRows = payoutLogRowValues
+    .map((row) => ({
+      combinedPayoutUsd: sumAmounts([row.combinedPayoutUsd]),
+      createdAt: row.createdAt,
+      dmName: row.dmName,
+      dmPaymentProfileId: row.dmPaymentProfileId,
+      dmUserId: row.dmUserId,
+      eventTicketSalesUsd: sumAmounts([row.eventTicketSalesUsd]),
+      groupKeyOrPayoutId: row.groupKeyOrPayoutId,
+      isGrouped: row.isGrouped,
+      leagueTicketSalesUsd: sumAmounts([row.leagueTicketSalesUsd]),
+      notes: row.notes,
+      status: row.status,
+    }))
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
 
   const settingsMessageMap: Record<string, string> = {
     invalid: "Ticket sales settings could not be saved.",
@@ -337,6 +484,12 @@ export default async function AdminTicketSalesPage({
     invalid: "Refund could not be logged.",
     unavailable: "Refund logging is unavailable until the new Prisma migration/client is applied.",
   };
+  const spellbookExpenseMessageMap: Record<string, string> = {
+    created: "SPELLBOOK purchase or subscription logged.",
+    invalid: "SPELLBOOK purchase or subscription could not be logged.",
+    unavailable:
+      "SPELLBOOK purchase tracking is unavailable until the new Prisma migration/client is applied.",
+  };
   const payoutMessageMap: Record<string, string> = {
     created: "Payout created.",
     invalid: "Payout could not be saved.",
@@ -349,6 +502,9 @@ export default async function AdminTicketSalesPage({
   const paymentMessage = params.payment ? paymentMessageMap[params.payment] : "";
   const refundMessage = params.refund ? refundMessageMap[params.refund] : "";
   const payoutMessage = params.payout ? payoutMessageMap[params.payout] : "";
+  const spellbookExpenseMessage = params["spellbook-expense"]
+    ? spellbookExpenseMessageMap[params["spellbook-expense"]]
+    : "";
 
   return (
     <main className="page-shell">
@@ -357,6 +513,9 @@ export default async function AdminTicketSalesPage({
         {paymentMessage ? <p style={{ color: "#ffffff", margin: 0 }}>{paymentMessage}</p> : null}
         {refundMessage ? <p style={{ color: "#ffffff", margin: 0 }}>{refundMessage}</p> : null}
         {payoutMessage ? <p style={{ color: "#ffffff", margin: 0 }}>{payoutMessage}</p> : null}
+        {spellbookExpenseMessage ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>{spellbookExpenseMessage}</p>
+        ) : null}
         {!ticketSalesFeatureReady ? (
           <p style={{ color: "#ffe7a0", margin: 0 }}>
             Ticket-sales tables are not active in the current Prisma client yet. Sales reporting
@@ -367,9 +526,8 @@ export default async function AdminTicketSalesPage({
         ) : null}
 
         <AdminPageHeader
-          description="Review completed league and Grimoire ticket sales, log refunds, manage DM payment methods, and track manual payouts from one place."
-          navigationRole={navigationRole}
-          title="Ticket sales"
+          description="Review completed league and Grimoire sales, log refunds, manage DM payment methods, track payouts, and monitor SPELLBOOK accounting in one place."
+          title="Accounting"
         />
 
         <div className="ggcon-summary-metrics">
@@ -409,8 +567,8 @@ export default async function AdminTicketSalesPage({
             <div>
               <h2 style={{ margin: 0 }}>Tax and payout settings</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                These rates are reporting inputs only right now. PayPal checkout still charges the
-                stored ticket price directly and does not add separate tax lines yet.
+                Sales tax is applied in the live carts and PayPal checkout totals. DM payout
+                defaults are split so league games and event games can use different percentages.
               </p>
             </div>
           </div>
@@ -444,11 +602,21 @@ export default async function AdminTicketSalesPage({
                 />
               </label>
               <label>
-                Default DM payout %
+                League games payout %
                 <input
-                  defaultValue={activeSettings.defaultDmPayoutRatePct}
+                  defaultValue={activeSettings.leagueGameDmPayoutRatePct}
                   min="0"
-                  name="defaultDmPayoutRatePct"
+                  name="leagueGameDmPayoutRatePct"
+                  step="0.01"
+                  type="number"
+                />
+              </label>
+              <label>
+                Event games payout %
+                <input
+                  defaultValue={activeSettings.eventGameDmPayoutRatePct}
+                  min="0"
+                  name="eventGameDmPayoutRatePct"
                   step="0.01"
                   type="number"
                 />
@@ -461,6 +629,10 @@ export default async function AdminTicketSalesPage({
 
           <div className="ggcon-summary-metrics">
             <div className="list-card stack" style={{ gap: "0.35rem" }}>
+              <span className="muted">Combined sales tax rate</span>
+              <strong>{formatPercent(combinedSalesTaxRatePct)}</strong>
+            </div>
+            <div className="list-card stack" style={{ gap: "0.35rem" }}>
               <span className="muted">Estimated federal tax</span>
               <strong>{formatUsd(estimatedFederalTaxUsd)}</strong>
             </div>
@@ -468,6 +640,102 @@ export default async function AdminTicketSalesPage({
               <span className="muted">Estimated provincial tax</span>
               <strong>{formatUsd(estimatedProvincialTaxUsd)}</strong>
             </div>
+          </div>
+        </div>
+
+        <div className="list-card stack">
+          <img
+            alt="Ticket sales divider"
+            className="ggcon-table-divider"
+            src="/divider4.png"
+          />
+          <div className="section-heading">
+            <div>
+              <h2 style={{ margin: 0 }}>SPELLBOOK purchases / subscriptions</h2>
+              <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                Track internal SPELLBOOK purchases, tools, and subscription receipts in one place.
+              </p>
+            </div>
+            <Link
+              className="button secondary"
+              href="/admin/accounting/export?report=spellbook-expenses"
+            >
+              Download CSV
+            </Link>
+          </div>
+
+          <form action={createSpellbookExpenseReceipt} className="form-stack">
+            <div
+              className="spellbook-expense-grid"
+              style={{
+                display: "grid",
+                gap: "1rem",
+              }}
+            >
+              <label>
+                Date
+                <input name="expenseDate" required type="date" />
+              </label>
+              <label>
+                Card
+                <select defaultValue="Jace" name="cardHolder">
+                  <option value="Jace">Jace</option>
+                  <option value="Trevor">Trevor</option>
+                </select>
+              </label>
+              <label>
+                Company
+                <input name="company" required type="text" />
+              </label>
+              <label>
+                Service/Item
+                <input name="serviceItem" required type="text" />
+              </label>
+              <label>
+                Total
+                <input min="0" name="totalUsd" required step="0.01" type="number" />
+              </label>
+              <label>
+                Tax Paid
+                <input min="0" name="taxPaidUsd" required step="0.01" type="number" />
+              </label>
+            </div>
+            <button className="button-secondary" type="submit">
+              Log purchase
+            </button>
+          </form>
+
+          <div className="table-wrap">
+            <table className="ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Card</th>
+                  <th>Company</th>
+                  <th>Service/Item</th>
+                  <th>Total</th>
+                  <th>Tax Paid</th>
+                </tr>
+              </thead>
+              <tbody>
+                {spellbookExpenseReceipts.length ? (
+                  spellbookExpenseReceipts.map((receipt) => (
+                    <tr key={receipt.id}>
+                      <td>{formatDate(receipt.expenseDate)}</td>
+                      <td>{receipt.cardHolder}</td>
+                      <td>{receipt.company}</td>
+                      <td>{receipt.serviceItem}</td>
+                      <td>{formatUsd(receipt.totalUsd)}</td>
+                      <td>{formatUsd(receipt.taxPaidUsd)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6}>No SPELLBOOK purchases or subscriptions have been logged yet.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -601,20 +869,14 @@ export default async function AdminTicketSalesPage({
               </tbody>
             </table>
           </div>
-        </div>
 
-        <div className="list-card stack">
-          <img
-            alt="Ticket sales divider"
-            className="ggcon-table-divider"
-            src="/divider4.png"
-          />
           <div className="section-heading">
             <div>
-              <h2 style={{ margin: 0 }}>Payout candidates</h2>
+              <h2 style={{ margin: 0 }}>Pending DM Payouts</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                Aggregated ticket sales by game and DM. Create a payout record when you are ready
-                to track what the DM should receive for that sale source.
+                Open payout candidates grouped by DM using the current default payout rates:
+                {" "}league at {formatPercent(activeSettings.leagueGameDmPayoutRatePct)} and
+                {" "}event games at {formatPercent(activeSettings.eventGameDmPayoutRatePct)}.
               </p>
             </div>
           </div>
@@ -623,87 +885,53 @@ export default async function AdminTicketSalesPage({
             <table className="ledger-table">
               <thead>
                 <tr>
-                  <th>Source</th>
                   <th>DM</th>
-                  <th>Seats sold</th>
-                  <th>Gross sales</th>
-                  <th>Payment method</th>
-                  <th>Create payout</th>
+                  <th>League ticket sales</th>
+                  <th>Event ticket sales</th>
+                  <th>Combined estimated payout</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {openPayoutCandidates.length ? (
-                  openPayoutCandidates.map((candidate) => (
-                    <tr
-                      key={[
-                        candidate.checkoutType,
-                        candidate.saleSourceType,
-                        candidate.saleSourceId,
-                        candidate.dmLookupKey,
-                      ].join(":")}
-                    >
+                {payoutCandidateDmRollups.length ? (
+                  payoutCandidateDmRollups.map((rollup) => (
+                    <tr key={rollup.dmLookupKey}>
                       <td>
-                        <strong>{candidate.saleSourceLabel}</strong>
-                        <div className="muted">
-                          {candidate.checkoutType} · {candidate.saleSourceType.replace(/_/g, " ")}
-                        </div>
+                        <strong>{rollup.dmName}</strong>
                       </td>
-                      <td>{candidate.dmName}</td>
-                      <td>{candidate.seatCount}</td>
-                      <td>{formatUsd(candidate.grossTicketSalesUsd)}</td>
+                      <td>{formatUsd(rollup.leagueTicketSalesUsd)}</td>
+                      <td>{formatUsd(rollup.eventTicketSalesUsd)}</td>
                       <td>
-                        {candidate.dmPaymentProfileId
-                          ? formatPaymentMethodSummary(
-                              paymentProfiles.find(
-                                (profile) => profile.id === candidate.dmPaymentProfileId,
-                              ) ?? {
-                                contactEmail: null,
-                                isActive: false,
-                                paymentDetails: null,
-                                paymentMethodLabel: null,
-                                paymentMethodType: null,
-                              },
-                            )
-                          : "Missing payment method"}
+                        <strong>{formatUsd(rollup.combinedEstimatedPayoutUsd)}</strong>
                       </td>
                       <td>
-                        <form action={createTicketPayout} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                          <input name="checkoutType" type="hidden" value={candidate.checkoutType} />
-                          <input name="dmName" type="hidden" value={candidate.dmName} />
+                        <form action={createPendingDmPayouts}>
                           <input
-                            name="dmPaymentProfileId"
+                            name="candidatesJson"
                             type="hidden"
-                            value={candidate.dmPaymentProfileId ?? ""}
-                          />
-                          <input name="dmUserId" type="hidden" value={candidate.dmUserId ?? ""} />
-                          <input
-                            name="grossTicketSalesUsd"
-                            type="hidden"
-                            value={candidate.grossTicketSalesUsd}
-                          />
-                          <input name="notes" type="hidden" value="" />
-                          <input name="saleSourceId" type="hidden" value={candidate.saleSourceId} />
-                          <input
-                            name="saleSourceLabel"
-                            type="hidden"
-                            value={candidate.saleSourceLabel}
-                          />
-                          <input
-                            name="saleSourceType"
-                            type="hidden"
-                            value={candidate.saleSourceType}
-                          />
-                          <input name="seatCount" type="hidden" value={candidate.seatCount} />
-                          <input
-                            defaultValue={activeSettings.defaultDmPayoutRatePct}
-                            min="0"
-                            name="payoutRatePct"
-                            step="0.01"
-                            style={{ width: "90px" }}
-                            type="number"
+                            value={JSON.stringify(
+                              openPayoutCandidates
+                                .filter((candidate) => candidate.dmLookupKey === rollup.dmLookupKey)
+                                .map((candidate) => ({
+                                  checkoutType: candidate.checkoutType,
+                                  dmName: candidate.dmName,
+                                  dmPaymentProfileId: candidate.dmPaymentProfileId ?? "",
+                                  dmUserId: candidate.dmUserId ?? "",
+                                  grossTicketSalesUsd: candidate.grossTicketSalesUsd,
+                                  notes: "",
+                                  payoutRatePct:
+                                    candidate.checkoutType === "LEAGUE"
+                                      ? activeSettings.leagueGameDmPayoutRatePct
+                                      : activeSettings.eventGameDmPayoutRatePct,
+                                  saleSourceId: candidate.saleSourceId,
+                                  saleSourceLabel: candidate.saleSourceLabel,
+                                  saleSourceType: candidate.saleSourceType,
+                                  seatCount: candidate.seatCount,
+                                })),
+                            )}
                           />
                           <button className="button-secondary button-small" type="submit">
-                            Create payout
+                            Add to payout log
                           </button>
                         </form>
                       </td>
@@ -711,148 +939,12 @@ export default async function AdminTicketSalesPage({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6}>Every current payout candidate is already tracked or there are no ticketed DM sales yet.</td>
+                    <td colSpan={5}>No pending DM payouts are available yet.</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        </div>
-
-        <div className="list-card stack">
-          <img
-            alt="Ticket sales divider"
-            className="ggcon-table-divider"
-            src="/divider4.png"
-          />
-          <div className="section-heading">
-            <div>
-              <h2 style={{ margin: 0 }}>Refund log</h2>
-              <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                Refunds are manual records right now. Use this to track ticket reimbursements even
-                if the money movement happened outside this page.
-              </p>
-            </div>
-            <Link className="button secondary" href="/admin/ticket-sales/export?report=refunds">
-              Download CSV
-            </Link>
-          </div>
-
-          <form action={createTicketRefund} className="form-stack">
-            <div
-              style={{
-                display: "grid",
-                gap: "1rem",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              }}
-            >
-              <label>
-                Checkout type
-                <select defaultValue="LEAGUE" name="checkoutType">
-                  <option value="LEAGUE">League</option>
-                  <option value="GRIMOIRE">Grimoire</option>
-                </select>
-              </label>
-              <label>
-                Sale source type
-                <select defaultValue="OTHER" name="saleSourceType">
-                  {TICKET_SALE_SOURCE_TYPES.map((value) => (
-                    <option key={value} value={value}>
-                      {value.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Related order
-                <select defaultValue="" name="checkoutOrderId">
-                  <option value="">No linked order</option>
-                  {completedOrders.map((order) => (
-                    <option key={order.id} value={order.id}>
-                      {order.checkoutType} · {order.paypalOrderId} · {formatUsd(order.amountUsd)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Refund amount USD
-                <input min="0.01" name="amountUsd" step="0.01" type="number" />
-              </label>
-              <label>
-                Refunded at
-                <input name="refundedAt" type="datetime-local" />
-              </label>
-              <label>
-                Sale source id
-                <input name="saleSourceId" type="text" />
-              </label>
-            </div>
-            <label>
-              Sale source label
-              <input name="saleSourceLabel" required type="text" />
-            </label>
-            <label>
-              Reason
-              <input name="reason" required type="text" />
-            </label>
-            <label>
-              Notes
-              <textarea name="notes" rows={3} />
-            </label>
-            <button className="button-secondary" type="submit">
-              Log refund
-            </button>
-          </form>
-
-          <div className="table-wrap">
-            <table className="ledger-table">
-              <thead>
-                <tr>
-                  <th>Refunded</th>
-                  <th>Source</th>
-                  <th>Amount</th>
-                  <th>Reason</th>
-                  <th>Order</th>
-                  <th>Logged by</th>
-                </tr>
-              </thead>
-              <tbody>
-                {refunds.length ? (
-                  refunds.map((refund) => (
-                    <tr key={refund.id}>
-                      <td>{formatDateTime(refund.refundedAt)}</td>
-                      <td>
-                        <strong>{refund.saleSourceLabel}</strong>
-                        <div className="muted">
-                          {refund.checkoutType} · {refund.saleSourceType.replace(/_/g, " ")}
-                        </div>
-                      </td>
-                      <td>{formatUsd(refund.amountUsd)}</td>
-                      <td>
-                        <strong>{refund.reason}</strong>
-                        {refund.notes ? <div className="muted">{refund.notes}</div> : null}
-                      </td>
-                      <td>
-                        {refund.checkoutOrder ? (
-                          <span className="muted">{refund.checkoutOrder.paypalOrderId}</span>
-                        ) : (
-                          "Manual"
-                        )}
-                      </td>
-                      <td>{refund.createdBy?.name ?? "Unknown"}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6}>No refunds have been logged yet.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="list-card stack">
           <img
             alt="Ticket sales divider"
             className="ggcon-table-divider"
@@ -866,7 +958,7 @@ export default async function AdminTicketSalesPage({
                 the DM has been sent funds.
               </p>
             </div>
-            <Link className="button secondary" href="/admin/ticket-sales/export?report=payouts">
+            <Link className="button secondary" href="/admin/accounting/export?report=payouts">
               Download CSV
             </Link>
           </div>
@@ -875,56 +967,51 @@ export default async function AdminTicketSalesPage({
             <table className="ledger-table">
               <thead>
                 <tr>
-                  <th>Source</th>
+                  <th>Date</th>
                   <th>DM</th>
-                  <th>Gross sales</th>
-                  <th>Payout</th>
-                  <th>Paid %</th>
+                  <th>League ticket sales</th>
+                  <th>Event ticket sales</th>
+                  <th>Combined payout</th>
                   <th>Status</th>
-                  <th>Save</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {payouts.length ? (
-                  payouts.map((payout) => (
-                    <tr key={payout.id}>
+                {payoutLogRows.length ? (
+                  payoutLogRows.map((payout) => (
+                    <tr key={payout.groupKeyOrPayoutId}>
                       <td>
-                        <strong>{payout.saleSourceLabel}</strong>
-                        <div className="muted">
-                          {payout.checkoutType} · {payout.saleSourceType.replace(/_/g, " ")} ·{" "}
-                          {payout.seatCount} seats
-                        </div>
+                        {formatDateTime(payout.createdAt)}
                       </td>
                       <td>{payout.dmName}</td>
-                      <td>{formatUsd(payout.grossTicketSalesUsd)}</td>
+                      <td>{formatUsd(payout.leagueTicketSalesUsd)}</td>
+                      <td>{formatUsd(payout.eventTicketSalesUsd)}</td>
                       <td>
-                        <div>
-                          <strong>{formatUsd(payout.payoutAmountUsd)}</strong>
-                        </div>
-                        <div className="muted">{formatPercent(payout.payoutRatePct)}</div>
-                      </td>
-                      <td>
-                        {payout.status === "PAID"
-                          ? formatPercent(payout.paidPayoutRatePct ?? payout.payoutRatePct)
-                          : "—"}
+                        <strong>{formatUsd(payout.combinedPayoutUsd)}</strong>
                       </td>
                       <td>
                         {payout.status}
-                        {payout.paidAt ? (
-                          <div className="muted">{formatDateTime(payout.paidAt)}</div>
-                        ) : null}
                       </td>
                       <td>
                         <form
-                          action={updateTicketPayout}
+                          action={updateTicketPayoutGroup}
                           className="form-stack"
                           style={{ minWidth: "260px" }}
                         >
-                          <input name="payoutId" type="hidden" value={payout.id} />
+                          <input
+                            name="groupKeyOrPayoutId"
+                            type="hidden"
+                            value={payout.groupKeyOrPayoutId}
+                          />
+                          <input
+                            name="isGrouped"
+                            type="hidden"
+                            value={payout.isGrouped ? "true" : "false"}
+                          />
                           <label>
                             Payment method
                             <select
-                              defaultValue={payout.dmPaymentProfileId ?? ""}
+                              defaultValue={payout.dmPaymentProfileId}
                               name="dmPaymentProfileId"
                             >
                               <option value="">No payment method linked</option>
@@ -944,21 +1031,21 @@ export default async function AdminTicketSalesPage({
                             </select>
                           </label>
                           <label>
-                            Gross sales USD
+                            League ticket sales USD
                             <input
-                              defaultValue={payout.grossTicketSalesUsd}
+                              defaultValue={payout.leagueTicketSalesUsd}
                               min="0"
-                              name="grossTicketSalesUsd"
+                              name="leagueTicketSalesUsd"
                               step="0.01"
                               type="number"
                             />
                           </label>
                           <label>
-                            Payout %
+                            Event ticket sales USD
                             <input
-                              defaultValue={payout.payoutRatePct}
+                              defaultValue={payout.eventTicketSalesUsd}
                               min="0"
-                              name="payoutRatePct"
+                              name="eventTicketSalesUsd"
                               step="0.01"
                               type="number"
                             />
@@ -975,10 +1062,10 @@ export default async function AdminTicketSalesPage({
                           </label>
                           <label>
                             Notes
-                            <textarea defaultValue={payout.notes ?? ""} name="notes" rows={2} />
+                            <textarea defaultValue={payout.notes} name="notes" rows={2} />
                           </label>
                           <button className="button-secondary button-small" type="submit">
-                            Save payout
+                            Update payout
                           </button>
                         </form>
                       </td>
@@ -1002,13 +1089,141 @@ export default async function AdminTicketSalesPage({
           />
           <div className="section-heading">
             <div>
+              <h2 style={{ margin: 0 }}>Refund log</h2>
+              <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                Refunds are manual records right now. Use this to track ticket reimbursements even
+                if the money movement happened outside this page.
+              </p>
+            </div>
+            <Link className="button secondary" href="/admin/accounting/export?report=refunds">
+              Download CSV
+            </Link>
+          </div>
+
+          <form action={createTicketRefund} className="form-stack">
+              <div
+              style={{
+                display: "grid",
+                gap: "1rem",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              }}
+            >
+              <label>
+                Receipt #
+                <select defaultValue="" name="checkoutOrderId" required>
+                  <option value="">Select a receipt #</option>
+                  {completedOrders.map((order) => (
+                    <option key={order.id} value={order.id}>
+                      {order.receiptNumber ?? order.paypalOrderId} · {order.checkoutType} ·{" "}
+                      {formatUsd(order.amountUsd)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Refund amount USD
+                <input min="0.01" name="amountUsd" step="0.01" type="number" />
+              </label>
+              <label>
+                Credit amount USD
+                <input min="0" name="creditAmountUsd" step="0.01" type="number" />
+              </label>
+              <label>
+                Refunded at
+                <input name="refundedAt" type="datetime-local" />
+              </label>
+            </div>
+            <label>
+              Reason
+              <input name="reason" required type="text" />
+            </label>
+            <label>
+              Notes
+              <textarea name="notes" rows={3} />
+            </label>
+            <button className="button-secondary" type="submit">
+              Log refund
+            </button>
+          </form>
+
+          <div className="table-wrap">
+            <table className="ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Refund USD</th>
+                  <th>Credit USD</th>
+                  <th>Receipt #</th>
+                  <th>Reason</th>
+                  <th>Notes</th>
+                  <th>Payer</th>
+                  <th>Logged by</th>
+                </tr>
+              </thead>
+              <tbody>
+                {refunds.length ? (
+                  refunds.map((refund) => (
+                    <tr key={refund.id}>
+                      <td>{formatDateTime(refund.refundedAt)}</td>
+                      <td>{formatUsd(refund.amountUsd)}</td>
+                      <td>{refund.creditGiven ? formatUsd(refund.creditAmountUsd) : "—"}</td>
+                      <td>
+                        {refund.checkoutOrder ? (
+                          <>
+                            <div>{refund.receiptNumber ?? "No refund receipt #"}</div>
+                            <div className="muted">
+                              Sale: {refund.checkoutOrder.receiptNumber ?? "No sale receipt #"}
+                            </div>
+                            <div className="muted">{refund.checkoutOrder.paypalOrderId}</div>
+                          </>
+                        ) : (
+                          <span className="muted">{refund.receiptNumber ?? "No refund receipt #"}</span>
+                        )}
+                      </td>
+                      <td>
+                        <strong>{refund.reason}</strong>
+                      </td>
+                      <td>
+                        {refund.creditGiven ? (
+                          <div className="muted">
+                            Credit given: {formatUsd(refund.creditAmountUsd)}
+                          </div>
+                        ) : null}
+                        {refund.notes ? (
+                          <div>{refund.notes}</div>
+                        ) : !refund.creditGiven ? (
+                          "—"
+                        ) : null}
+                      </td>
+                      <td>{refund.checkoutOrder?.payerEmail ?? "No payer email"}</td>
+                      <td>{refund.createdBy?.name ?? "Unknown"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8}>No refunds have been logged yet.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="list-card stack">
+          <img
+            alt="Ticket sales divider"
+            className="ggcon-table-divider"
+            src="/divider4.png"
+          />
+          <div className="section-heading">
+            <div>
               <h2 style={{ margin: 0 }}>Membership sales</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
                 Completed Grimoire Guild membership purchases derived from the stored league
                 checkout payload.
               </p>
             </div>
-            <Link className="button secondary" href="/admin/ticket-sales/export?report=memberships">
+            <Link className="button secondary" href="/admin/accounting/export?report=memberships">
               Download CSV
             </Link>
           </div>
@@ -1018,12 +1233,11 @@ export default async function AdminTicketSalesPage({
               <thead>
                 <tr>
                   <th>Captured</th>
-                  <th>Product</th>
-                  <th>Duration</th>
-                  <th>Qty</th>
                   <th>Price</th>
+                  <th>Qty</th>
                   <th>Gross</th>
-                  <th>Payer / order</th>
+                  <th>Receipt #</th>
+                  <th>Payer</th>
                 </tr>
               </thead>
               <tbody>
@@ -1032,24 +1246,21 @@ export default async function AdminTicketSalesPage({
                     <tr key={`${row.checkoutOrderId}:${row.productName}`}>
                       <td>{formatDateTime(row.capturedAt ?? row.createdAt)}</td>
                       <td>
-                        <strong>{row.productName}</strong>
-                      </td>
-                      <td>{row.durationDays} days</td>
-                      <td>{row.quantity}</td>
-                      <td>
                         <strong>{formatUsd(row.unitPriceUsd)}</strong>
                         <div className="muted">each</div>
                       </td>
+                      <td>{row.quantity}</td>
                       <td>{formatUsd(row.totalUsd)}</td>
                       <td>
-                        <strong>{row.payerEmail ?? "No payer email"}</strong>
+                        <strong>{row.receiptNumber ?? "No receipt #"}</strong>
                         <div className="muted">{row.paypalOrderId}</div>
                       </td>
+                      <td>{row.payerEmail ?? "No payer email"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7}>No completed membership sales were found.</td>
+                    <td colSpan={6}>No completed membership sales were found.</td>
                   </tr>
                 )}
               </tbody>
@@ -1071,7 +1282,7 @@ export default async function AdminTicketSalesPage({
                 checkout stream.
               </p>
             </div>
-            <Link className="button secondary" href="/admin/ticket-sales/export?report=badges">
+            <Link className="button secondary" href="/admin/accounting/export?report=badges">
               Download CSV
             </Link>
           </div>
@@ -1083,10 +1294,11 @@ export default async function AdminTicketSalesPage({
                   <th>Captured</th>
                   <th>Event</th>
                   <th>Badge</th>
-                  <th>Qty</th>
                   <th>Price</th>
+                  <th>Qty</th>
                   <th>Gross</th>
-                  <th>Payer / order</th>
+                  <th>Receipt #</th>
+                  <th>Payer</th>
                 </tr>
               </thead>
               <tbody>
@@ -1098,21 +1310,22 @@ export default async function AdminTicketSalesPage({
                       <td>
                         <strong>{row.title}</strong>
                       </td>
-                      <td>{row.quantity}</td>
                       <td>
                         <strong>{row.ticketPriceLabel}</strong>
                         <div className="muted">{formatUsd(row.unitPriceUsd)} each</div>
                       </td>
+                      <td>{row.quantity}</td>
                       <td>{formatUsd(row.totalUsd)}</td>
                       <td>
-                        <strong>{row.payerEmail ?? "No payer email"}</strong>
+                        <strong>{row.receiptNumber ?? "No receipt #"}</strong>
                         <div className="muted">{row.paypalOrderId}</div>
                       </td>
+                      <td>{row.payerEmail ?? "No payer email"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7}>No completed event badge sales were found.</td>
+                    <td colSpan={8}>No completed event badge sales were found.</td>
                   </tr>
                 )}
               </tbody>
@@ -1133,7 +1346,7 @@ export default async function AdminTicketSalesPage({
                 Completed paid league-ticket rows derived from stored PayPal checkout orders.
               </p>
             </div>
-            <Link className="button secondary" href="/admin/ticket-sales/export?report=league">
+            <Link className="button secondary" href="/admin/accounting/export?report=league">
               Download CSV
             </Link>
           </div>
@@ -1143,12 +1356,12 @@ export default async function AdminTicketSalesPage({
               <thead>
                 <tr>
                   <th>Captured</th>
-                  <th>Game</th>
                   <th>DM</th>
-                  <th>Seats</th>
-                  <th>Ticket</th>
+                  <th>Price</th>
+                  <th>Qty</th>
                   <th>Gross</th>
-                  <th>Payer / order</th>
+                  <th>Receipt #</th>
+                  <th>Payer</th>
                 </tr>
               </thead>
               <tbody>
@@ -1157,22 +1370,23 @@ export default async function AdminTicketSalesPage({
                     <tr key={`${row.checkoutOrderId}:${row.gameId}`}>
                       <td>{formatDateTime(row.capturedAt ?? row.createdAt)}</td>
                       <td>
-                        <strong>{row.title}</strong>
+                        <strong>{row.dmName}</strong>
+                        <div className="muted">{row.title}</div>
                         <div className="muted">
                           {row.gameDate ? formatDateTime(row.gameDate) : "Date unavailable"}
                         </div>
                       </td>
-                      <td>{row.dmName}</td>
-                      <td>{row.quantity}</td>
                       <td>
                         <strong>{row.ticketPriceLabel}</strong>
                         <div className="muted">{formatUsd(row.unitPriceUsd)} each</div>
                       </td>
+                      <td>{row.quantity}</td>
                       <td>{formatUsd(row.totalUsd)}</td>
                       <td>
-                        <strong>{row.payerEmail ?? "No payer email"}</strong>
+                        <strong>{row.receiptNumber ?? "No receipt #"}</strong>
                         <div className="muted">{row.paypalOrderId}</div>
                       </td>
+                      <td>{row.payerEmail ?? "No payer email"}</td>
                     </tr>
                   ))
                 ) : (
@@ -1198,7 +1412,7 @@ export default async function AdminTicketSalesPage({
                 Completed curated-game ticket rows derived from stored Grimoire checkout orders.
               </p>
             </div>
-            <Link className="button secondary" href="/admin/ticket-sales/export?report=grimoire">
+            <Link className="button secondary" href="/admin/accounting/export?report=grimoire">
               Download CSV
             </Link>
           </div>
@@ -1209,12 +1423,12 @@ export default async function AdminTicketSalesPage({
                 <tr>
                   <th>Captured</th>
                   <th>Event</th>
-                  <th>Item</th>
                   <th>DM</th>
+                  <th>Price</th>
                   <th>Qty</th>
-                  <th>Ticket</th>
                   <th>Gross</th>
-                  <th>Payer / order</th>
+                  <th>Receipt #</th>
+                  <th>Payer</th>
                 </tr>
               </thead>
               <tbody>
@@ -1224,25 +1438,26 @@ export default async function AdminTicketSalesPage({
                       <td>{formatDateTime(row.capturedAt ?? row.createdAt)}</td>
                       <td>{row.eventLabel}</td>
                       <td>
-                        <strong>{row.title}</strong>
+                        <strong>{row.dmName ?? "Not applicable"}</strong>
+                        <div className="muted">{row.title}</div>
                         <div className="muted">{row.saleSourceType.replace(/_/g, " ")}</div>
                       </td>
-                      <td>{row.dmName ?? "Not applicable"}</td>
-                      <td>{row.quantity}</td>
                       <td>
                         <strong>{row.ticketPriceLabel}</strong>
                         <div className="muted">{formatUsd(row.unitPriceUsd)} each</div>
                       </td>
+                      <td>{row.quantity}</td>
                       <td>{formatUsd(row.totalUsd)}</td>
                       <td>
-                        <strong>{row.payerEmail ?? "No payer email"}</strong>
+                        <strong>{row.receiptNumber ?? "No receipt #"}</strong>
                         <div className="muted">{row.paypalOrderId}</div>
                       </td>
+                      <td>{row.payerEmail ?? "No payer email"}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8}>No completed Grimoire game-ticket sales were found.</td>
+                        <td colSpan={8}>No completed Grimoire game-ticket sales were found.</td>
                   </tr>
                 )}
               </tbody>

@@ -56,6 +56,19 @@ type LeagueRefundRequestConfirmationEmailInput = {
   playerName: string | null | undefined;
 };
 
+type NewGameSignupAlertEmailInput = {
+  adventureCode: string;
+  dmName: string;
+  gameDateTime: string;
+  gamePath?: string | null;
+  gameTitle: string;
+  priceLabel: string;
+  seatsOpenLabel: string;
+  tierLabel: string;
+  to: string;
+  playerName: string | null | undefined;
+};
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -474,6 +487,63 @@ export async function sendLeagueRefundRequestConfirmationEmail({
     `<strong>Support contact:</strong> ${escapedSupportEmail}` +
     "</p>" +
     (gameUrl ? `<p><a href="${escapedGameUrl}">Open game listing</a></p>` : "");
+
+  await sendTransactionalEmail({
+    to,
+    subject,
+    text,
+    html,
+  });
+}
+
+export async function sendNewGameSignupAlertEmail({
+  adventureCode,
+  dmName,
+  gameDateTime,
+  gamePath,
+  gameTitle,
+  playerName,
+  priceLabel,
+  seatsOpenLabel,
+  tierLabel,
+  to,
+}: NewGameSignupAlertEmailInput) {
+  const recipientName = escapeHtml(getRecipientName(playerName));
+  const escapedGameTitle = escapeHtml(gameTitle);
+  const escapedAdventureCode = escapeHtml(adventureCode);
+  const escapedGameDateTime = escapeHtml(gameDateTime);
+  const escapedDmName = escapeHtml(dmName);
+  const escapedTierLabel = escapeHtml(tierLabel);
+  const escapedPriceLabel = escapeHtml(priceLabel);
+  const escapedSeatsOpenLabel = escapeHtml(seatsOpenLabel);
+  const gameUrl = gamePath?.trim() ? buildAppUrl(gamePath.trim()) : "";
+  const escapedGameUrl = gameUrl ? escapeHtml(gameUrl) : "";
+  const subject = `New game open for signup: ${gameTitle}`;
+  const text = [
+    `Hi ${getRecipientName(playerName)},`,
+    "",
+    `A new SPELLBOOK game is now open for signup: ${gameTitle}.`,
+    "",
+    `Adventure code: ${adventureCode}`,
+    `DM: ${dmName}`,
+    `Tier: ${tierLabel}`,
+    `Scheduled time: ${gameDateTime}`,
+    `Price: ${priceLabel}`,
+    `Open spots: ${seatsOpenLabel}`,
+    ...(gameUrl ? [`View game: ${gameUrl}`] : []),
+  ].join("\n");
+  const html =
+    `<p>Hi ${recipientName},</p>` +
+    `<p>A new <strong>SPELLBOOK</strong> game is now open for signup: <strong>${escapedGameTitle}</strong>.</p>` +
+    "<p>" +
+    `<strong>Adventure code:</strong> ${escapedAdventureCode}<br />` +
+    `<strong>DM:</strong> ${escapedDmName}<br />` +
+    `<strong>Tier:</strong> ${escapedTierLabel}<br />` +
+    `<strong>Scheduled time:</strong> ${escapedGameDateTime}<br />` +
+    `<strong>Price:</strong> ${escapedPriceLabel}<br />` +
+    `<strong>Open spots:</strong> ${escapedSeatsOpenLabel}` +
+    "</p>" +
+    (gameUrl ? `<p><a href="${escapedGameUrl}">View game</a></p>` : "");
 
   await sendTransactionalEmail({
     to,

@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+import { AdminPageMenu } from "@/components/admin-page-menu";
+import { isAdminEmail } from "@/lib/admin-access";
+import { requireUser } from "@/lib/auth";
+
 const adminNavigationLinks = [
   {
     href: "/admin/users",
@@ -27,8 +31,8 @@ const adminNavigationLinks = [
     roles: ["ADMIN", "EVENT_ADMIN"],
   },
   {
-    href: "/admin/ticket-sales",
-    label: "Ticket sales",
+    href: "/admin/accounting",
+    label: "Accounting",
     roles: ["ADMIN", "EVENT_ADMIN"],
   },
   {
@@ -50,10 +54,23 @@ const adminNavigationLinks = [
 
 type AdminNavigationRole = "ADMIN" | "EVENT_ADMIN" | "LEAGUE_ADMIN";
 
-export function AdminPageHeader({
+async function getVisibleAdminNavigationLinks() {
+  const currentUser = await requireUser();
+  const hasFullAdminAccess = isAdminEmail(currentUser.email);
+  const currentUserRoles = new Set<string>(currentUser.roles);
+
+  const visibleLinks = adminNavigationLinks.filter(
+    (link) =>
+      hasFullAdminAccess ||
+      (link.roles as readonly AdminNavigationRole[]).some((role) => currentUserRoles.has(role))
+  );
+
+  return [...visibleLinks, { href: "/", label: "Back home" }];
+}
+
+export async function AdminPageHeader({
   description,
   extraActions,
-  navigationRole = "ADMIN",
   title,
 }: {
   description: string;
@@ -61,12 +78,12 @@ export function AdminPageHeader({
   navigationRole?: AdminNavigationRole;
   title: string;
 }) {
-  const visibleLinks = adminNavigationLinks.filter((link) =>
-    (link.roles as readonly AdminNavigationRole[]).includes(navigationRole),
-  );
+  const visibleLinks = await getVisibleAdminNavigationLinks();
 
   return (
     <div className="list-card stack">
+      <AdminPageMenu currentTitle={title} links={visibleLinks} />
+
       <div>
         <p className="eyebrow" style={{ margin: 0 }}>
           Admin
@@ -77,17 +94,11 @@ export function AdminPageHeader({
         </p>
       </div>
 
-      <div className="inline-actions" style={{ flexWrap: "wrap" }}>
-        {visibleLinks.map((link) => (
-          <Link key={link.href} className="button secondary" href={link.href}>
-            {link.label}
-          </Link>
-        ))}
-        {extraActions}
-        <Link className="button secondary" href="/">
-          Back home
-        </Link>
-      </div>
+      {extraActions ? (
+        <div className="inline-actions" style={{ flexWrap: "wrap" }}>
+          {extraActions}
+        </div>
+      ) : null}
     </div>
   );
 }

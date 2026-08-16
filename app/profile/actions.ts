@@ -25,6 +25,7 @@ const profileSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
   discordHandle: discordHandleSchema,
+  newGameSignupAlertsEnabled: z.boolean().default(false),
   dmProfileHeadline: z
     .string()
     .trim()
@@ -63,6 +64,7 @@ export async function updateProfile(formData: FormData) {
     name: formData.get("name"),
     email: formData.get("email"),
     discordHandle: formData.get("discordHandle") ?? "",
+    newGameSignupAlertsEnabled: formData.get("newGameSignupAlertsEnabled") === "on",
     dmProfileHeadline: formData.get("dmProfileHeadline") ?? "",
     dmProfileSpecialties: formData.get("dmProfileSpecialties") ?? "",
     dmProfileBio: formData.get("dmProfileBio") ?? "",
@@ -115,6 +117,8 @@ export async function updateProfile(formData: FormData) {
           name: parsed.data.name,
           email: normalizedEmail,
           discordHandle: parsed.data.discordHandle || null,
+          newGameSignupAlertsEnabled:
+            parsed.data.newGameSignupAlertsEnabled && parsed.data.roles.includes("PLAYER"),
           profileImagePath: nextProfileImagePath,
         },
       });

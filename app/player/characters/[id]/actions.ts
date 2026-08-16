@@ -86,6 +86,7 @@ const pendingGameLogSchema = z.object({
   rewardsSummary: z.string().trim().min(1).max(1000),
   magicItemsAwarded: z.string().trim().max(1500).optional().or(z.literal("")),
   consumablesAwarded: z.string().trim().max(500).optional().or(z.literal("")),
+  spellbookAwarded: z.string().trim().max(1500).optional().or(z.literal("")),
   sessionNotes: z.string().trim().max(1500).optional().or(z.literal("")),
 });
 
@@ -503,6 +504,7 @@ export async function approvePendingGameLog(
     rewardsSummary: formData.get("rewardsSummary"),
     magicItemsAwarded: formData.get("magicItemsAwarded") ?? "",
     consumablesAwarded: formData.get("consumablesAwarded") ?? "",
+    spellbookAwarded: formData.get("spellbookAwarded") ?? "",
     sessionNotes: formData.get("sessionNotes") ?? "",
   });
 
@@ -518,6 +520,7 @@ export async function approvePendingGameLog(
       logRewardsSummary: parsed.data.rewardsSummary,
       logMagicItemsAwarded: parsed.data.magicItemsAwarded || "",
       logConsumablesAwarded: parsed.data.consumablesAwarded || "",
+      logSpellbookAwarded: parsed.data.spellbookAwarded || "",
       logSessionNotes: parsed.data.sessionNotes || "",
     },
   });

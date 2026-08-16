@@ -4,7 +4,6 @@ import { updateLeagueLegalChoices } from "@/app/admin/league-choices/actions";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { DND_CLASSES } from "@/lib/character-options";
 import { requireLeagueChoicesAdminUser } from "@/lib/admin";
-import { isAdminEmail } from "@/lib/admin-access";
 import {
   getLeagueLegalBlessingOptions,
   getLeagueLegalBoonOptions,
@@ -35,7 +34,7 @@ export default async function AdminLeagueChoicesPage({
 }: {
   searchParams: Promise<{ choices?: string }>;
 }) {
-  const currentUser = await requireLeagueChoicesAdminUser();
+  await requireLeagueChoicesAdminUser();
 
   const params = await searchParams;
   const [
@@ -76,11 +75,6 @@ export default async function AdminLeagueChoicesPage({
 
         <AdminPageHeader
           description="Update the live legal subclass lists used by character creation and character log editing. Feats, tools, languages, boons, blessings, and charms all live here now."
-          navigationRole={
-            !isAdminEmail(currentUser.email) && currentUser.roles.includes("LEAGUE_ADMIN")
-              ? "LEAGUE_ADMIN"
-              : "ADMIN"
-          }
           title="League legal choices"
         />
 

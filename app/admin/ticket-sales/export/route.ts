@@ -13,7 +13,8 @@ type ReportType =
   | "league"
   | "memberships"
   | "payouts"
-  | "refunds";
+  | "refunds"
+  | "spellbook-expenses";
 
 function escapeCsvValue(value: boolean | number | null | string | undefined) {
   const normalized = String(value ?? "");
@@ -33,6 +34,9 @@ function buildCsv(rows: Array<Array<boolean | number | null | string | undefined
 
 function getTicketSalesPrisma() {
   return prisma as typeof prisma & {
+    spellbookExpenseReceipt?: {
+      findMany?: (...args: any[]) => Promise<any[]>;
+    };
     ticketPayout?: {
       findMany?: (...args: any[]) => Promise<any[]>;
     };
@@ -79,6 +83,7 @@ async function buildLeagueSalesCsv() {
         itemDataJson: true,
         payerEmail: true,
         paypalOrderId: true,
+        receiptNumber: true,
         status: true,
         summaryText: true,
       },
@@ -116,6 +121,7 @@ async function buildLeagueSalesCsv() {
       "Unit Price USD",
       "Gross Sales USD",
       "Payer Email",
+      "Receipt Number",
       "PayPal Order ID",
       "Checkout Order ID",
     ],
@@ -131,6 +137,7 @@ async function buildLeagueSalesCsv() {
       row.unitPriceUsd,
       row.totalUsd,
       row.payerEmail ?? "",
+      row.receiptNumber ?? "",
       row.paypalOrderId,
       row.checkoutOrderId,
     ]),
@@ -153,6 +160,7 @@ async function buildGrimoireSalesCsv() {
         itemDataJson: true,
         payerEmail: true,
         paypalOrderId: true,
+        receiptNumber: true,
         status: true,
         summaryText: true,
       },
@@ -194,6 +202,7 @@ async function buildGrimoireSalesCsv() {
       "Unit Price USD",
       "Gross Sales USD",
       "Payer Email",
+      "Receipt Number",
       "PayPal Order ID",
       "Checkout Order ID",
     ],
@@ -211,6 +220,7 @@ async function buildGrimoireSalesCsv() {
       row.unitPriceUsd,
       row.totalUsd,
       row.payerEmail ?? "",
+      row.receiptNumber ?? "",
       row.paypalOrderId,
       row.checkoutOrderId,
     ]),
@@ -233,6 +243,7 @@ async function buildBadgeSalesCsv() {
         itemDataJson: true,
         payerEmail: true,
         paypalOrderId: true,
+        receiptNumber: true,
         status: true,
         summaryText: true,
       },
@@ -273,6 +284,7 @@ async function buildBadgeSalesCsv() {
       "Unit Price USD",
       "Gross Sales USD",
       "Payer Email",
+      "Receipt Number",
       "PayPal Order ID",
       "Checkout Order ID",
     ],
@@ -287,6 +299,7 @@ async function buildBadgeSalesCsv() {
       row.unitPriceUsd,
       row.totalUsd,
       row.payerEmail ?? "",
+      row.receiptNumber ?? "",
       row.paypalOrderId,
       row.checkoutOrderId,
     ]),
@@ -308,6 +321,7 @@ async function buildMembershipSalesCsv() {
       itemDataJson: true,
       payerEmail: true,
       paypalOrderId: true,
+      receiptNumber: true,
       status: true,
       summaryText: true,
     },
@@ -326,6 +340,7 @@ async function buildMembershipSalesCsv() {
       "Unit Price USD",
       "Gross Sales USD",
       "Payer Email",
+      "Receipt Number",
       "PayPal Order ID",
       "Checkout Order ID",
     ],
@@ -338,6 +353,7 @@ async function buildMembershipSalesCsv() {
       row.unitPriceUsd,
       row.totalUsd,
       row.payerEmail ?? "",
+      row.receiptNumber ?? "",
       row.paypalOrderId,
       row.checkoutOrderId,
     ]),
@@ -423,6 +439,7 @@ async function buildRefundsCsv() {
       checkoutOrder: {
         select: {
           paypalOrderId: true,
+          receiptNumber: true,
           summaryText: true,
         },
       },
@@ -444,8 +461,12 @@ async function buildRefundsCsv() {
       "Sale Source ID",
       "Sale Source Label",
       "Refund Amount USD",
+      "Credit Given",
+      "Credit Amount USD",
       "Reason",
       "Notes",
+      "Refund Receipt Number",
+      "Sale Receipt Number",
       "PayPal Order ID",
       "Order Summary",
       "Logged By",
@@ -458,11 +479,57 @@ async function buildRefundsCsv() {
       refund.saleSourceId ?? "",
       refund.saleSourceLabel,
       refund.amountUsd,
+      refund.creditGiven ? "Yes" : "No",
+      refund.creditAmountUsd,
       refund.reason,
       refund.notes ?? "",
+      refund.receiptNumber ?? "",
+      refund.checkoutOrder?.receiptNumber ?? "",
       refund.checkoutOrder?.paypalOrderId ?? "",
       refund.checkoutOrder?.summaryText ?? "",
       refund.createdBy?.name ?? "",
+    ]),
+  ]);
+}
+
+async function buildSpellbookExpensesCsv() {
+  const spellbookExpenseReceipt = getTicketSalesPrisma().spellbookExpenseReceipt;
+
+  if (!spellbookExpenseReceipt?.findMany) {
+    return null;
+  }
+
+  const receipts = await spellbookExpenseReceipt.findMany({
+    include: {
+      createdBy: {
+        select: {
+          name: true,
+        },
+      },
+    },
+    orderBy: [{ expenseDate: "desc" }, { createdAt: "desc" }],
+  });
+
+  return buildCsv([
+    [
+      "Date",
+      "Card",
+      "Company",
+      "Service/Item",
+      "Total USD",
+      "Tax Paid USD",
+      "Logged By",
+      "Created At",
+    ],
+    ...receipts.map((receipt) => [
+      receipt.expenseDate?.toISOString?.() ?? "",
+      receipt.cardHolder,
+      receipt.company,
+      receipt.serviceItem,
+      receipt.totalUsd,
+      receipt.taxPaidUsd,
+      receipt.createdBy?.name ?? "",
+      receipt.createdAt?.toISOString?.() ?? "",
     ]),
   ]);
 }
@@ -530,6 +597,19 @@ export async function GET(request: Request) {
     }
 
     return csvResponse(csv, `ticket-sales-refunds-${exportDate}.csv`);
+  }
+
+  if (report === "spellbook-expenses") {
+    const csv = await buildSpellbookExpensesCsv();
+
+    if (!csv) {
+      return new Response(
+        "SPELLBOOK purchase export is unavailable until the Prisma migration and client refresh are applied.",
+        { status: 503 },
+      );
+    }
+
+    return csvResponse(csv, `ticket-sales-spellbook-purchases-${exportDate}.csv`);
   }
 
   return new Response("Unknown report.", { status: 400 });

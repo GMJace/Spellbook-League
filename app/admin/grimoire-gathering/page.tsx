@@ -316,7 +316,7 @@ export default async function AdminGrimoireGatheringPage({
     editGame?: string;
   }>;
 }) {
-  const currentUser = await requireGrimoireAdminUser();
+  await requireGrimoireAdminUser();
 
   const params = await searchParams;
   const [events, games, submissions] = await Promise.all([
@@ -509,11 +509,6 @@ export default async function AdminGrimoireGatheringPage({
                     Public DM page
                   </Link>
                 </>
-              }
-              navigationRole={
-                currentUser.roles.includes("EVENT_ADMIN") && currentUser.roles.length === 1
-                  ? "EVENT_ADMIN"
-                  : "ADMIN"
               }
               title="Grimoire management"
             />

@@ -1032,6 +1032,17 @@ export default async function CharacterLogsheetPage({
                     />
                   </label>
                   <label>
+                    Spellbooks Awarded
+                    <textarea
+                      defaultValue={
+                        participant.logSpellbookAwarded ??
+                        participant.game.spellbookAwarded ??
+                        ""
+                      }
+                      name="spellbookAwarded"
+                    />
+                  </label>
+                  <label>
                     Session Notes/Story Awards
                     <textarea
                       defaultValue={

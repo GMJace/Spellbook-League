@@ -9,6 +9,7 @@ import {
   TBD_CHARACTER_OPTION_LABEL,
   TBD_CHARACTER_VALUE,
 } from "@/lib/game-participants";
+import { calculateCheckoutTotals } from "@/lib/checkout-pricing";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { PayPalCheckoutButton } from "@/components/paypal-checkout-button";
 import type { LeaguePayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
@@ -35,6 +36,7 @@ type PlayerCharacter = {
 };
 
 type LeagueCartBuilderProps = {
+  availableStoreCreditUsd: number;
   currentPatronAccessEndsAt: null | string;
   games: LeagueCartGame[];
   initialSelectedGameIds: string[];
@@ -49,6 +51,7 @@ type LeagueCartBuilderProps = {
   };
   paypalClientId: string | null;
   playerCharacters: PlayerCharacter[];
+  salesTaxRatePct: number;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -62,6 +65,7 @@ function formatPriceLabel(amount: number) {
 }
 
 export function LeagueCartBuilder({
+  availableStoreCreditUsd,
   currentPatronAccessEndsAt,
   games,
   initialSelectedGameIds,
@@ -70,6 +74,7 @@ export function LeagueCartBuilder({
   membershipProduct,
   paypalClientId,
   playerCharacters,
+  salesTaxRatePct,
 }: LeagueCartBuilderProps) {
   const router = useRouter();
   const [selectedGameQuantities, setSelectedGameQuantities] = useState(() =>
@@ -244,6 +249,12 @@ export function LeagueCartBuilder({
     (total, game) => total + game.ticketPriceUsd * (selectedGameQuantities[game.id] ?? 0),
     0,
   ) + membershipProduct.priceUsd * membershipQuantity;
+  const { payableAmountUsd, storeCreditAppliedUsd: appliedStoreCreditUsd, taxUsd } =
+    calculateCheckoutTotals({
+      availableStoreCreditUsd,
+      salesTaxRatePct,
+      subtotalUsd: subtotal,
+    });
   const hasSelections = selectedGames.length > 0 || membershipQuantity > 0;
   const hasInvalidSelectedCharacters = selectedGameCharacterIssues.some((entry) => !entry.valid);
   const hasMembershipSignInIssue = membershipQuantity > 0 && !isPlayerSignedIn;
@@ -372,6 +383,24 @@ export function LeagueCartBuilder({
                   <span>Subtotal</span>
                   <strong>{formatUsd(subtotal)}</strong>
                 </div>
+                <div className="ggcon-summary-line">
+                  <span>
+                    Sales tax (
+                    {salesTaxRatePct.toFixed(salesTaxRatePct % 1 === 0 ? 0 : 2)}
+                    %)
+                  </span>
+                  <strong>{formatUsd(taxUsd)}</strong>
+                </div>
+                {appliedStoreCreditUsd > 0 ? (
+                  <div className="ggcon-summary-line">
+                    <span>Account credit</span>
+                    <strong>-{formatUsd(appliedStoreCreditUsd)}</strong>
+                  </div>
+                ) : null}
+                <div className="ggcon-summary-total">
+                  <span>Total due</span>
+                  <strong>{formatUsd(payableAmountUsd)}</strong>
+                </div>
               </div>
             ) : (
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
@@ -382,11 +411,24 @@ export function LeagueCartBuilder({
 
           <div className="list-card stack">
             <div className="section-heading">
-              <h2 style={{ margin: 0 }}>PayPal checkout</h2>
+              <h2 style={{ margin: 0 }}>Checkout</h2>
             </div>
             <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
               Selected items: {checkoutSummary || "Nothing selected yet."}
             </p>
+            <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+              Sales tax of{" "}
+              {salesTaxRatePct.toFixed(salesTaxRatePct % 1 === 0 ? 0 : 2)}
+              % is applied to everything sold in this cart.
+            </p>
+            {availableStoreCreditUsd > 0 ? (
+              <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                Available account credit: {formatUsd(availableStoreCreditUsd)}.
+                {appliedStoreCreditUsd > 0
+                  ? ` ${formatUsd(appliedStoreCreditUsd)} will be applied to your taxed total before checkout.`
+                  : ""}
+              </p>
+            ) : null}
             {hasIncompleteGuestEmails ? (
               <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
                 Enter a valid email for each extra ticket before checkout.
@@ -417,6 +459,7 @@ export function LeagueCartBuilder({
                 hasMembershipSignInIssue
               }
               disabledText="Continue to PayPal"
+              payableAmountUsd={payableAmountUsd}
               payload={checkoutPayload}
             />
 

@@ -15,8 +15,9 @@ import {
 } from "@/lib/game-reward-selections";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
+import { sendNewGameSignupAlertEmail } from "@/lib/transactional-email";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
-import { isPaidTicketPrice } from "@/lib/utils";
+import { formatTier, isPaidTicketPrice } from "@/lib/utils";
 
 const MAX_ADVENTURE_IMAGE_SIZE = 5 * 1024 * 1024;
 const TICKET_ACCESS_CODE_HASH_ROUNDS = 10;
@@ -35,9 +36,26 @@ function formatNotificationDate(value: string) {
   }).format(date);
 }
 
+function formatNotificationDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 const GAME_FIELD_LABELS: Record<string, string> = {
   title: "Game title",
   adventureCode: "Adventure code",
+  source: "Source",
   gameSummary: "Game summary",
   ticketPrice: "Price",
   ticketAccessCode: "Ticket access code",
@@ -46,6 +64,7 @@ const GAME_FIELD_LABELS: Record<string, string> = {
   tier: "Tier",
   seatCapacity: "Player capacity",
   rewardsSummary: "Awarded Gold",
+  spellbookAwarded: "Spellbooks awarded",
   sessionNotes: "Session notes/Story Awards",
   status: "Status",
 };
@@ -53,6 +72,7 @@ const GAME_FIELD_LABELS: Record<string, string> = {
 type GameFieldName =
   | "title"
   | "adventureCode"
+  | "source"
   | "gameSummary"
   | "ticketPrice"
   | "ticketAccessCode"
@@ -65,6 +85,7 @@ type GameFieldName =
   | "rewardsSummary"
   | "magicItemsAwarded"
   | "consumablesAwarded"
+  | "spellbookAwarded"
   | "sessionNotes"
   | "status"
   | "participants"
@@ -78,6 +99,7 @@ type GameActionErrorResult = {
 const GAME_FIELD_ERROR_MESSAGES: Record<GameFieldName, string> = {
   title: "Enter a game title.",
   adventureCode: "Enter an adventure code.",
+  source: "Source must be 160 characters or fewer.",
   gameSummary: "Game summary must be 1500 characters or fewer.",
   ticketPrice: 'Enter a price such as "Free" or "$15 USD".',
   ticketAccessCode: "Ticket access code must be at least 4 characters and 100 characters or fewer.",
@@ -90,6 +112,7 @@ const GAME_FIELD_ERROR_MESSAGES: Record<GameFieldName, string> = {
   rewardsSummary: "Enter the awarded gold total.",
   magicItemsAwarded: "Magic items awarded must be 1500 characters or fewer.",
   consumablesAwarded: "Consumables awarded must be 500 characters or fewer.",
+  spellbookAwarded: "Spellbooks awarded must be 1500 characters or fewer.",
   sessionNotes: "Enter the session notes or story awards.",
   status: "Choose a valid game status.",
   participants: "Review the participants list and try again.",
@@ -232,6 +255,7 @@ function getParticipantLogData(gameData: {
   rewardsSummary: string;
   magicItemsAwarded: string;
   consumablesAwarded: string;
+  spellbookAwarded: string;
   sessionNotes: string;
 }) {
   if (gameData.status === "COMPLETED") {
@@ -241,6 +265,7 @@ function getParticipantLogData(gameData: {
       logRewardsSummary: gameData.rewardsSummary,
       logMagicItemsAwarded: gameData.magicItemsAwarded,
       logConsumablesAwarded: gameData.consumablesAwarded,
+      logSpellbookAwarded: gameData.spellbookAwarded,
       logSessionNotes: gameData.sessionNotes,
     };
   }
@@ -251,6 +276,7 @@ function getParticipantLogData(gameData: {
     logRewardsSummary: null,
     logMagicItemsAwarded: null,
     logConsumablesAwarded: null,
+    logSpellbookAwarded: null,
     logSessionNotes: null,
   };
 }
@@ -302,6 +328,7 @@ async function parseGameForm(formData: FormData) {
   const parsed = gameSchema.safeParse({
     title: String(formData.get("title") ?? ""),
     adventureCode: String(formData.get("adventureCode") ?? ""),
+    source: String(formData.get("source") ?? ""),
     gameSummary: String(formData.get("gameSummary") ?? ""),
     ticketPrice: String(formData.get("ticketPrice") ?? "Free"),
     ticketAccessCode: String(formData.get("ticketAccessCode") ?? ""),
@@ -314,6 +341,7 @@ async function parseGameForm(formData: FormData) {
     rewardsSummary: String(formData.get("rewardsSummary") ?? ""),
     magicItemsAwarded: rewardStrings.magicItemsAwarded,
     consumablesAwarded: rewardStrings.consumablesAwarded,
+    spellbookAwarded: String(formData.get("spellbookAwarded") ?? ""),
     sessionNotes: String(formData.get("sessionNotes") ?? ""),
     status: String(formData.get("status") ?? "SCHEDULED"),
     participants: participantsResult.data,
@@ -474,6 +502,14 @@ export async function createGame(formData: FormData) {
     parsed.playerMap
   );
   const formattedDate = formatNotificationDate(parsed.data.datePlayed);
+  const formattedDateTime = formatNotificationDateTime(parsed.data.datePlayed);
+  const participantUserIds = Array.from(
+    new Set(
+      participantSummaries
+        .map((participant) => participant.userId)
+        .filter((userId): userId is string => Boolean(userId))
+    )
+  );
 
   const game = await prisma.$transaction(async (tx) => {
     const createdGame = await tx.game.create({
@@ -482,6 +518,7 @@ export async function createGame(formData: FormData) {
         loggedByUserId: user.id,
         title: parsed.data.title,
         adventureCode: parsed.data.adventureCode,
+        source: parsed.data.source,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
         ticketAccessCodeHash,
@@ -495,6 +532,7 @@ export async function createGame(formData: FormData) {
         rewardsSummary: parsed.data.rewardsSummary,
         magicItemsAwarded: parsed.data.magicItemsAwarded,
         consumablesAwarded: parsed.data.consumablesAwarded,
+        spellbookAwarded: parsed.data.spellbookAwarded,
         consequencesSummary: "",
         sessionNotes: parsed.data.sessionNotes,
         status: parsed.data.status,
@@ -511,6 +549,38 @@ export async function createGame(formData: FormData) {
         })),
       });
     }
+
+    const availableSpots = Math.max(
+      (parsed.data.seatCapacity ?? 0) - parsed.data.participants.length,
+      0,
+    );
+    const shouldSendSignupAlerts =
+      parsed.data.status === "SCHEDULED" &&
+      new Date(parsed.data.datePlayed).getTime() > Date.now() &&
+      availableSpots > 0;
+    const signupAlertRecipients = shouldSendSignupAlerts
+      ? await tx.user.findMany({
+          where: {
+            id: {
+              notIn: [user.id, ...participantUserIds],
+            },
+            newGameSignupAlertsEnabled: true,
+            roles: {
+              some: {
+                role: "PLAYER",
+              },
+            },
+          },
+          select: {
+            email: true,
+            id: true,
+            name: true,
+          },
+          orderBy: {
+            name: "asc",
+          },
+        })
+      : [];
 
     await createNotifications(tx, [
       {
@@ -547,12 +617,60 @@ export async function createGame(formData: FormData) {
             ? `/player/characters/${participant.firstCharacterId}`
             : `/league/games/${createdGame.id}`,
         })),
+      ...signupAlertRecipients.map((recipient) => ({
+        userId: recipient.id,
+        createdByUserId: user.id,
+        type: "GAME_CREATED" as const,
+        title: `New game open for signup: ${parsed.data.title}`,
+        body: `${user.name} posted ${parsed.data.title}, and it is open for signups now.`,
+        details: [
+          { label: "Adventure", value: parsed.data.adventureCode },
+          { label: "Date", value: formattedDate },
+          { label: "Tier", value: formatTier(parsed.data.tier) },
+          {
+            label: "Open spots",
+            value: `${availableSpots} of ${parsed.data.seatCapacity}`,
+          },
+        ],
+        actionLabel: "View game",
+        actionHref: `/league/games/${createdGame.id}`,
+      })),
     ]);
 
-    return createdGame;
+    return {
+      createdGame,
+      signupAlertRecipients,
+      availableSpots,
+    };
   });
 
-  redirect(`/dm/games/${game.id}`);
+  if (game.signupAlertRecipients.length) {
+    const seatsOpenLabel = `${game.availableSpots} of ${parsed.data.seatCapacity}`;
+
+    await Promise.allSettled(
+      game.signupAlertRecipients.map((recipient) =>
+        sendNewGameSignupAlertEmail({
+          adventureCode: parsed.data.adventureCode,
+          dmName: user.name,
+          gameDateTime: formattedDateTime,
+          gamePath: `/league/games/${game.createdGame.id}`,
+          gameTitle: parsed.data.title,
+          playerName: recipient.name,
+          priceLabel: parsed.data.ticketPrice,
+          seatsOpenLabel,
+          tierLabel: formatTier(parsed.data.tier),
+          to: recipient.email,
+        }).catch((error) => {
+          console.error(
+            `Failed to send new game signup alert email to ${recipient.email}.`,
+            error,
+          );
+        })
+      )
+    );
+  }
+
+  redirect(`/dm/games/${game.createdGame.id}`);
 }
 
 export async function updateGame(formData: FormData) {
@@ -633,6 +751,7 @@ export async function updateGame(formData: FormData) {
       data: {
         title: parsed.data.title,
         adventureCode: parsed.data.adventureCode,
+        source: parsed.data.source,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
         ticketAccessCodeHash,
@@ -646,6 +765,7 @@ export async function updateGame(formData: FormData) {
         rewardsSummary: parsed.data.rewardsSummary,
         magicItemsAwarded: parsed.data.magicItemsAwarded,
         consumablesAwarded: parsed.data.consumablesAwarded,
+        spellbookAwarded: parsed.data.spellbookAwarded,
         sessionNotes: parsed.data.sessionNotes,
         status: parsed.data.status,
       },

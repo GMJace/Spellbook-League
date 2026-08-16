@@ -45,7 +45,10 @@ export async function requireUser(options: RequireUserOptions = {}) {
     name: dbUser.name,
     email: dbUser.email,
     discordHandle: dbUser.discordHandle,
+    newGameSignupAlertsEnabled: dbUser.newGameSignupAlertsEnabled,
     profileImagePath: dbUser.profileImagePath,
+    storeCreditHeldUsd: dbUser.storeCreditHeldUsd,
+    storeCreditUsd: dbUser.storeCreditUsd,
     roles,
     hasPassword: Boolean(dbUser.passwordHash),
   };

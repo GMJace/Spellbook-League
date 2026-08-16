@@ -2,6 +2,10 @@ import { auth } from "@/auth";
 import { LeagueCartBuilder } from "@/components/league-cart-builder";
 import { getCharacterTier, getCharacterTotalLevel } from "@/lib/character";
 import {
+  getCombinedSalesTaxRatePct,
+  normalizeTicketSalesRateSettings,
+} from "@/lib/checkout-pricing";
+import {
   getGrimoireGuildMembershipSettings,
   getPatronMembershipOverviewForUser,
 } from "@/lib/grimoire-guild-membership";
@@ -63,7 +67,7 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
         },
       })
     : null;
-  const [pricedLeagueGames, membershipSettings] = await Promise.all([
+  const [pricedLeagueGames, membershipSettings, ticketSalesSettings] = await Promise.all([
     prisma.game.findMany({
       where: {
         status: "SCHEDULED",
@@ -95,7 +99,15 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
       orderBy: [{ datePlayed: "asc" }, { title: "asc" }],
     }),
     getGrimoireGuildMembershipSettings(),
+    prisma.ticketSalesSettings.findUnique({
+      where: {
+        id: "default",
+      },
+    }),
   ]);
+  const salesTaxRatePct = getCombinedSalesTaxRatePct(
+    normalizeTicketSalesRateSettings(ticketSalesSettings),
+  );
 
   const cartGames = pricedLeagueGames
     .filter((game) => !(game.participants?.length ?? 0))
@@ -131,6 +143,14 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
             games={cartGames}
             initialSelectedGameIds={parseSelectedGames(resolvedSearchParams.games)}
             initialMembershipQuantity={parseMembershipQuantity(resolvedSearchParams.membership)}
+            availableStoreCreditUsd={
+              player
+                ? Math.max(
+                    Math.round((player.storeCreditUsd - player.storeCreditHeldUsd) * 100) / 100,
+                    0,
+                  )
+                : 0
+            }
             isPlayerSignedIn={isPlayerSignedIn}
             currentPatronAccessEndsAt={
               patronMembershipOverview?.accessEndsAt?.toISOString() ?? null
@@ -144,6 +164,7 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
             }}
             paypalClientId={paypalClientId}
             playerCharacters={playerCharacters}
+            salesTaxRatePct={salesTaxRatePct}
           />
         ) : (
           <div className="empty">No priced league games are available for checkout yet.</div>

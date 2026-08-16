@@ -9,6 +9,7 @@ import { createNotifications } from "@/lib/notifications";
 import { removeProDmReview as removeStoredProDmReview } from "@/lib/pro-dm-reviews";
 import { setProDmRosterListing } from "@/lib/pro-dm-roster";
 import { prisma } from "@/lib/prisma";
+import { roundUsdAmount } from "@/lib/store-credit";
 
 export type RemoveUserState = {
   error: string;
@@ -32,6 +33,13 @@ const adminNotificationSchema = z.object({
   targetUserId: z.string().min(1),
   title: z.string().trim().min(2).max(120),
   body: z.string().trim().min(2).max(1200),
+});
+
+const userStoreCreditSchema = z.object({
+  targetUserId: z.string().min(1),
+  amountUsd: z.coerce.number().finite().min(-100000).max(100000),
+  mode: z.enum(["ADJUST", "SET"]).default("ADJUST"),
+  returnTo: z.string().trim().min(1).default("/admin/users"),
 });
 
 async function getDmUserOrRedirect(targetUserId: string) {
@@ -604,6 +612,81 @@ export async function createAdminNotification(formData: FormData) {
 
   revalidatePath("/admin/users");
   redirect("/admin/users?notification=sent");
+}
+
+export async function updateUserStoreCredit(formData: FormData) {
+  const adminUser = await requireAdminUser();
+
+  const parsed = userStoreCreditSchema.safeParse({
+    amountUsd: formData.get("amountUsd"),
+    mode: formData.get("mode"),
+    returnTo: formData.get("returnTo"),
+    targetUserId: formData.get("targetUserId"),
+  });
+
+  if (!parsed.success) {
+    redirect("/admin/users?credit=invalid");
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: {
+      id: parsed.data.targetUserId,
+    },
+    select: {
+      id: true,
+      name: true,
+      storeCreditHeldUsd: true,
+      storeCreditUsd: true,
+    },
+  });
+
+  if (!targetUser) {
+    redirect("/admin/users?credit=invalid");
+  }
+
+  const requestedAmountUsd = roundUsdAmount(parsed.data.amountUsd);
+  const nextStoreCreditUsd =
+    parsed.data.mode === "SET"
+      ? requestedAmountUsd
+      : roundUsdAmount(targetUser.storeCreditUsd + requestedAmountUsd);
+
+  if (nextStoreCreditUsd < 0) {
+    redirect(`${parsed.data.returnTo}?credit=invalid`);
+  }
+
+  if (nextStoreCreditUsd < targetUser.storeCreditHeldUsd) {
+    redirect(`${parsed.data.returnTo}?credit=held`);
+  }
+
+  await prisma.user.update({
+    where: {
+      id: targetUser.id,
+    },
+    data: {
+      storeCreditUsd: nextStoreCreditUsd,
+    },
+  });
+
+  await createNotifications(prisma, [
+    {
+      userId: targetUser.id,
+      createdByUserId: adminUser.id,
+      type: "ADMIN",
+      title: "Account credit updated",
+      body:
+        parsed.data.mode === "SET"
+          ? `An admin set your account credit balance to $${nextStoreCreditUsd.toFixed(2)} USD.`
+          : `An admin adjusted your account credit by $${requestedAmountUsd.toFixed(2)} USD. Your new balance is $${nextStoreCreditUsd.toFixed(2)} USD.`,
+      actionLabel: "Open profile",
+      actionHref: "/profile",
+    },
+  ]);
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${targetUser.id}`);
+  revalidatePath("/profile");
+
+  redirect(`${parsed.data.returnTo}?credit=updated`);
 }
 
 export async function removeUserAccount(

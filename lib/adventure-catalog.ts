@@ -14,6 +14,10 @@ export type AdventureCatalogRecord = AdventureCatalogMagicItemBuckets & {
   title: string;
   tier: Tier;
   duration: string;
+  gameSummary: string;
+  adventureImagePath: null | string;
+  serviceHours: number;
+  downtimeDaysAwarded: number;
   gold: string;
   spellbook: string;
   storyAwards: string;
@@ -21,6 +25,11 @@ export type AdventureCatalogRecord = AdventureCatalogMagicItemBuckets & {
   sourceSheet: string;
   sourceNotes: string;
   consumables: string[];
+  boons: string[];
+  blessings: string[];
+  charms: string[];
+  additionalMagicRewardNotes: string;
+  additionalConsumableNotes: string;
 };
 
 export type AdventureCatalogAutofillPayload = {
@@ -28,9 +37,15 @@ export type AdventureCatalogAutofillPayload = {
   title: string;
   tier: Tier;
   duration: string;
+  source: string;
+  gameSummary: string;
+  adventureImagePath: null | string;
+  serviceHours: string;
+  downtimeDaysAwarded: string;
   rewardsSummary: string;
   magicItemsAwarded: string;
   consumablesAwarded: string;
+  spellbookAwarded: string;
   sessionNotes: string;
 };
 
@@ -57,6 +72,14 @@ export function splitAdventureCatalogSpreadsheetValue(value: string) {
     .replace(/\r\n/g, "\n")
     .split(/\n|;|,/)
     .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+export function splitAdventureCatalogTextareaValue(value: string) {
+  return value
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((entry) => entry.replace(/^[-*•]\s*/, "").trim())
     .filter(Boolean);
 }
 
@@ -109,9 +132,29 @@ export function buildAdventureCatalogAutofillPayload(
     title: record.title,
     tier: record.tier,
     duration: record.duration,
+    source: record.sourceSheet,
+    gameSummary: record.gameSummary,
+    adventureImagePath: record.adventureImagePath,
+    serviceHours: String(record.serviceHours || 0),
+    downtimeDaysAwarded: String(record.downtimeDaysAwarded || 0),
     rewardsSummary: record.gold,
-    magicItemsAwarded: toBulletLines(buildAdventureCatalogMagicItemLines(record)),
-    consumablesAwarded: toBulletLines(record.consumables),
+    magicItemsAwarded: toBulletLines([
+      ...record.commonMagicItems,
+      ...record.uncommonMagicItems,
+      ...record.rareMagicItems,
+      ...record.veryRareMagicItems,
+      ...record.legendaryMagicItems,
+      ...record.uniqueMagicItems,
+      ...record.boons,
+      ...record.blessings,
+      ...record.charms,
+      ...splitAdventureCatalogTextareaValue(record.additionalMagicRewardNotes),
+    ]),
+    consumablesAwarded: toBulletLines([
+      ...record.consumables,
+      ...splitAdventureCatalogTextareaValue(record.additionalConsumableNotes),
+    ]),
+    spellbookAwarded: record.spellbook,
     sessionNotes: toBulletLines(splitAdventureCatalogSpreadsheetValue(record.storyAwards)),
   };
 }

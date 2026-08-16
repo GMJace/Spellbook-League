@@ -89,6 +89,7 @@ export type TicketSalesOrder = Pick<
   | "itemDataJson"
   | "payerEmail"
   | "paypalOrderId"
+  | "receiptNumber"
   | "status"
   | "summaryText"
 >;
@@ -102,6 +103,7 @@ export type LeagueTicketSaleRow = {
   gameDate: Date | null;
   gameId: string;
   paypalOrderId: string;
+  receiptNumber: string | null;
   payerEmail: string | null;
   quantity: number;
   saleSourceId: string;
@@ -122,6 +124,7 @@ export type GrimoireTicketSaleRow = {
   eventId: string | null;
   eventLabel: string;
   paypalOrderId: string;
+  receiptNumber: string | null;
   payerEmail: string | null;
   quantity: number;
   saleSourceId: string;
@@ -140,6 +143,7 @@ export type MembershipSaleRow = {
   durationDays: number;
   payerEmail: string | null;
   paypalOrderId: string;
+  receiptNumber: string | null;
   productName: string;
   quantity: number;
   totalUsd: number;
@@ -340,6 +344,7 @@ export function buildLeagueTicketSaleRows(
         gameDate: game?.datePlayed ?? null,
         gameId: gameRow.gameId,
         paypalOrderId: order.paypalOrderId,
+        receiptNumber: order.receiptNumber,
         payerEmail: order.payerEmail,
         quantity: gameRow.quantity,
         saleSourceId: gameRow.gameId,
@@ -392,6 +397,7 @@ export function buildGrimoireTicketSaleRows(
         eventId: parsed.eventId || null,
         eventLabel,
         paypalOrderId: order.paypalOrderId,
+        receiptNumber: order.receiptNumber,
         payerEmail: order.payerEmail,
         quantity: parsed.badgeQuantity,
         saleSourceId: parsed.eventId || order.id,
@@ -419,6 +425,7 @@ export function buildGrimoireTicketSaleRows(
         eventId: curatedGame?.eventId ?? parsed.eventId ?? null,
         eventLabel,
         paypalOrderId: order.paypalOrderId,
+        receiptNumber: order.receiptNumber,
         payerEmail: order.payerEmail,
         quantity: gameRow.quantity,
         saleSourceId: curatedGame?.slug ?? gameRow.slug,
@@ -460,6 +467,7 @@ export function buildMembershipSaleRows(orders: TicketSalesOrder[]) {
       durationDays: membership.durationDays,
       payerEmail: order.payerEmail,
       paypalOrderId: order.paypalOrderId,
+      receiptNumber: order.receiptNumber,
       productName: membership.productName,
       quantity: membership.quantity,
       totalUsd: membership.quantity * membership.priceUsd,

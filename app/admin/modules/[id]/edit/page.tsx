@@ -2,12 +2,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { updateAdventureModule } from "@/app/admin/modules/actions";
+import { AdminModuleForm } from "@/components/admin-module-form";
 import { AdminPageHeader } from "@/components/admin-page-header";
-import {
-  ADVENTURE_CATALOG_TIER_OPTIONS,
-  parseAdventureCatalogListJson,
-} from "@/lib/adventure-catalog";
 import { requireAdminUser } from "@/lib/admin";
+import {
+  buildUncommonPlusMagicItems,
+  buildUncommonPlusRarityByItem,
+  mergeUniqueOptions,
+  parseAdminModuleMagicItem,
+} from "@/lib/admin-module-magic-items";
+import { parseAdventureCatalogListJson } from "@/lib/adventure-catalog";
+import {
+  getCharacterBuildMagicItemOptions,
+  getLeagueLegalMagicItemOptions,
+  getLeagueLegalMinorPropertyOptions,
+} from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTier } from "@/lib/utils";
 
@@ -22,24 +31,42 @@ type PageProps = {
   }>;
 };
 
-function formatListForTextarea(value: string) {
-  return parseAdventureCatalogListJson(value).join("\n");
-}
-
 export default async function AdminModuleEditPage({ params, searchParams }: PageProps) {
   await requireAdminUser();
 
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const module = await prisma.adventureCatalog.findUnique({
-    where: { id },
-  });
+  const [module, legalMagicItemOptions, legalMinorPropertyOptions] = await Promise.all([
+    prisma.adventureCatalog.findUnique({
+      where: { id },
+    }),
+    getLeagueLegalMagicItemOptions(),
+    getLeagueLegalMinorPropertyOptions(),
+  ]);
 
   if (!module) {
     notFound();
   }
 
+  const existingCommonMagicItems = parseAdventureCatalogListJson(module.commonMagicItemsJson).map(
+    parseAdminModuleMagicItem
+  );
+  const existingUncommonPlusMagicItems = buildUncommonPlusMagicItems(module);
+  const legalCommonMagicItemOptions = mergeUniqueOptions(
+    legalMagicItemOptions.Common,
+    existingCommonMagicItems.map((item) => item.item)
+  );
+  const legalUncommonPlusMagicItemOptions = mergeUniqueOptions(
+    getCharacterBuildMagicItemOptions(legalMagicItemOptions),
+    existingUncommonPlusMagicItems.map((item) => item.item)
+  );
+  const uncommonPlusRarityByItem = {
+    ...buildUncommonPlusRarityByItem(legalMagicItemOptions),
+    ...Object.fromEntries(existingUncommonPlusMagicItems.map((item) => [item.item, item.rarity])),
+  };
+
   const moduleMessageMap: Record<string, string> = {
     conflict: "A module with that code, title, and tier already exists.",
+    "image-invalid": "Adventure art must be an image file under 5 MB.",
     invalid: "That module update could not be completed.",
     updated: "Module saved.",
   };
@@ -78,131 +105,38 @@ export default async function AdminModuleEditPage({ params, searchParams }: Page
           </div>
 
           <form action={updateAdventureModule} className="form-stack">
-            <input name="moduleId" type="hidden" value={module.id} />
-
-            <div className="form-grid">
-              <label>
-                Adventure code
-                <input defaultValue={module.adventureCode} name="adventureCode" required type="text" />
-              </label>
-              <label>
-                Title
-                <input defaultValue={module.title} name="title" required type="text" />
-              </label>
-              <label>
-                Tier
-                <select defaultValue={module.tier} name="tier" required>
-                  {ADVENTURE_CATALOG_TIER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Duration
-                <input defaultValue={module.duration} name="duration" type="text" />
-              </label>
-              <label>
-                Awarded gold / GP summary
-                <input defaultValue={module.gold} name="gold" type="text" />
-              </label>
-              <label>
-                Page numbers
-                <input defaultValue={module.pageNumbers} name="pageNumbers" type="text" />
-              </label>
-              <label>
-                Source sheet
-                <input defaultValue={module.sourceSheet} name="sourceSheet" type="text" />
-              </label>
-              <label>
-                Spellbooks / scrolls
-                <input defaultValue={module.spellbook} name="spellbook" type="text" />
-              </label>
-            </div>
-
-            <label>
-              Story awards / session notes
-              <textarea defaultValue={module.storyAwards} name="storyAwards" rows={5} />
-            </label>
-
-            <label>
-              Source notes
-              <textarea defaultValue={module.sourceNotes} name="sourceNotes" rows={4} />
-            </label>
-
-            <div className="form-grid">
-              <label>
-                Consumables
-                <textarea
-                  defaultValue={formatListForTextarea(module.consumablesJson)}
-                  name="consumables"
-                  rows={6}
-                />
-              </label>
-              <label>
-                Common magic items
-                <textarea
-                  defaultValue={formatListForTextarea(module.commonMagicItemsJson)}
-                  name="commonMagicItems"
-                  rows={6}
-                />
-              </label>
-              <label>
-                Uncommon magic items
-                <textarea
-                  defaultValue={formatListForTextarea(module.uncommonMagicItemsJson)}
-                  name="uncommonMagicItems"
-                  rows={6}
-                />
-              </label>
-              <label>
-                Rare magic items
-                <textarea
-                  defaultValue={formatListForTextarea(module.rareMagicItemsJson)}
-                  name="rareMagicItems"
-                  rows={6}
-                />
-              </label>
-              <label>
-                Very rare magic items
-                <textarea
-                  defaultValue={formatListForTextarea(module.veryRareMagicItemsJson)}
-                  name="veryRareMagicItems"
-                  rows={6}
-                />
-              </label>
-              <label>
-                Legendary magic items
-                <textarea
-                  defaultValue={formatListForTextarea(module.legendaryMagicItemsJson)}
-                  name="legendaryMagicItems"
-                  rows={6}
-                />
-              </label>
-              <label>
-                Unique / custom magic items
-                <textarea
-                  defaultValue={formatListForTextarea(module.uniqueMagicItemsJson)}
-                  name="uniqueMagicItems"
-                  rows={6}
-                />
-              </label>
-            </div>
-
-            <p className="muted" style={{ margin: 0 }}>
-              Use one item per line in the reward textareas. Saving here updates the module
-              autofill data used in league game creation.
-            </p>
-
-            <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-              <Link className="button secondary" href="/admin/modules?sort=code">
-                Back to list
-              </Link>
-              <button className="button-secondary" type="submit">
-                Save module
-              </button>
-            </div>
+            <AdminModuleForm
+              cancelHref="/admin/modules?sort=code"
+              initialValues={{
+                moduleId: module.id,
+                adventureCode: module.adventureCode,
+                title: module.title,
+                tier: module.tier,
+                duration: module.duration,
+                sourceSheet: module.sourceSheet,
+                gameSummary: module.gameSummary,
+                adventureImagePath: module.adventureImagePath,
+                serviceHours: String(module.serviceHours ?? 0),
+                downtimeDaysAwarded: String(module.downtimeDaysAwarded ?? 0),
+                gold: module.gold,
+                commonMagicItems: existingCommonMagicItems,
+                uncommonPlusMagicItems: existingUncommonPlusMagicItems,
+                consumables: parseAdventureCatalogListJson(module.consumablesJson),
+                spellbook: module.spellbook,
+                boons: parseAdventureCatalogListJson(module.boonsJson),
+                blessings: parseAdventureCatalogListJson(module.blessingsJson),
+                charms: parseAdventureCatalogListJson(module.charmsJson),
+                additionalMagicRewardNotes: module.additionalMagicRewardNotes,
+                additionalConsumableNotes: module.additionalConsumableNotes,
+                storyAwards: module.storyAwards,
+                sourceNotes: module.sourceNotes,
+              }}
+              legalCommonMagicItemOptions={legalCommonMagicItemOptions}
+              legalMinorPropertyOptions={legalMinorPropertyOptions}
+              legalUncommonPlusMagicItemOptions={legalUncommonPlusMagicItemOptions}
+              submitLabel="Save module"
+              uncommonPlusRarityByItem={uncommonPlusRarityByItem}
+            />
           </form>
         </section>
       </section>

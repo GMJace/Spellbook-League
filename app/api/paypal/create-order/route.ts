@@ -9,10 +9,20 @@ import {
   getParticipantCharacterLabel,
   normalizeParticipantCharacterId,
 } from "@/lib/game-participants";
-import { getGrimoireGuildMembershipSettings } from "@/lib/grimoire-guild-membership";
+import {
+  getCombinedSalesTaxRatePct,
+  normalizeTicketSalesRateSettings,
+} from "@/lib/checkout-pricing";
+import {
+  grantGrimoireGuildMembership,
+  getGrimoireGuildMembershipSettings,
+} from "@/lib/grimoire-guild-membership";
 import { formatPayPalAmount, paypalRequest } from "@/lib/paypal";
 import type { PayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
+import { ensureAutomaticTicketPayoutsForCheckoutOrder } from "@/lib/ticket-payouts";
+import { createSaleReceiptNumber } from "@/lib/ticket-receipts";
 import { prisma } from "@/lib/prisma";
+import { releaseExpiredStoreCreditReservations, roundUsdAmount } from "@/lib/store-credit";
 import { getTierValue, isPaidTicketPrice, parseTicketPriceUsd } from "@/lib/utils";
 
 const leagueItemSchema = z.object({
@@ -48,14 +58,28 @@ type PayPalCreateOrderResponse = {
   status: string;
 };
 
+type DirectCreditCheckoutResponse = {
+  completed: true;
+  payerEmail: null | string;
+  storeCreditAppliedUsd: number;
+  success: true;
+};
+
 type CanonicalCheckout = {
-  amountUsd: number;
   checkoutType: CheckoutType;
   itemDataJson: string;
   purchaseUnits: Array<{
     amount: {
       breakdown: {
+        discount?: {
+          currency_code: "USD";
+          value: string;
+        };
         item_total: {
+          currency_code: "USD";
+          value: string;
+        };
+        tax_total?: {
           currency_code: "USD";
           value: string;
         };
@@ -74,7 +98,10 @@ type CanonicalCheckout = {
     }>;
   }>;
   recipientDataJson: string;
+  subtotalUsd: number;
   summaryText: string;
+  taxUsd: number;
+  totalUsd: number;
 };
 
 function jsonError(message: string, status: number) {
@@ -115,6 +142,7 @@ function serializeLeagueItems(
 
 async function buildLeagueCheckout(
   payload: Extract<PayPalCheckoutPayload, { checkoutType: "LEAGUE" }>,
+  salesTaxRatePct: number,
 ): Promise<CanonicalCheckout> {
   const session = await auth();
 
@@ -189,14 +217,14 @@ async function buildLeagueCheckout(
     quantity: number;
   }> = [];
   const summaryParts: string[] = [];
-  let amountUsd = 0;
+  let subtotalUsd = 0;
 
   if (payload.membershipQuantity > 0) {
     if (!membershipSettings?.isActive) {
       throw new Error("Grimoire Guild membership is not available right now.");
     }
 
-    amountUsd += membershipSettings.priceUsd * payload.membershipQuantity;
+    subtotalUsd += membershipSettings.priceUsd * payload.membershipQuantity;
     paypalItems.push({
       name: membershipSettings.productName.slice(0, 120),
       quantity: String(payload.membershipQuantity),
@@ -247,7 +275,7 @@ async function buildLeagueCheckout(
     }
 
     const unitPriceUsd = parseTicketPriceUsd(game.ticketPrice);
-    amountUsd += unitPriceUsd * item.quantity;
+    subtotalUsd += unitPriceUsd * item.quantity;
     paypalItems.push({
       name: game.title.slice(0, 120),
       quantity: String(item.quantity),
@@ -272,12 +300,14 @@ async function buildLeagueCheckout(
     });
   }
 
-  if (!amountUsd) {
+  if (!subtotalUsd) {
     throw new Error("Select a paid league ticket or the Grimoire Guild membership before checkout.");
   }
 
+  const taxUsd = roundUsdAmount(subtotalUsd * (salesTaxRatePct / 100));
+  const totalUsd = roundUsdAmount(subtotalUsd + taxUsd);
+
   return {
-    amountUsd,
     checkoutType: "LEAGUE",
     itemDataJson: JSON.stringify({
       games: serializeLeagueItems(serializedItems, gamesById),
@@ -297,28 +327,40 @@ async function buildLeagueCheckout(
           breakdown: {
             item_total: {
               currency_code: "USD",
-              value: formatPayPalAmount(amountUsd),
+              value: formatPayPalAmount(subtotalUsd),
             },
+            ...(taxUsd > 0
+              ? {
+                  tax_total: {
+                    currency_code: "USD" as const,
+                    value: formatPayPalAmount(taxUsd),
+                  },
+                }
+              : {}),
           },
           currency_code: "USD",
-          value: formatPayPalAmount(amountUsd),
+          value: formatPayPalAmount(totalUsd),
         },
         description:
           payload.membershipQuantity > 0
             ? "SPELLBOOK League tickets and memberships"
             : "SPELLBOOK League tickets",
         items: paypalItems,
-      },
+        },
     ],
     recipientDataJson: JSON.stringify(
       payload.items.flatMap((item) => item.guestEmails),
     ),
+    subtotalUsd,
     summaryText: summaryParts.join(" | "),
+    taxUsd,
+    totalUsd,
   };
 }
 
 async function buildGrimoireCheckout(
   payload: Extract<PayPalCheckoutPayload, { checkoutType: "GRIMOIRE" }>,
+  salesTaxRatePct: number,
 ): Promise<CanonicalCheckout> {
   const nextEvent = await getNextGrimoireEvent();
 
@@ -346,10 +388,10 @@ async function buildGrimoireCheckout(
     payload.badgeType === "FLYING_CARPET"
       ? "Flying Carpet Badge"
       : nextEvent.ticketLabel;
-  let amountUsd = 0;
+  let subtotalUsd = 0;
 
   if (payload.badgeQuantity > 0) {
-    amountUsd += badgeUnitPriceUsd * payload.badgeQuantity;
+    subtotalUsd += badgeUnitPriceUsd * payload.badgeQuantity;
     paypalItems.push({
       name: badgeLabel.slice(0, 120),
       quantity: String(payload.badgeQuantity),
@@ -374,7 +416,7 @@ async function buildGrimoireCheckout(
       throw new Error(`${game.game} does not have enough remaining seats.`);
     }
 
-    amountUsd += game.ticketPriceUsd * item.quantity;
+    subtotalUsd += game.ticketPriceUsd * item.quantity;
     paypalItems.push({
       name: game.game.slice(0, 120),
       quantity: String(item.quantity),
@@ -386,7 +428,7 @@ async function buildGrimoireCheckout(
     summaryParts.push(`${game.game} x${item.quantity} (${game.ticketPrice})`);
   }
 
-  if (!amountUsd) {
+  if (!subtotalUsd) {
     throw new Error("Add a badge or at least one Grimoire ticket before checkout.");
   }
 
@@ -394,8 +436,10 @@ async function buildGrimoireCheckout(
     summaryParts.push(`Receivers: ${payload.receiverEmails.join(", ")}`);
   }
 
+  const taxUsd = roundUsdAmount(subtotalUsd * (salesTaxRatePct / 100));
+  const totalUsd = roundUsdAmount(subtotalUsd + taxUsd);
+
   return {
-    amountUsd,
     checkoutType: "GRIMOIRE",
     itemDataJson: JSON.stringify({
       badgeQuantity: payload.badgeQuantity,
@@ -420,11 +464,19 @@ async function buildGrimoireCheckout(
           breakdown: {
             item_total: {
               currency_code: "USD",
-              value: formatPayPalAmount(amountUsd),
+              value: formatPayPalAmount(subtotalUsd),
             },
+            ...(taxUsd > 0
+              ? {
+                  tax_total: {
+                    currency_code: "USD" as const,
+                    value: formatPayPalAmount(taxUsd),
+                  },
+                }
+              : {}),
           },
           currency_code: "USD",
-          value: formatPayPalAmount(amountUsd),
+          value: formatPayPalAmount(totalUsd),
         },
         description: "SPELLBOOK Grimoire tickets",
         items: paypalItems,
@@ -434,8 +486,87 @@ async function buildGrimoireCheckout(
       isGiftPurchase: payload.isGiftPurchase,
       receiverEmails: payload.receiverEmails,
     }),
+    subtotalUsd,
     summaryText: summaryParts.join(" | "),
+    taxUsd,
+    totalUsd,
   };
+}
+
+function getLeagueCheckoutMembershipFromValue(
+  serializedValue: string,
+): null | {
+  durationDays: number;
+  productName: string;
+  quantity: number;
+} {
+  try {
+    const parsed = JSON.parse(serializedValue) as {
+      membership?: {
+        durationDays?: number;
+        productName?: string;
+        quantity?: number;
+      } | null;
+    };
+
+    if (
+      !parsed?.membership ||
+      typeof parsed.membership.durationDays !== "number" ||
+      typeof parsed.membership.productName !== "string" ||
+      typeof parsed.membership.quantity !== "number" ||
+      parsed.membership.quantity < 1
+    ) {
+      return null;
+    }
+
+    return {
+      durationDays: parsed.membership.durationDays,
+      productName: parsed.membership.productName,
+      quantity: parsed.membership.quantity,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function applyStoreCreditToPurchaseUnits(
+  checkout: CanonicalCheckout,
+  storeCreditAppliedUsd: number,
+) {
+  if (storeCreditAppliedUsd <= 0) {
+    return checkout.purchaseUnits;
+  }
+
+  const payableAmountUsd = roundUsdAmount(
+    Math.max(checkout.totalUsd - storeCreditAppliedUsd, 0),
+  );
+
+  return checkout.purchaseUnits.map((purchaseUnit) => ({
+    ...purchaseUnit,
+    amount: {
+      ...purchaseUnit.amount,
+      breakdown: {
+        ...purchaseUnit.amount.breakdown,
+        discount: {
+          currency_code: "USD" as const,
+          value: formatPayPalAmount(storeCreditAppliedUsd),
+        },
+        item_total: {
+          ...purchaseUnit.amount.breakdown.item_total,
+          value: formatPayPalAmount(checkout.subtotalUsd),
+        },
+        ...(checkout.taxUsd > 0
+          ? {
+              tax_total: {
+                currency_code: "USD" as const,
+                value: formatPayPalAmount(checkout.taxUsd),
+              },
+            }
+          : {}),
+      },
+      value: formatPayPalAmount(payableAmountUsd),
+    },
+  }));
 }
 
 export async function POST(request: Request) {
@@ -457,18 +588,143 @@ export async function POST(request: Request) {
   }
 
   try {
+    await releaseExpiredStoreCreditReservations(prisma);
+
     const session = await auth();
+    const salesTaxSettings = normalizeTicketSalesRateSettings(
+      await prisma.ticketSalesSettings.findUnique({
+        where: {
+          id: "default",
+        },
+      }),
+    );
+    const salesTaxRatePct = getCombinedSalesTaxRatePct(salesTaxSettings);
     const canonicalCheckout =
       parsed.data.checkoutType === "LEAGUE"
-        ? await buildLeagueCheckout(parsed.data)
-        : await buildGrimoireCheckout(parsed.data);
+        ? await buildLeagueCheckout(parsed.data, salesTaxRatePct)
+        : await buildGrimoireCheckout(parsed.data, salesTaxRatePct);
+    const checkoutUser = session?.user?.id
+      ? await prisma.user.findUnique({
+          where: {
+            id: session.user.id,
+          },
+          select: {
+            email: true,
+            id: true,
+            storeCreditHeldUsd: true,
+            storeCreditUsd: true,
+          },
+        })
+      : null;
+    const availableStoreCreditUsd = checkoutUser
+      ? roundUsdAmount(Math.max(checkoutUser.storeCreditUsd - checkoutUser.storeCreditHeldUsd, 0))
+      : 0;
+    const storeCreditAppliedUsd = roundUsdAmount(
+      Math.min(availableStoreCreditUsd, canonicalCheckout.totalUsd),
+    );
+    const payableAmountUsd = roundUsdAmount(
+      Math.max(canonicalCheckout.totalUsd - storeCreditAppliedUsd, 0),
+    );
+
+    if (payableAmountUsd <= 0) {
+      if (!checkoutUser) {
+        throw new Error("Sign in before using account credit for checkout.");
+      }
+
+      const completedCheckout = await prisma.$transaction(async (tx) => {
+        const completedAt = new Date();
+        const currentUser = await tx.user.findUnique({
+          where: {
+            id: checkoutUser.id,
+          },
+          select: {
+            email: true,
+            id: true,
+            storeCreditHeldUsd: true,
+            storeCreditUsd: true,
+          },
+        });
+
+        if (!currentUser) {
+          throw new Error("That account could not be found for store credit checkout.");
+        }
+
+        const currentAvailableStoreCreditUsd = roundUsdAmount(
+          Math.max(currentUser.storeCreditUsd - currentUser.storeCreditHeldUsd, 0),
+        );
+
+        if (currentAvailableStoreCreditUsd < canonicalCheckout.totalUsd) {
+          throw new Error("Your available store credit changed. Refresh the cart and try again.");
+        }
+
+        await tx.user.update({
+          where: {
+            id: currentUser.id,
+          },
+          data: {
+            storeCreditUsd: roundUsdAmount(currentUser.storeCreditUsd - canonicalCheckout.totalUsd),
+          },
+        });
+
+        return tx.checkoutOrder.create({
+          data: {
+            amountUsd: 0,
+            checkoutType: canonicalCheckout.checkoutType,
+            capturedAt: completedAt,
+            itemDataJson: canonicalCheckout.itemDataJson,
+            payerEmail: currentUser.email,
+            paypalOrderId: `STORE-CREDIT-${crypto.randomUUID()}`,
+            provider: "STORE_CREDIT",
+            receiptNumber: createSaleReceiptNumber(completedAt),
+            recipientDataJson: canonicalCheckout.recipientDataJson,
+            status: "COMPLETED",
+            storeCreditAppliedUsd: canonicalCheckout.totalUsd,
+            subtotalUsd: canonicalCheckout.subtotalUsd,
+            taxUsd: canonicalCheckout.taxUsd,
+            summaryText: canonicalCheckout.summaryText,
+            userId: currentUser.id,
+          },
+        });
+      });
+
+      const membership = getLeagueCheckoutMembershipFromValue(canonicalCheckout.itemDataJson);
+
+      if (
+        canonicalCheckout.checkoutType === "LEAGUE" &&
+        membership &&
+        checkoutUser.id
+      ) {
+        await grantGrimoireGuildMembership({
+          checkoutOrderId: completedCheckout.id,
+          durationDays: membership.durationDays,
+          productName: membership.productName,
+          userId: checkoutUser.id,
+        });
+      }
+
+      try {
+        await ensureAutomaticTicketPayoutsForCheckoutOrder(completedCheckout.id);
+      } catch (error) {
+        console.error("Unable to create automatic ticket payouts after store credit checkout.", error);
+      }
+
+      return NextResponse.json({
+        completed: true,
+        payerEmail: checkoutUser.email ?? null,
+        storeCreditAppliedUsd: canonicalCheckout.totalUsd,
+        success: true,
+      } satisfies DirectCreditCheckoutResponse);
+    }
 
     const order = await paypalRequest<PayPalCreateOrderResponse>(
       "/v2/checkout/orders",
       {
         body: {
           intent: "CAPTURE",
-          purchase_units: canonicalCheckout.purchaseUnits,
+          purchase_units: applyStoreCreditToPurchaseUnits(
+            canonicalCheckout,
+            storeCreditAppliedUsd,
+          ),
           payment_source: {
             paypal: {
               experience_context: {
@@ -486,16 +742,58 @@ export async function POST(request: Request) {
       throw new Error("PayPal did not return an order response.");
     }
 
-    await prisma.checkoutOrder.create({
-      data: {
-        amountUsd: canonicalCheckout.amountUsd,
-        checkoutType: canonicalCheckout.checkoutType,
-        itemDataJson: canonicalCheckout.itemDataJson,
-        paypalOrderId: order.id,
-        recipientDataJson: canonicalCheckout.recipientDataJson,
-        summaryText: canonicalCheckout.summaryText,
-        userId: session?.user?.id ?? null,
-      },
+    await prisma.$transaction(async (tx) => {
+      if (checkoutUser && storeCreditAppliedUsd > 0) {
+        const currentUser = await tx.user.findUnique({
+          where: {
+            id: checkoutUser.id,
+          },
+          select: {
+            id: true,
+            storeCreditHeldUsd: true,
+            storeCreditUsd: true,
+          },
+        });
+
+        if (!currentUser) {
+          throw new Error("That account could not be found for store credit checkout.");
+        }
+
+        const currentAvailableStoreCreditUsd = roundUsdAmount(
+          Math.max(currentUser.storeCreditUsd - currentUser.storeCreditHeldUsd, 0),
+        );
+
+        if (currentAvailableStoreCreditUsd < storeCreditAppliedUsd) {
+          throw new Error("Your available store credit changed. Refresh the cart and try again.");
+        }
+
+        await tx.user.update({
+          where: {
+            id: currentUser.id,
+          },
+          data: {
+            storeCreditHeldUsd: roundUsdAmount(
+              currentUser.storeCreditHeldUsd + storeCreditAppliedUsd,
+            ),
+          },
+        });
+      }
+
+      await tx.checkoutOrder.create({
+        data: {
+          amountUsd: payableAmountUsd,
+          checkoutType: canonicalCheckout.checkoutType,
+          itemDataJson: canonicalCheckout.itemDataJson,
+          paypalOrderId: order.id,
+          receiptNumber: createSaleReceiptNumber(),
+          recipientDataJson: canonicalCheckout.recipientDataJson,
+          storeCreditAppliedUsd,
+          subtotalUsd: canonicalCheckout.subtotalUsd,
+          taxUsd: canonicalCheckout.taxUsd,
+          summaryText: canonicalCheckout.summaryText,
+          userId: session?.user?.id ?? null,
+        },
+      });
     });
 
     return NextResponse.json({ id: order.id });

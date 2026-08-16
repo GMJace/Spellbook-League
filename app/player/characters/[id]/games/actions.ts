@@ -10,18 +10,21 @@ import {
   readGameRewardSelectionsFromFormData,
 } from "@/lib/game-reward-selections";
 import { createNotification } from "@/lib/notifications";
+import { syncPendingAdventureModuleFromPlayerLog } from "@/lib/pending-adventure-modules";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const playerGameLogSchema = z.object({
   title: z.string().trim().min(2).max(120),
   adventureCode: z.string().trim().min(2).max(40),
+  source: z.string().trim().max(160).default(""),
   datePlayed: z.string().min(1),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   dmName: z.string().trim().min(2).max(80),
   rewardsSummary: z.string().trim(),
   magicItemsAwarded: z.string().trim().max(1500).default(""),
   consumablesAwarded: z.string().trim().max(500).default(""),
+  spellbookAwarded: z.string().trim().max(1500).default(""),
   sessionNotes: z.string().trim(),
   status: z.literal("COMPLETED"),
 });
@@ -95,6 +98,7 @@ function getApprovedParticipantUpdate(status: "SCHEDULED" | "COMPLETED" | "CANCE
     logRewardsSummary: null,
     logMagicItemsAwarded: null,
     logConsumablesAwarded: null,
+    logSpellbookAwarded: null,
     logSessionNotes: null,
   };
 }
@@ -123,12 +127,14 @@ export async function createPlayerGameLog(formData: FormData) {
   const parsed = playerGameLogSchema.safeParse({
     title: formData.get("title"),
     adventureCode: formData.get("adventureCode"),
+    source: formData.get("source"),
     datePlayed: formData.get("datePlayed"),
     tier: formData.get("tier"),
     dmName: formData.get("dmName"),
     rewardsSummary: formData.get("rewardsSummary"),
     magicItemsAwarded: rewardStrings.magicItemsAwarded,
     consumablesAwarded: rewardStrings.consumablesAwarded,
+    spellbookAwarded: formData.get("spellbookAwarded"),
     sessionNotes: formData.get("sessionNotes"),
     status: formData.get("status"),
   });
@@ -148,6 +154,7 @@ export async function createPlayerGameLog(formData: FormData) {
         dmName: parsed.data.dmName,
         title: parsed.data.title,
         adventureCode: parsed.data.adventureCode,
+        source: parsed.data.source,
         adventureImagePath: null,
         datePlayed: new Date(parsed.data.datePlayed),
         tier: parsed.data.tier,
@@ -155,6 +162,7 @@ export async function createPlayerGameLog(formData: FormData) {
         rewardsSummary: parsed.data.rewardsSummary,
         magicItemsAwarded: parsed.data.magicItemsAwarded,
         consumablesAwarded: parsed.data.consumablesAwarded,
+        spellbookAwarded: parsed.data.spellbookAwarded,
         consequencesSummary: "",
         sessionNotes: parsed.data.sessionNotes,
         status: parsed.data.status,
@@ -189,8 +197,24 @@ export async function createPlayerGameLog(formData: FormData) {
     return createdGame;
   });
 
+  await syncPendingAdventureModuleFromPlayerLog({
+    adventureCode: parsed.data.adventureCode,
+    title: parsed.data.title,
+    tier: parsed.data.tier,
+    source: parsed.data.source,
+    dmName: parsed.data.dmName,
+    datePlayed: parsed.data.datePlayed,
+    rewardsSummary: parsed.data.rewardsSummary,
+    magicItemsAwarded: parsed.data.magicItemsAwarded,
+    consumablesAwarded: parsed.data.consumablesAwarded,
+    spellbookAwarded: parsed.data.spellbookAwarded,
+    sessionNotes: parsed.data.sessionNotes,
+    reportedByUserId: user.id,
+  });
+
   revalidatePath("/player");
   revalidatePath(`/player/characters/${characterId}`);
+  revalidatePath("/admin/modules");
 
   redirect(`/player/characters/${characterId}?logged=1`);
 }
@@ -211,12 +235,14 @@ export async function updatePlayerGameLog(
   const parsed = playerGameLogSchema.safeParse({
     title: formData.get("title"),
     adventureCode: formData.get("adventureCode"),
+    source: formData.get("source"),
     datePlayed: formData.get("datePlayed"),
     tier: formData.get("tier"),
     dmName: formData.get("dmName"),
     rewardsSummary: formData.get("rewardsSummary"),
     magicItemsAwarded: rewardStrings.magicItemsAwarded,
     consumablesAwarded: rewardStrings.consumablesAwarded,
+    spellbookAwarded: formData.get("spellbookAwarded"),
     sessionNotes: formData.get("sessionNotes"),
     status: formData.get("status"),
   });
@@ -242,11 +268,13 @@ export async function updatePlayerGameLog(
           dmName: parsed.data.dmName,
           title: parsed.data.title,
           adventureCode: parsed.data.adventureCode,
+          source: parsed.data.source,
           datePlayed: new Date(parsed.data.datePlayed),
           tier: parsed.data.tier,
           rewardsSummary: parsed.data.rewardsSummary,
           magicItemsAwarded: parsed.data.magicItemsAwarded,
           consumablesAwarded: parsed.data.consumablesAwarded,
+          spellbookAwarded: parsed.data.spellbookAwarded,
           sessionNotes: parsed.data.sessionNotes,
           status: parsed.data.status,
         },
@@ -269,6 +297,7 @@ export async function updatePlayerGameLog(
           logRewardsSummary: parsed.data.rewardsSummary,
           logMagicItemsAwarded: parsed.data.magicItemsAwarded,
           logConsumablesAwarded: parsed.data.consumablesAwarded,
+          logSpellbookAwarded: parsed.data.spellbookAwarded,
           logSessionNotes: parsed.data.sessionNotes,
         },
       });
@@ -291,10 +320,26 @@ export async function updatePlayerGameLog(
     });
   });
 
+  await syncPendingAdventureModuleFromPlayerLog({
+    adventureCode: parsed.data.adventureCode,
+    title: parsed.data.title,
+    tier: parsed.data.tier,
+    source: parsed.data.source,
+    dmName: parsed.data.dmName,
+    datePlayed: parsed.data.datePlayed,
+    rewardsSummary: parsed.data.rewardsSummary,
+    magicItemsAwarded: parsed.data.magicItemsAwarded,
+    consumablesAwarded: parsed.data.consumablesAwarded,
+    spellbookAwarded: parsed.data.spellbookAwarded,
+    sessionNotes: parsed.data.sessionNotes,
+    reportedByUserId: participant.userId,
+  });
+
   revalidatePath("/player");
   revalidatePath(`/player/characters/${characterId}`);
   revalidatePath(`/player/characters/${characterId}/games/${gameId}/edit`);
   revalidatePath(`/dm/games/${gameId}`);
+  revalidatePath("/admin/modules");
 
   redirect(`/player/characters/${characterId}?updatedLog=1`);
 }

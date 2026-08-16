@@ -1,6 +1,12 @@
+import { auth } from "@/auth";
 import { GrimoireCartBuilder } from "@/components/grimoire-cart-builder";
+import {
+  getCombinedSalesTaxRatePct,
+  normalizeTicketSalesRateSettings,
+} from "@/lib/checkout-pricing";
 import { getCuratedGamesForEvent, getNextGrimoireEvent } from "@/lib/grimoire-server";
 import { getPayPalClientId } from "@/lib/paypal";
+import { prisma } from "@/lib/prisma";
 
 type PageProps = {
   searchParams: Promise<{
@@ -42,8 +48,30 @@ function parseBadgeType(rawValue: string | string[] | undefined) {
 
 export default async function GrimoireCartPage({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams;
+  const session = await auth();
   const paypalClientId = getPayPalClientId();
-  const nextEvent = await getNextGrimoireEvent();
+  const checkoutUser = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: {
+          id: session.user.id,
+        },
+        select: {
+          storeCreditHeldUsd: true,
+          storeCreditUsd: true,
+        },
+      })
+    : null;
+  const [nextEvent, ticketSalesSettings] = await Promise.all([
+    getNextGrimoireEvent(),
+    prisma.ticketSalesSettings.findUnique({
+      where: {
+        id: "default",
+      },
+    }),
+  ]);
+  const salesTaxRatePct = getCombinedSalesTaxRatePct(
+    normalizeTicketSalesRateSettings(ticketSalesSettings),
+  );
 
   if (!nextEvent) {
     return (
@@ -61,12 +89,21 @@ export default async function GrimoireCartPage({ searchParams }: PageProps) {
     <main className="page-shell">
       <section className="stack">
         <GrimoireCartBuilder
+          availableStoreCreditUsd={
+            checkoutUser
+              ? Math.max(
+                  Math.round((checkoutUser.storeCreditUsd - checkoutUser.storeCreditHeldUsd) * 100) / 100,
+                  0,
+                )
+              : 0
+          }
           games={nextEventGames}
           initialBadgeQuantity={parseBadgeQuantity(resolvedSearchParams.badges)}
           initialBadgeType={parseBadgeType(resolvedSearchParams.badgeType)}
           initialSelectedGameSlugs={parseSelectedGames(resolvedSearchParams.games)}
           nextEvent={nextEvent}
           paypalClientId={paypalClientId}
+          salesTaxRatePct={salesTaxRatePct}
         />
       </section>
     </main>

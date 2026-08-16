@@ -70,6 +70,7 @@ export default async function EditPlayerGameLogPage({
   const initialValues: PlayerGameLogInitialValues = {
     title: participant.game.title,
     adventureCode: participant.game.adventureCode,
+    source: participant.game.source,
     datePlayed: formatDateInput(participant.game.datePlayed),
     tier: participant.game.tier,
     dmName: participant.game.dmName ?? "",
@@ -79,6 +80,8 @@ export default async function EditPlayerGameLogPage({
       participant.logMagicItemsAwarded ?? participant.game.magicItemsAwarded,
     consumablesAwarded:
       participant.logConsumablesAwarded ?? participant.game.consumablesAwarded,
+    spellbookAwarded:
+      participant.logSpellbookAwarded ?? participant.game.spellbookAwarded,
     sessionNotes:
       participant.logSessionNotes ?? participant.game.sessionNotes,
   };

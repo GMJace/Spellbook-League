@@ -40,6 +40,7 @@ export default async function LeaguePage() {
             Throughout the year, we host <GrimoireGatheringsText />, a series
             of quarterly online convention events featuring games run by our
             roster of professional <RainbowSpellbook /> Dungeon Masters.
+            {" "}
             <GrimoireGatheringsText /> events use purchasable badges and game
             tickets to manage event access, scheduling, and table registration.
           </p>
@@ -91,6 +92,7 @@ export default async function LeaguePage() {
 
           <p>
             Looking to DM in a safe, inclusive community? This just in:
+            {" "}
             <RainbowSpellbook /> is recruiting resident DMs for free and
             paid-to-play games. All we ask is that you follow the community
             code of conduct and run at least one <RainbowSpellbook /> game
@@ -98,7 +100,7 @@ export default async function LeaguePage() {
           </p>
 
           <p>
-            Its time to join the community where magic is written!
+            It's time to join the community where magic is written!
           </p>
         </div>
       </section>

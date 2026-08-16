@@ -1,6 +1,6 @@
 "use server";
 
-import { CheckoutType } from "@prisma/client";
+import { CheckoutType, TicketSaleSourceType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -12,13 +12,15 @@ import {
   TICKET_PAYOUT_STATUSES,
   TICKET_SALE_SOURCE_TYPES,
 } from "@/lib/ticket-sales";
+import { createRefundReceiptNumber } from "@/lib/ticket-receipts";
 import { prisma } from "@/lib/prisma";
 
-const ticketSalesPath = "/admin/ticket-sales";
+const ticketSalesPath = "/admin/accounting";
 
 const settingsSchema = z.object({
-  defaultDmPayoutRatePct: z.coerce.number().min(0).max(100),
+  eventGameDmPayoutRatePct: z.coerce.number().min(0).max(100),
   federalTaxRatePct: z.coerce.number().min(0).max(100),
+  leagueGameDmPayoutRatePct: z.coerce.number().min(0).max(100),
   provincialTaxRatePct: z.coerce.number().min(0).max(100),
 });
 
@@ -40,6 +42,9 @@ function getTicketSalesPrisma() {
     ticketRefund?: {
       create?: (...args: any[]) => Promise<any>;
     };
+    spellbookExpenseReceipt?: {
+      create?: (...args: any[]) => Promise<any>;
+    };
     ticketSalesSettings?: {
       upsert?: (...args: any[]) => Promise<any>;
     };
@@ -48,7 +53,7 @@ function getTicketSalesPrisma() {
 
 function requireTicketSalesDelegate<TDelegate>(
   delegate: TDelegate,
-  section: "payment" | "payout" | "refund" | "settings",
+  section: "payment" | "payout" | "refund" | "settings" | "spellbook-expense",
 ): Exclude<TDelegate, undefined> {
   if (!delegate) {
     redirectToTicketSales(section, "unavailable");
@@ -73,15 +78,128 @@ const paymentProfileSchema = z.object({
 
 const refundSchema = z.object({
   amountUsd: z.coerce.number().positive(),
-  checkoutOrderId: z.string().trim().min(1).max(191).or(z.literal("")).transform((value) => value || null),
-  checkoutType: z.nativeEnum(CheckoutType),
+  checkoutOrderId: z.string().trim().min(1).max(191),
+  creditAmountUsd: z.coerce.number().nonnegative(),
   notes: z.string().trim().max(2000).or(z.literal("")).transform((value) => value || null),
   reason: z.string().trim().min(2).max(240),
   refundedAt: z.string().trim().or(z.literal("")),
-  saleSourceId: z.string().trim().max(191).or(z.literal("")).transform((value) => value || null),
-  saleSourceLabel: z.string().trim().min(1).max(240),
-  saleSourceType: ticketSaleSourceTypeEnum,
 });
+
+const spellbookExpenseCardHolderEnum = z.enum(["Jace", "Trevor"]);
+
+const spellbookExpenseReceiptSchema = z.object({
+  cardHolder: spellbookExpenseCardHolderEnum,
+  company: z.string().trim().min(1).max(160),
+  expenseDate: z.string().trim().min(1),
+  serviceItem: z.string().trim().min(1).max(240),
+  taxPaidUsd: z.coerce.number().nonnegative(),
+  totalUsd: z.coerce.number().nonnegative(),
+});
+
+function buildRefundSourceDetailsFromOrder(order: {
+  checkoutType: CheckoutType;
+  id: string;
+  itemDataJson: string;
+  summaryText: string;
+}) {
+  const fallbackLabel =
+    order.summaryText || (order.checkoutType === "LEAGUE" ? "League sale" : "Grimoire sale");
+  const fallbackSource = {
+    checkoutType: order.checkoutType,
+    saleSourceId: order.id,
+    saleSourceLabel: fallbackLabel,
+    saleSourceType: "OTHER" as TicketSaleSourceType,
+  };
+
+  try {
+    const parsed = JSON.parse(order.itemDataJson) as
+      | Array<{ title?: string }>
+      | {
+          badgeLabel?: string;
+          badgeQuantity?: number;
+          games?: Array<{ title?: string }>;
+          membership?: {
+            productName?: string;
+            quantity?: number;
+          } | null;
+        };
+
+    if (order.checkoutType === "LEAGUE") {
+      if (Array.isArray(parsed)) {
+        const firstGameTitle =
+          parsed.find((entry) => typeof entry?.title === "string")?.title ?? fallbackLabel;
+
+        return {
+          checkoutType: order.checkoutType,
+          saleSourceId: order.id,
+          saleSourceLabel: firstGameTitle,
+          saleSourceType: "LEAGUE_GAME" as TicketSaleSourceType,
+        };
+      }
+
+      const games = Array.isArray(parsed?.games) ? parsed.games : [];
+      const membership = parsed?.membership;
+
+      if (
+        membership &&
+        typeof membership.productName === "string" &&
+        typeof membership.quantity === "number" &&
+        membership.quantity > 0 &&
+        games.length === 0
+      ) {
+        return {
+          checkoutType: order.checkoutType,
+          saleSourceId: order.id,
+          saleSourceLabel: membership.productName,
+          saleSourceType: "MEMBERSHIP" as TicketSaleSourceType,
+        };
+      }
+
+      if (games.length > 0) {
+        return {
+          checkoutType: order.checkoutType,
+          saleSourceId: order.id,
+          saleSourceLabel: fallbackLabel,
+          saleSourceType: "LEAGUE_GAME" as TicketSaleSourceType,
+        };
+      }
+
+      return fallbackSource;
+    }
+
+    if (!Array.isArray(parsed)) {
+      const games = Array.isArray(parsed?.games) ? parsed.games : [];
+      const badgeQuantity =
+        typeof parsed?.badgeQuantity === "number" ? parsed.badgeQuantity : 0;
+      const badgeLabel =
+        typeof parsed?.badgeLabel === "string" && parsed.badgeLabel.trim()
+          ? parsed.badgeLabel
+          : fallbackLabel;
+
+      if (badgeQuantity > 0 && games.length === 0) {
+        return {
+          checkoutType: order.checkoutType,
+          saleSourceId: order.id,
+          saleSourceLabel: badgeLabel,
+          saleSourceType: "GRIMOIRE_BADGE" as TicketSaleSourceType,
+        };
+      }
+
+      if (games.length > 0 && badgeQuantity === 0) {
+        return {
+          checkoutType: order.checkoutType,
+          saleSourceId: order.id,
+          saleSourceLabel: fallbackLabel,
+          saleSourceType: "GRIMOIRE_GAME" as TicketSaleSourceType,
+        };
+      }
+    }
+  } catch {
+    return fallbackSource;
+  }
+
+  return fallbackSource;
+}
 
 const payoutCreateSchema = z.object({
   checkoutType: z.nativeEnum(CheckoutType),
@@ -96,7 +214,9 @@ const payoutCreateSchema = z.object({
   saleSourceType: ticketSaleSourceTypeEnum,
   seatCount: z.coerce.number().int().min(0).max(999),
 });
-
+const pendingDmPayoutCreateSchema = z.object({
+  candidatesJson: z.string().trim().min(2),
+});
 const payoutUpdateSchema = z.object({
   dmPaymentProfileId: z.string().trim().min(1).max(191).or(z.literal("")).transform((value) => value || null),
   grossTicketSalesUsd: z.coerce.number().nonnegative(),
@@ -105,9 +225,18 @@ const payoutUpdateSchema = z.object({
   payoutRatePct: z.coerce.number().min(0).max(100),
   status: ticketPayoutStatusEnum,
 });
+const payoutGroupUpdateSchema = z.object({
+  dmPaymentProfileId: z.string().trim().min(1).max(191).or(z.literal("")).transform((value) => value || null),
+  eventTicketSalesUsd: z.coerce.number().nonnegative(),
+  groupKeyOrPayoutId: z.string().trim().min(1).max(191),
+  isGrouped: z.boolean().default(false),
+  leagueTicketSalesUsd: z.coerce.number().nonnegative(),
+  notes: z.string().trim().max(2000).or(z.literal("")).transform((value) => value || null),
+  status: ticketPayoutStatusEnum,
+});
 
 function redirectToTicketSales(
-  section: "payment" | "payout" | "refund" | "settings",
+  section: "payment" | "payout" | "refund" | "settings" | "spellbook-expense",
   status: string,
 ): never {
   const params = new URLSearchParams();
@@ -125,11 +254,22 @@ function parseOptionalDate(value: string) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function parseRequiredDateInput(value: string) {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = new Date(`${value}T12:00:00`);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 export async function saveTicketSalesSettings(formData: FormData) {
   const currentUser = await requireTicketSalesAdminUser();
   const parsed = settingsSchema.safeParse({
-    defaultDmPayoutRatePct: formData.get("defaultDmPayoutRatePct"),
+    eventGameDmPayoutRatePct: formData.get("eventGameDmPayoutRatePct"),
     federalTaxRatePct: formData.get("federalTaxRatePct"),
+    leagueGameDmPayoutRatePct: formData.get("leagueGameDmPayoutRatePct"),
     provincialTaxRatePct: formData.get("provincialTaxRatePct"),
   });
 
@@ -147,15 +287,17 @@ export async function saveTicketSalesSettings(formData: FormData) {
       id: "default",
     },
     update: {
-      defaultDmPayoutRatePct: parsed.data.defaultDmPayoutRatePct,
+      eventGameDmPayoutRatePct: parsed.data.eventGameDmPayoutRatePct,
       federalTaxRatePct: parsed.data.federalTaxRatePct,
+      leagueGameDmPayoutRatePct: parsed.data.leagueGameDmPayoutRatePct,
       provincialTaxRatePct: parsed.data.provincialTaxRatePct,
       updatedByUserId: currentUser.id,
     },
     create: {
-      defaultDmPayoutRatePct: parsed.data.defaultDmPayoutRatePct,
+      eventGameDmPayoutRatePct: parsed.data.eventGameDmPayoutRatePct,
       federalTaxRatePct: parsed.data.federalTaxRatePct,
       id: "default",
+      leagueGameDmPayoutRatePct: parsed.data.leagueGameDmPayoutRatePct,
       provincialTaxRatePct: parsed.data.provincialTaxRatePct,
       updatedByUserId: currentUser.id,
     },
@@ -224,13 +366,10 @@ export async function createTicketRefund(formData: FormData) {
   const parsed = refundSchema.safeParse({
     amountUsd: formData.get("amountUsd"),
     checkoutOrderId: formData.get("checkoutOrderId"),
-    checkoutType: formData.get("checkoutType"),
+    creditAmountUsd: formData.get("creditAmountUsd"),
     notes: formData.get("notes"),
     reason: formData.get("reason"),
     refundedAt: formData.get("refundedAt"),
-    saleSourceId: formData.get("saleSourceId"),
-    saleSourceLabel: formData.get("saleSourceLabel"),
-    saleSourceType: formData.get("saleSourceType"),
   });
 
   if (!parsed.success) {
@@ -243,6 +382,32 @@ export async function createTicketRefund(formData: FormData) {
     redirectToTicketSales("refund", "invalid");
   }
 
+  const effectiveRefundedAt = refundedAt ?? new Date();
+  const effectiveCreditAmountUsd = parsed.data.creditAmountUsd;
+  const creditGiven = effectiveCreditAmountUsd > 0;
+
+  if (effectiveCreditAmountUsd > parsed.data.amountUsd) {
+    redirectToTicketSales("refund", "invalid");
+  }
+
+  const checkoutOrder = await prisma.checkoutOrder.findUnique({
+    where: {
+      id: parsed.data.checkoutOrderId,
+    },
+    select: {
+      checkoutType: true,
+      id: true,
+      itemDataJson: true,
+      summaryText: true,
+    },
+  });
+
+  if (!checkoutOrder) {
+    redirectToTicketSales("refund", "invalid");
+  }
+
+  const refundSource = buildRefundSourceDetailsFromOrder(checkoutOrder);
+
   const ticketRefund = requireTicketSalesDelegate(
     getTicketSalesPrisma().ticketRefund,
     "refund",
@@ -252,19 +417,64 @@ export async function createTicketRefund(formData: FormData) {
     data: {
       amountUsd: parsed.data.amountUsd,
       checkoutOrderId: parsed.data.checkoutOrderId,
-      checkoutType: parsed.data.checkoutType,
+      checkoutType: refundSource.checkoutType,
+      creditAmountUsd: effectiveCreditAmountUsd,
+      creditGiven,
       createdByUserId: currentUser.id,
       notes: parsed.data.notes,
+      receiptNumber: createRefundReceiptNumber(effectiveRefundedAt),
       reason: parsed.data.reason,
-      refundedAt: refundedAt ?? new Date(),
-      saleSourceId: parsed.data.saleSourceId,
-      saleSourceLabel: parsed.data.saleSourceLabel,
-      saleSourceType: parsed.data.saleSourceType,
+      refundedAt: effectiveRefundedAt,
+      saleSourceId: refundSource.saleSourceId,
+      saleSourceLabel: refundSource.saleSourceLabel,
+      saleSourceType: refundSource.saleSourceType,
     },
   });
 
   revalidatePath(ticketSalesPath);
   redirectToTicketSales("refund", "created");
+}
+
+export async function createSpellbookExpenseReceipt(formData: FormData) {
+  const currentUser = await requireTicketSalesAdminUser();
+  const parsed = spellbookExpenseReceiptSchema.safeParse({
+    cardHolder: formData.get("cardHolder"),
+    company: formData.get("company"),
+    expenseDate: formData.get("expenseDate"),
+    serviceItem: formData.get("serviceItem"),
+    taxPaidUsd: formData.get("taxPaidUsd"),
+    totalUsd: formData.get("totalUsd"),
+  });
+
+  if (!parsed.success) {
+    redirectToTicketSales("spellbook-expense", "invalid");
+  }
+
+  const expenseDate = parseRequiredDateInput(parsed.data.expenseDate);
+
+  if (!expenseDate || parsed.data.taxPaidUsd > parsed.data.totalUsd) {
+    redirectToTicketSales("spellbook-expense", "invalid");
+  }
+
+  const spellbookExpenseReceipt = requireTicketSalesDelegate(
+    getTicketSalesPrisma().spellbookExpenseReceipt,
+    "spellbook-expense",
+  );
+
+  await spellbookExpenseReceipt.create?.({
+    data: {
+      cardHolder: parsed.data.cardHolder,
+      company: parsed.data.company,
+      createdByUserId: currentUser.id,
+      expenseDate,
+      serviceItem: parsed.data.serviceItem,
+      taxPaidUsd: parsed.data.taxPaidUsd,
+      totalUsd: parsed.data.totalUsd,
+    },
+  });
+
+  revalidatePath(ticketSalesPath);
+  redirectToTicketSales("spellbook-expense", "created");
 }
 
 export async function createTicketPayout(formData: FormData) {
@@ -316,6 +526,239 @@ export async function createTicketPayout(formData: FormData) {
 
   revalidatePath(ticketSalesPath);
   redirectToTicketSales("payout", "created");
+}
+
+export async function createPendingDmPayouts(formData: FormData) {
+  const currentUser = await requireTicketSalesAdminUser();
+  const parsed = pendingDmPayoutCreateSchema.safeParse({
+    candidatesJson: formData.get("candidatesJson"),
+  });
+
+  if (!parsed.success) {
+    redirectToTicketSales("payout", "invalid");
+  }
+
+  let rawCandidates: unknown;
+
+  try {
+    rawCandidates = JSON.parse(parsed.data.candidatesJson);
+  } catch {
+    redirectToTicketSales("payout", "invalid");
+  }
+
+  const candidatesParsed = z.array(payoutCreateSchema).min(1).safeParse(rawCandidates);
+
+  if (!candidatesParsed.success) {
+    redirectToTicketSales("payout", "invalid");
+  }
+
+  const ticketPayout = requireTicketSalesDelegate(
+    getTicketSalesPrisma().ticketPayout,
+    "payout",
+  );
+  const groupKey = `payout-group-${crypto.randomUUID()}`;
+
+  for (const candidate of candidatesParsed.data) {
+    await ticketPayout.create?.({
+      data: {
+        checkoutType: candidate.checkoutType,
+        createdByUserId: currentUser.id,
+        dmName: candidate.dmName,
+        dmPaymentProfileId: candidate.dmPaymentProfileId,
+        dmUserId: candidate.dmUserId,
+        grossTicketSalesUsd: candidate.grossTicketSalesUsd,
+        groupKey,
+        notes: candidate.notes,
+        payoutAmountUsd: calculatePayoutAmount(
+          candidate.grossTicketSalesUsd,
+          candidate.payoutRatePct,
+        ),
+        payoutRatePct: candidate.payoutRatePct,
+        saleSourceId: candidate.saleSourceId,
+        saleSourceLabel: candidate.saleSourceLabel,
+        saleSourceType: candidate.saleSourceType,
+        seatCount: candidate.seatCount,
+        status: "PENDING",
+      },
+    });
+  }
+
+  revalidatePath(ticketSalesPath);
+  redirectToTicketSales("payout", "created");
+}
+
+function buildAdjustedGrossAmounts(
+  payouts: Array<{
+    grossTicketSalesUsd: number;
+    id: string;
+  }>,
+  nextGrossTotalUsd: number,
+) {
+  if (!payouts.length) {
+    return [];
+  }
+
+  const currentTotalUsd = payouts.reduce((sum, payout) => sum + payout.grossTicketSalesUsd, 0);
+
+  if (currentTotalUsd <= 0) {
+    const evenSplitUsd = Math.round((nextGrossTotalUsd / payouts.length) * 100) / 100;
+    const remainderUsd = Math.round((nextGrossTotalUsd - evenSplitUsd * payouts.length) * 100) / 100;
+
+    return payouts.map((payout, index) => ({
+      grossTicketSalesUsd:
+        index === payouts.length - 1
+          ? Math.round((evenSplitUsd + remainderUsd) * 100) / 100
+          : evenSplitUsd,
+      id: payout.id,
+    }));
+  }
+
+  let assignedTotalUsd = 0;
+
+  return payouts.map((payout, index) => {
+    if (index === payouts.length - 1) {
+      return {
+        grossTicketSalesUsd: Math.round((nextGrossTotalUsd - assignedTotalUsd) * 100) / 100,
+        id: payout.id,
+      };
+    }
+
+    const proportionalGrossUsd = Math.round(
+      nextGrossTotalUsd * (payout.grossTicketSalesUsd / currentTotalUsd) * 100,
+    ) / 100;
+
+    assignedTotalUsd = Math.round((assignedTotalUsd + proportionalGrossUsd) * 100) / 100;
+
+    return {
+      grossTicketSalesUsd: proportionalGrossUsd,
+      id: payout.id,
+    };
+  });
+}
+
+export async function updateTicketPayoutGroup(formData: FormData) {
+  await requireTicketSalesAdminUser();
+  const parsed = payoutGroupUpdateSchema.safeParse({
+    dmPaymentProfileId: formData.get("dmPaymentProfileId"),
+    eventTicketSalesUsd: formData.get("eventTicketSalesUsd"),
+    groupKeyOrPayoutId: formData.get("groupKeyOrPayoutId"),
+    isGrouped: formData.get("isGrouped") === "true",
+    leagueTicketSalesUsd: formData.get("leagueTicketSalesUsd"),
+    notes: formData.get("notes"),
+    status: formData.get("status"),
+  });
+
+  if (!parsed.success) {
+    redirectToTicketSales("payout", "invalid");
+  }
+
+  const prismaTicketSales = getTicketSalesPrisma();
+  const dmPaymentProfile = requireTicketSalesDelegate(
+    prismaTicketSales.dmPaymentProfile,
+    "payout",
+  );
+  const ticketPayout = requireTicketSalesDelegate(
+    prismaTicketSales.ticketPayout,
+    "payout",
+  );
+
+  let paymentProfile = null;
+
+  if (parsed.data.dmPaymentProfileId) {
+    paymentProfile = await dmPaymentProfile.findUnique?.({
+      where: {
+        id: parsed.data.dmPaymentProfileId,
+      },
+    });
+
+    if (!paymentProfile) {
+      redirectToTicketSales("payout", "invalid");
+    }
+  }
+
+  if (parsed.data.status === "PAID") {
+    const hasPaymentMethod = Boolean(
+      paymentProfile &&
+        paymentProfile.isActive &&
+        paymentProfile.paymentMethodType &&
+        (paymentProfile.paymentMethodLabel ||
+          paymentProfile.paymentDetails ||
+          paymentProfile.contactEmail),
+    );
+
+    if (!hasPaymentMethod) {
+      redirectToTicketSales("payout", "missing-method");
+    }
+  }
+
+  const existingPayouts = await ticketPayout.findMany?.({
+    where: parsed.data.isGrouped
+      ? {
+          groupKey: parsed.data.groupKeyOrPayoutId,
+        }
+      : {
+          id: parsed.data.groupKeyOrPayoutId,
+        },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: {
+      checkoutType: true,
+      grossTicketSalesUsd: true,
+      id: true,
+      paidAt: true,
+      paidPayoutRatePct: true,
+      payoutRatePct: true,
+    },
+  });
+
+  if (!existingPayouts?.length) {
+    redirectToTicketSales("payout", "invalid");
+  }
+
+  const leaguePayouts = existingPayouts.filter((payout) => payout.checkoutType === "LEAGUE");
+  const eventPayouts = existingPayouts.filter((payout) => payout.checkoutType === "GRIMOIRE");
+  const nextLeagueGrossAmounts = buildAdjustedGrossAmounts(
+    leaguePayouts,
+    parsed.data.leagueTicketSalesUsd,
+  );
+  const nextEventGrossAmounts = buildAdjustedGrossAmounts(
+    eventPayouts,
+    parsed.data.eventTicketSalesUsd,
+  );
+  const nextGrossAmountsById = new Map(
+    [...nextLeagueGrossAmounts, ...nextEventGrossAmounts].map((entry) => [entry.id, entry.grossTicketSalesUsd]),
+  );
+
+  for (const payout of existingPayouts) {
+    const nextGrossTicketSalesUsd =
+      nextGrossAmountsById.get(payout.id) ?? payout.grossTicketSalesUsd;
+
+    await ticketPayout.update?.({
+      where: {
+        id: payout.id,
+      },
+      data: {
+        dmPaymentProfileId: parsed.data.dmPaymentProfileId,
+        grossTicketSalesUsd: nextGrossTicketSalesUsd,
+        notes: parsed.data.notes,
+        paidAt:
+          parsed.data.status === "PAID"
+            ? payout.paidAt ?? new Date()
+            : null,
+        paidPayoutRatePct:
+          parsed.data.status === "PAID"
+            ? payout.paidPayoutRatePct ?? payout.payoutRatePct
+            : null,
+        payoutAmountUsd: calculatePayoutAmount(
+          nextGrossTicketSalesUsd,
+          payout.payoutRatePct,
+        ),
+        status: parsed.data.status,
+      },
+    });
+  }
+
+  revalidatePath(ticketSalesPath);
+  redirectToTicketSales("payout", "updated");
 }
 
 export async function updateTicketPayout(formData: FormData) {

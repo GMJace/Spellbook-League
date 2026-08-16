@@ -26,6 +26,7 @@ const submissionSchema = z.object({
   rewardsSummary: z.string().trim().optional(),
   magicItemsAwarded: z.string().trim().optional(),
   consumablesAwarded: z.string().trim().optional(),
+  spellbookAwarded: z.string().trim().optional(),
   sessionNotes: z.string().trim().optional(),
   summary: z.string().trim().min(1),
   notes: z.string().trim().optional(),
@@ -37,6 +38,7 @@ function formatSubmissionNotes(data: {
   rewardsSummary?: string;
   magicItemsAwarded?: string;
   consumablesAwarded?: string;
+  spellbookAwarded?: string;
   sessionNotes?: string;
   notes?: string;
 }) {
@@ -50,6 +52,7 @@ function formatSubmissionNotes(data: {
     data.consumablesAwarded
       ? `Consumables awarded: ${data.consumablesAwarded}`
       : null,
+    data.spellbookAwarded ? `Spellbooks awarded: ${data.spellbookAwarded}` : null,
     data.sessionNotes ? `Session notes/Story Awards: ${data.sessionNotes}` : null,
     data.notes ? `Notes for staff: ${data.notes}` : null,
   ].filter(Boolean);
@@ -79,6 +82,7 @@ export async function createGrimoireDmSubmission(formData: FormData) {
     rewardsSummary: String(formData.get("rewardsSummary") ?? ""),
     magicItemsAwarded: rewardStrings.magicItemsAwarded,
     consumablesAwarded: rewardStrings.consumablesAwarded,
+    spellbookAwarded: String(formData.get("spellbookAwarded") ?? ""),
     sessionNotes: String(formData.get("sessionNotes") ?? ""),
     summary: String(formData.get("summary") ?? ""),
     notes: String(formData.get("notes") ?? ""),

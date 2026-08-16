@@ -53,6 +53,7 @@ export default async function AdminLeagueGameEditPage({ params }: PageProps) {
     id: game.id,
     title: game.title,
     adventureCode: game.adventureCode,
+    source: game.source,
     gameSummary: game.gameSummary,
     ticketPrice: game.ticketPrice,
     adventureImagePath: game.adventureImagePath,
@@ -61,6 +62,7 @@ export default async function AdminLeagueGameEditPage({ params }: PageProps) {
     duration: game.duration,
     downtimeDaysAwarded: String(game.downtimeDaysAwarded ?? 0),
     magicItemsAwarded: game.magicItemsAwarded,
+    spellbookAwarded: game.spellbookAwarded,
     participants: game.participants.map((participant) => ({
       characterId: participant.characterId,
       characterName: getParticipantCharacterLabel(participant.character?.name),

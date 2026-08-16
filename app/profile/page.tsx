@@ -59,6 +59,21 @@ export default async function ProfilePage({
               </p>
             </div>
 
+            <div className="ggcon-summary-metrics">
+              <div className="list-card stack" style={{ gap: "0.35rem" }}>
+                <span className="muted">Account credit</span>
+                <strong>${user.storeCreditUsd.toFixed(2)}</strong>
+              </div>
+              <div className="list-card stack" style={{ gap: "0.35rem" }}>
+                <span className="muted">Held for open checkout</span>
+                <strong>${user.storeCreditHeldUsd.toFixed(2)}</strong>
+              </div>
+              <div className="list-card stack" style={{ gap: "0.35rem" }}>
+                <span className="muted">Available now</span>
+                <strong>${Math.max(user.storeCreditUsd - user.storeCreditHeldUsd, 0).toFixed(2)}</strong>
+              </div>
+            </div>
+
             <div
               style={{
                 display: "flex",
@@ -155,6 +170,23 @@ export default async function ProfilePage({
                 />
                 Dungeon Master
               </label>
+            </div>
+
+            <div className="list-card stack" style={{ gap: "0.45rem" }}>
+              <span className="muted">Player alerts</span>
+              <label className="checkbox-row compact-checkbox-row">
+                <input
+                  type="checkbox"
+                  name="newGameSignupAlertsEnabled"
+                  value="on"
+                  defaultChecked={user.newGameSignupAlertsEnabled}
+                />
+                Email me when a new game opens to signups
+              </label>
+              <p className="muted" style={{ margin: 0 }}>
+                Applies to player accounts. When enabled, SPELLBOOK will try to email you and also
+                add an in-app notification when a newly created future game has open spots.
+              </p>
             </div>
           </div>
 

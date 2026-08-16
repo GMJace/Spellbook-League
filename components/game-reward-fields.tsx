@@ -283,6 +283,7 @@ function MagicRewardSelectList({
 export function GameRewardFields({
   initialConsumablesAwarded = "",
   initialMagicItemsAwarded = "",
+  initialSpellbookAwarded = "",
   legalBlessingOptions,
   legalBoonOptions,
   legalBuildMagicItemOptions,
@@ -293,6 +294,7 @@ export function GameRewardFields({
 }: {
   initialConsumablesAwarded?: string;
   initialMagicItemsAwarded?: string;
+  initialSpellbookAwarded?: string;
   legalBlessingOptions: string[];
   legalBoonOptions: string[];
   legalBuildMagicItemOptions: string[];
@@ -344,6 +346,7 @@ export function GameRewardFields({
   const [boons, setBoons] = useState(initialSelections.boons);
   const [blessings, setBlessings] = useState(initialSelections.blessings);
   const [charms, setCharms] = useState(initialSelections.charms);
+  const [spellbookAwarded, setSpellbookAwarded] = useState(initialSpellbookAwarded);
   const [additionalMagicRewardNotes, setAdditionalMagicRewardNotes] = useState(
     initialSelections.additionalMagicRewardNotes
   );
@@ -366,11 +369,13 @@ export function GameRewardFields({
     setBoons(nextSelections.boons);
     setBlessings(nextSelections.blessings);
     setCharms(nextSelections.charms);
+    setSpellbookAwarded(initialSpellbookAwarded);
     setAdditionalMagicRewardNotes(nextSelections.additionalMagicRewardNotes);
     setAdditionalConsumableNotes(nextSelections.additionalConsumableNotes);
   }, [
     initialConsumablesAwarded,
     initialMagicItemsAwarded,
+    initialSpellbookAwarded,
     legalBlessingOptions,
     legalBoonOptions,
     legalBuildMagicItemOptions,
@@ -458,6 +463,21 @@ export function GameRewardFields({
           options={legalConsumableOptions}
           values={consumables}
         />
+      </div>
+
+      <div className="list-card stack">
+        <strong>Spellbooks</strong>
+        <label style={{ margin: 0 }}>
+          <span className="muted" style={{ display: "block", marginBottom: "0.35rem" }}>
+            Spellbook rewards
+          </span>
+          <textarea
+            name="spellbookAwarded"
+            onChange={(event) => setSpellbookAwarded(event.target.value)}
+            placeholder="List spellbook rewards, spells learned, or book details."
+            value={spellbookAwarded}
+          />
+        </label>
       </div>
 
       <div className="list-card stack">

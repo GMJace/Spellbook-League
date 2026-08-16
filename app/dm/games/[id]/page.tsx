@@ -162,6 +162,10 @@ export default async function DmGameDetailPage({ params }: PageProps) {
                   <strong>{game.duration || "TBD"}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
+                  <span className="muted">Source (DM&apos;s Guild link)</span>
+                  <strong>{game.source || "Not recorded"}</strong>
+                </div>
+                <div className="list-card stack" style={{ gap: "0.35rem" }}>
                   <span className="muted">Status</span>
                   <strong>{game.status.replaceAll("_", " ")}</strong>
                 </div>
@@ -212,6 +216,14 @@ export default async function DmGameDetailPage({ params }: PageProps) {
               </p>
               <p style={{ margin: "0.35rem 0 0" }}>
                 {game.consumablesAwarded || "None recorded"}
+              </p>
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                Spellbooks awarded
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>
+                {game.spellbookAwarded || "None recorded"}
               </p>
             </div>
             <div>

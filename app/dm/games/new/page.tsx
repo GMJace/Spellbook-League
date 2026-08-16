@@ -90,12 +90,13 @@ export default async function NewGamePage({ searchParams }: PageProps) {
     })),
   }));
   const initialGameValues = duplicatedGame
-    ? {
-        title: duplicatedGame.title,
-        adventureCode: duplicatedGame.adventureCode,
-        gameSummary: duplicatedGame.gameSummary,
-        ticketPrice: duplicatedGame.ticketPrice,
-        hasTicketAccessCode: false,
+      ? {
+          title: duplicatedGame.title,
+          adventureCode: duplicatedGame.adventureCode,
+          source: duplicatedGame.source,
+          gameSummary: duplicatedGame.gameSummary,
+          ticketPrice: duplicatedGame.ticketPrice,
+          hasTicketAccessCode: false,
         datePlayed: "",
         duration: duplicatedGame.duration,
         tier: duplicatedGame.tier,
@@ -105,6 +106,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
         rewardsSummary: duplicatedGame.rewardsSummary,
         magicItemsAwarded: duplicatedGame.magicItemsAwarded,
         consumablesAwarded: duplicatedGame.consumablesAwarded,
+        spellbookAwarded: duplicatedGame.spellbookAwarded,
         sessionNotes: duplicatedGame.sessionNotes,
         status: "SCHEDULED" as const,
         adventureImagePath: duplicatedGame.adventureImagePath,

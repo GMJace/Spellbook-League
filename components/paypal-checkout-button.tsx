@@ -69,6 +69,7 @@ type PayPalCheckoutButtonProps = {
   clientId: null | string;
   disabled: boolean;
   disabledText: string;
+  payableAmountUsd: number;
   payload: PayPalCheckoutPayload;
 };
 
@@ -85,18 +86,86 @@ export function PayPalCheckoutButton({
   clientId,
   disabled,
   disabledText,
+  payableAmountUsd,
   payload,
 }: PayPalCheckoutButtonProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [sdkReady, setSdkReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [lastCreatedOrderId, setLastCreatedOrderId] = useState<null | string>(null);
+
+  async function cancelCreatedOrder(orderId: null | string) {
+    if (!orderId) {
+      return;
+    }
+
+    try {
+      await fetch("/api/paypal/cancel-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId,
+        }),
+      });
+    } catch {
+      // Ignore local release errors here and let server-side expiry cleanup handle it.
+    }
+  }
+
+  async function createOrderRequest() {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const response = await fetch("/api/paypal/create-order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(await parseResponseError(response));
+    }
+
+    const data = (await response.json()) as
+      | {
+          completed: true;
+          payerEmail?: null | string;
+          storeCreditAppliedUsd?: number;
+          success: true;
+        }
+      | {
+          id: string;
+        };
+
+    if ("completed" in data && data.completed) {
+      setSuccessMessage(
+        data.payerEmail
+          ? `Purchase completed with account credit. A receipt was sent to ${data.payerEmail}.`
+          : "Purchase completed with account credit.",
+      );
+      setLastCreatedOrderId(null);
+      return null;
+    }
+
+    if (!("id" in data)) {
+      throw new Error("PayPal checkout did not return an order ID.");
+    }
+
+    setLastCreatedOrderId(data.id);
+    return data.id;
+  }
 
   useEffect(() => {
     let isActive = true;
 
-    if (!clientId) {
+    if (!clientId || payableAmountUsd <= 0) {
       return undefined;
     }
 
@@ -117,7 +186,7 @@ export function PayPalCheckoutButton({
     return () => {
       isActive = false;
     };
-  }, [clientId]);
+  }, [clientId, payableAmountUsd]);
 
   useEffect(() => {
     let isMounted = true;
@@ -143,20 +212,13 @@ export function PayPalCheckoutButton({
         setErrorMessage(null);
         setSuccessMessage(null);
 
-        const response = await fetch("/api/paypal/create-order", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+        const orderId = await createOrderRequest();
 
-        if (!response.ok) {
-          throw new Error(await parseResponseError(response));
+        if (!orderId) {
+          throw new Error("This checkout was completed with account credit instead.");
         }
 
-        const data = (await response.json()) as { id: string };
-        return data.id;
+        return orderId;
       },
       onApprove: async (data) => {
         setIsCapturing(true);
@@ -173,6 +235,7 @@ export function PayPalCheckoutButton({
         });
 
         setIsCapturing(false);
+        setLastCreatedOrderId(null);
 
         if (!response.ok) {
           throw new Error(await parseResponseError(response));
@@ -194,11 +257,15 @@ export function PayPalCheckoutButton({
         );
       },
       onCancel: () => {
+        void cancelCreatedOrder(lastCreatedOrderId);
+        setLastCreatedOrderId(null);
         if (isMounted) {
           setErrorMessage("Checkout was canceled before payment completed.");
         }
       },
       onError: (error) => {
+        void cancelCreatedOrder(lastCreatedOrderId);
+        setLastCreatedOrderId(null);
         if (isMounted) {
           setIsCapturing(false);
           setErrorMessage(
@@ -222,9 +289,9 @@ export function PayPalCheckoutButton({
         containerRef.current.innerHTML = "";
       }
     };
-  }, [disabled, payload, sdkReady]);
+  }, [disabled, lastCreatedOrderId, payload, sdkReady]);
 
-  if (!clientId) {
+  if (!clientId && payableAmountUsd > 0) {
     return (
       <span aria-disabled="true" className="button ggcon-button-disabled">
         PayPal checkout unavailable
@@ -234,13 +301,34 @@ export function PayPalCheckoutButton({
 
   return (
     <div className="stack" style={{ gap: "0.75rem" }}>
+      {!disabled && payableAmountUsd <= 0 ? (
+        <button
+          disabled={isCreatingOrder}
+          type="button"
+          onClick={() => {
+            setIsCreatingOrder(true);
+            void createOrderRequest()
+              .catch((error: unknown) => {
+                setErrorMessage(
+                  error instanceof Error ? error.message : "Unable to complete credit checkout.",
+                );
+              })
+              .finally(() => {
+                setIsCreatingOrder(false);
+              });
+          }}
+        >
+          {isCreatingOrder ? "Applying account credit..." : "Complete with account credit"}
+        </button>
+      ) : null}
+
       {disabled ? (
         <span aria-disabled="true" className="button ggcon-button-disabled">
           {disabledText}
         </span>
       ) : null}
 
-      {!disabled ? (
+      {!disabled && payableAmountUsd > 0 ? (
         <>
           {!sdkReady ? (
             <span aria-disabled="true" className="button ggcon-button-disabled">
@@ -254,6 +342,11 @@ export function PayPalCheckoutButton({
       {isCapturing ? (
         <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
           Finalizing your PayPal payment...
+        </p>
+      ) : null}
+      {isCreatingOrder ? (
+        <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+          Finalizing your account credit purchase...
         </p>
       ) : null}
 

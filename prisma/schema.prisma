@@ -107,6 +107,9 @@ model User {
   discordHandle String?
   profileImagePath String?
   passwordHash String?
+  newGameSignupAlertsEnabled Boolean @default(false)
+  storeCreditUsd Float           @default(0)
+  storeCreditHeldUsd Float       @default(0)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   roles        UserRole[]
@@ -125,9 +128,11 @@ model User {
   patronMemberships PatronMembership[]
   ticketSalesSettingsUpdated TicketSalesSettings[] @relation("TicketSalesSettingsUpdatedBy")
   ticketRefundsCreated TicketRefund[] @relation("TicketRefundCreatedBy")
+  spellbookExpenseReceiptsCreated SpellbookExpenseReceipt[] @relation("SpellbookExpenseReceiptCreatedBy")
   dmPaymentProfiles DmPaymentProfile[] @relation("DmPaymentProfileUser")
   ticketPayoutsAsDm TicketPayout[] @relation("TicketPayoutDmUser")
   ticketPayoutsCreated TicketPayout[] @relation("TicketPayoutCreatedBy")
+  reportedPendingAdventureModules PendingAdventureModule[] @relation("PendingAdventureModuleReportedBy")
 }
 
 model UserRole {
@@ -217,6 +222,7 @@ model Game {
   dmName              String?
   title               String
   adventureCode       String
+  source              String            @default("")
   gameSummary         String            @default("")
   ticketPrice         String            @default("Free")
   ticketAccessCodeHash String?
@@ -230,6 +236,7 @@ model Game {
   rewardsSummary      String
   magicItemsAwarded   String            @default("")
   consumablesAwarded  String            @default("")
+  spellbookAwarded    String            @default("")
   consequencesSummary String
   sessionNotes        String
   status              GameStatus
@@ -250,6 +257,7 @@ model GameParticipant {
   logRewardsSummary     String?
   logMagicItemsAwarded  String?
   logConsumablesAwarded String?
+  logSpellbookAwarded   String?
   logSessionNotes       String?
   createdAt             DateTime             @default(now())
   game                  Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -267,6 +275,10 @@ model AdventureCatalog {
   lookupTitle           String
   tier                  Tier
   duration              String   @default("")
+  gameSummary           String   @default("")
+  adventureImagePath    String?
+  serviceHours          Float    @default(0)
+  downtimeDaysAwarded   Int      @default(0)
   gold                  String   @default("")
   spellbook             String   @default("")
   storyAwards           String   @default("")
@@ -280,6 +292,11 @@ model AdventureCatalog {
   veryRareMagicItemsJson String  @default("[]")
   legendaryMagicItemsJson String @default("[]")
   uniqueMagicItemsJson  String   @default("[]")
+  boonsJson             String   @default("[]")
+  blessingsJson         String   @default("[]")
+  charmsJson            String   @default("[]")
+  additionalMagicRewardNotes String @default("")
+  additionalConsumableNotes String @default("")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -287,6 +304,51 @@ model AdventureCatalog {
   @@index([lookupCode, tier])
   @@index([adventureCode, tier])
   @@index([lookupTitle])
+}
+
+model PendingAdventureModule {
+  id                    String   @id @default(cuid())
+  adventureCode         String
+  lookupCode            String
+  title                 String
+  lookupTitle           String
+  tier                  Tier
+  duration              String   @default("")
+  gameSummary           String   @default("")
+  adventureImagePath    String?
+  serviceHours          Float    @default(0)
+  downtimeDaysAwarded   Int      @default(0)
+  gold                  String   @default("")
+  spellbook             String   @default("")
+  storyAwards           String   @default("")
+  sourceSheet           String   @default("")
+  sourceNotes           String   @default("")
+  consumablesJson       String   @default("[]")
+  commonMagicItemsJson  String   @default("[]")
+  uncommonMagicItemsJson String  @default("[]")
+  rareMagicItemsJson    String   @default("[]")
+  veryRareMagicItemsJson String  @default("[]")
+  legendaryMagicItemsJson String @default("[]")
+  uniqueMagicItemsJson  String   @default("[]")
+  boonsJson             String   @default("[]")
+  blessingsJson         String   @default("[]")
+  charmsJson            String   @default("[]")
+  additionalMagicRewardNotes String @default("")
+  additionalConsumableNotes String @default("")
+  lastReportedByUserId  String?
+  reportedDmName        String   @default("")
+  reportedDatePlayed    DateTime?
+  reportCount           Int      @default(1)
+  lastReportedAt        DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastReportedBy        User?    @relation("PendingAdventureModuleReportedBy", fields: [lastReportedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([lookupCode, lookupTitle, tier])
+  @@index([lookupCode, tier])
+  @@index([adventureCode, tier])
+  @@index([lookupTitle])
+  @@index([lastReportedAt(sort: Desc)])
 }
 
 model Handbook {
@@ -519,8 +581,12 @@ model CheckoutOrder {
   checkoutType      CheckoutType
   status            CheckoutStatus @default(CREATED)
   paypalOrderId     String         @unique
+  receiptNumber     String?        @unique
   currencyCode      String         @default("USD")
   amountUsd         Float
+  subtotalUsd       Float          @default(0)
+  taxUsd            Float          @default(0)
+  storeCreditAppliedUsd Float      @default(0)
   summaryText       String
   itemDataJson      String         @default("[]")
   recipientDataJson String         @default("[]")
@@ -538,24 +604,28 @@ model CheckoutOrder {
 }
 
 model TicketSalesSettings {
-  id                     String   @id @default("default")
-  provincialTaxRatePct   Float    @default(0)
-  federalTaxRatePct      Float    @default(5)
-  defaultDmPayoutRatePct Float    @default(0)
-  updatedByUserId        String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  updatedBy              User?    @relation("TicketSalesSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  id                      String   @id @default("default")
+  provincialTaxRatePct    Float    @default(0)
+  federalTaxRatePct       Float    @default(5)
+  leagueGameDmPayoutRatePct Float  @default(0)
+  eventGameDmPayoutRatePct Float   @default(0)
+  updatedByUserId         String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  updatedBy               User?    @relation("TicketSalesSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 }
 
 model TicketRefund {
   id             String               @id @default(cuid())
   checkoutOrderId String?
+  receiptNumber  String?              @unique
   checkoutType   CheckoutType
   saleSourceType TicketSaleSourceType @default(OTHER)
   saleSourceId   String?
   saleSourceLabel String
   amountUsd      Float
+  creditGiven    Boolean              @default(false)
+  creditAmountUsd Float               @default(0)
   currencyCode   String               @default("USD")
   reason         String
   notes          String?
@@ -568,6 +638,23 @@ model TicketRefund {
 
   @@index([checkoutType, refundedAt(sort: Desc)])
   @@index([saleSourceType, refundedAt(sort: Desc)])
+}
+
+model SpellbookExpenseReceipt {
+  id              String   @id @default(cuid())
+  expenseDate     DateTime
+  cardHolder      String
+  company         String
+  serviceItem     String
+  totalUsd        Float
+  taxPaidUsd      Float
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       User?    @relation("SpellbookExpenseReceiptCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([expenseDate(sort: Desc)])
+  @@index([company])
 }
 
 model DmPaymentProfile {
@@ -591,6 +678,7 @@ model DmPaymentProfile {
 
 model TicketPayout {
   id                 String             @id @default(cuid())
+  groupKey           String?
   dmPaymentProfileId String?
   dmUserId           String?
   dmName             String
@@ -615,6 +703,7 @@ model TicketPayout {
   createdBy          User?              @relation("TicketPayoutCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt(sort: Desc)])
+  @@index([groupKey])
   @@index([checkoutType, createdAt(sort: Desc)])
   @@index([saleSourceType, saleSourceId])
 }

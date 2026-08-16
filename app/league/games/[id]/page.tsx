@@ -235,6 +235,10 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   <strong>{game.duration || "TBD"}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
+                  <span className="muted">Source (DM&apos;s Guild link)</span>
+                  <strong>{game.source || "Not recorded"}</strong>
+                </div>
+                <div className="list-card stack" style={{ gap: "0.35rem" }}>
                   <span className="muted">Status</span>
                   <strong>{formatStatus(game.status)}</strong>
                 </div>
@@ -402,6 +406,42 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
           </div>
 
           <div className="stack">
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                Awarded Gold
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>{game.rewardsSummary || "None recorded"}</p>
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                Downtime days awarded
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>{game.downtimeDaysAwarded ?? 0}</p>
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                Magic items awarded
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>
+                {game.magicItemsAwarded || "None recorded"}
+              </p>
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                Consumables awarded
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>
+                {game.consumablesAwarded || "None recorded"}
+              </p>
+            </div>
+            <div>
+              <p className="muted" style={{ margin: 0 }}>
+                Spellbooks awarded
+              </p>
+              <p style={{ margin: "0.35rem 0 0" }}>
+                {game.spellbookAwarded || "None recorded"}
+              </p>
+            </div>
             <div>
               <p className="muted" style={{ margin: 0 }}>
                 Session notes

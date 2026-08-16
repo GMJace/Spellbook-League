@@ -15,6 +15,10 @@ function mapAdventureCatalogRow(row: AdventureCatalog): AdventureCatalogRecord {
     title: row.title,
     tier: row.tier,
     duration: row.duration,
+    gameSummary: row.gameSummary,
+    adventureImagePath: row.adventureImagePath,
+    serviceHours: row.serviceHours,
+    downtimeDaysAwarded: row.downtimeDaysAwarded,
     gold: row.gold,
     spellbook: row.spellbook,
     storyAwards: row.storyAwards,
@@ -28,6 +32,11 @@ function mapAdventureCatalogRow(row: AdventureCatalog): AdventureCatalogRecord {
     veryRareMagicItems: parseAdventureCatalogListJson(row.veryRareMagicItemsJson),
     legendaryMagicItems: parseAdventureCatalogListJson(row.legendaryMagicItemsJson),
     uniqueMagicItems: parseAdventureCatalogListJson(row.uniqueMagicItemsJson),
+    boons: parseAdventureCatalogListJson(row.boonsJson),
+    blessings: parseAdventureCatalogListJson(row.blessingsJson),
+    charms: parseAdventureCatalogListJson(row.charmsJson),
+    additionalMagicRewardNotes: row.additionalMagicRewardNotes,
+    additionalConsumableNotes: row.additionalConsumableNotes,
   };
 }
 

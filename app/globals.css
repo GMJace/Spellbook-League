@@ -2248,6 +2248,46 @@ textarea {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.admin-page-menu-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-page-menu-details {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-page-menu-summary {
+  padding: 0.95rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+.admin-page-menu-summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-page-menu-links {
+  padding: 0 1rem 1rem;
+}
+
+.admin-page-menu-link {
+  width: 100%;
+}
+
+.admin-page-menu-link-active {
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  background: linear-gradient(135deg, #ffd166, #fca311);
+  color: #1b1408;
+  font-weight: 700;
+}
+
 .guide-copy {
   max-width: 60rem;
   font-size: 1.05rem;
@@ -2535,4 +2575,14 @@ textarea {
 
 .button-danger:hover {
   background: #351010;
+}
+
+.spellbook-expense-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .spellbook-expense-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

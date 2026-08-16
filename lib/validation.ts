@@ -350,6 +350,7 @@ export function validateCharacterChoices(
 export const gameSchema = z.object({
   title: z.string().trim().min(1, "Game title").max(120),
   adventureCode: z.string().trim().min(1, "Adventure code").max(40),
+  source: z.string().trim().max(160).default(""),
   gameSummary: z.string().trim().max(1500).default(""),
   ticketPrice: z.string().trim().min(1).max(40),
   ticketAccessCode: z
@@ -387,6 +388,7 @@ export const gameSchema = z.object({
   rewardsSummary: z.string().trim().min(1, "Awarded Gold"),
   magicItemsAwarded: z.string().max(1500).default(""),
   consumablesAwarded: z.string().max(500).default(""),
+  spellbookAwarded: z.string().trim().max(1500).default(""),
   sessionNotes: z.string().trim().min(1, "Session notes/Story Awards"),
   status: z.enum(["SCHEDULED", "COMPLETED", "CANCELLED"]),
   participants: z

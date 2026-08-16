@@ -15,12 +15,14 @@ import { GameRewardFields } from "@/components/game-reward-fields";
 export type PlayerGameLogInitialValues = {
   title: string;
   adventureCode: string;
+  source: string;
   datePlayed: string;
   tier: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
   dmName: string;
   rewardsSummary: string;
   magicItemsAwarded: string;
   consumablesAwarded: string;
+  spellbookAwarded: string;
   sessionNotes: string;
 };
 
@@ -72,6 +74,7 @@ export function PlayerGameLogForm({
   const [adventureCodeValue, setAdventureCodeValue] = useState(
     initialValues?.adventureCode ?? ""
   );
+  const [sourceValue, setSourceValue] = useState(initialValues?.source ?? "");
   const [tierValue, setTierValue] = useState(initialValues?.tier ?? "TIER_1");
   const [rewardsSummaryValue, setRewardsSummaryValue] = useState(
     initialValues?.rewardsSummary ?? ""
@@ -81,6 +84,9 @@ export function PlayerGameLogForm({
   );
   const [consumablesAwardedValue, setConsumablesAwardedValue] = useState(
     initialValues?.consumablesAwarded ?? ""
+  );
+  const [spellbookAwardedValue, setSpellbookAwardedValue] = useState(
+    initialValues?.spellbookAwarded ?? ""
   );
   const [sessionNotesValue, setSessionNotesValue] = useState(
     initialValues?.sessionNotes ?? ""
@@ -108,10 +114,12 @@ export function PlayerGameLogForm({
 
       setTitleValue(match.title);
       setAdventureCodeValue(match.adventureCode);
+      setSourceValue(match.source);
       setTierValue(match.tier);
       setRewardsSummaryValue(match.rewardsSummary);
       setMagicItemsAwardedValue(match.magicItemsAwarded);
       setConsumablesAwardedValue(match.consumablesAwarded);
+      setSpellbookAwardedValue(match.spellbookAwarded);
       setSessionNotesValue(match.sessionNotes);
       setAutofillMessage(`Loaded adventure details for ${match.adventureCode}.`);
     } catch (lookupError) {
@@ -186,6 +194,20 @@ export function PlayerGameLogForm({
           </label>
         </div>
         <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Source (DM's Guild link)
+            <input
+              readOnly={metadataLocked}
+              value={sourceValue}
+              name="source"
+              onChange={(event) => {
+                setSourceValue(event.target.value);
+              }}
+              type="text"
+            />
+          </label>
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
           <DatePickerField
             defaultValue={initialValues?.datePlayed ?? ""}
             disabled={metadataLocked}
@@ -252,6 +274,7 @@ export function PlayerGameLogForm({
       <GameRewardFields
         initialConsumablesAwarded={consumablesAwardedValue}
         initialMagicItemsAwarded={magicItemsAwardedValue}
+        initialSpellbookAwarded={spellbookAwardedValue}
         legalBlessingOptions={legalBlessingOptions}
         legalBoonOptions={legalBoonOptions}
         legalBuildMagicItemOptions={legalBuildMagicItemOptions}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
+import { calculateCheckoutTotals } from "@/lib/checkout-pricing";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { PayPalCheckoutButton } from "@/components/paypal-checkout-button";
 import {
@@ -14,12 +15,14 @@ import {
 import type { GrimoirePayPalCheckoutPayload } from "@/lib/paypal-checkout-types";
 
 type GrimoireCartBuilderProps = {
+  availableStoreCreditUsd: number;
   games: GrimoireGame[];
   initialBadgeQuantity: number;
   initialBadgeType: "REGULAR" | "FLYING_CARPET";
   initialSelectedGameSlugs: string[];
   nextEvent: SeasonEvent;
   paypalClientId: string | null;
+  salesTaxRatePct: number;
 };
 
 const FLYING_CARPET_BADGE_MULTIPLIER = 2;
@@ -37,12 +40,14 @@ function getConflictingGames(games: GrimoireGame[]) {
 }
 
 export function GrimoireCartBuilder({
+  availableStoreCreditUsd,
   games,
   initialBadgeQuantity,
   initialBadgeType,
   initialSelectedGameSlugs,
   nextEvent,
   paypalClientId,
+  salesTaxRatePct,
 }: GrimoireCartBuilderProps) {
   const [selectedGameQuantities, setSelectedGameQuantities] = useState(() =>
     Object.fromEntries(
@@ -97,6 +102,12 @@ export function GrimoireCartBuilder({
         total + game.ticketPriceUsd * (selectedGameQuantities[game.slug] ?? 0),
       0,
     );
+  const { payableAmountUsd, storeCreditAppliedUsd: appliedStoreCreditUsd, taxUsd } =
+    calculateCheckoutTotals({
+      availableStoreCreditUsd,
+      salesTaxRatePct,
+      subtotalUsd: subtotal,
+    });
   const hasSelections = badgeQuantity > 0 || selectedGames.length > 0;
   const requiresConflictAcknowledgement = conflictingGameGroups.length > 0;
   const canCheckout =
@@ -233,6 +244,26 @@ export function GrimoireCartBuilder({
                   <span>Subtotal</span>
                   <strong>{formatUsd(subtotal)}</strong>
                 </div>,
+                <div className="ggcon-summary-line" key="tax-summary">
+                  <span>
+                    Sales tax (
+                    {salesTaxRatePct.toFixed(salesTaxRatePct % 1 === 0 ? 0 : 2)}
+                    %)
+                  </span>
+                  <strong>{formatUsd(taxUsd)}</strong>
+                </div>,
+                ...(appliedStoreCreditUsd > 0
+                  ? [
+                      <div className="ggcon-summary-line" key="store-credit-summary">
+                        <span>Account credit</span>
+                        <strong>-{formatUsd(appliedStoreCreditUsd)}</strong>
+                      </div>,
+                    ]
+                  : []),
+                <div className="ggcon-summary-total" key="total-due-summary">
+                  <span>Total due</span>
+                  <strong>{formatUsd(payableAmountUsd)}</strong>
+                </div>,
               ]
             ) : (
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
@@ -248,6 +279,19 @@ export function GrimoireCartBuilder({
             <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
               Selected items: {checkoutSummary || "Nothing selected yet."}
             </p>
+            <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+              Sales tax of{" "}
+              {salesTaxRatePct.toFixed(salesTaxRatePct % 1 === 0 ? 0 : 2)}
+              % is applied to everything sold in this cart.
+            </p>
+            {availableStoreCreditUsd > 0 ? (
+              <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                Available account credit: {formatUsd(availableStoreCreditUsd)}.
+                {appliedStoreCreditUsd > 0
+                  ? ` ${formatUsd(appliedStoreCreditUsd)} will be applied to your taxed total before checkout.`
+                  : ""}
+              </p>
+            ) : null}
 
             {requiresConflictAcknowledgement ? (
               <div className="ggcon-conflict-notice stack">
@@ -324,6 +368,7 @@ export function GrimoireCartBuilder({
               clientId={paypalClientId}
               disabled={!canCheckout}
               disabledText="Continue to PayPal"
+              payableAmountUsd={payableAmountUsd}
               payload={checkoutPayload}
             />
 

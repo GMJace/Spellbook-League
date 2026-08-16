@@ -2,6 +2,11 @@
 import { redirect } from "next/navigation";
 
 import { requireAdminUser } from "@/lib/admin";
+import {
+  buildStoredGameRewardStrings,
+  hasStructuredGameRewardSelectionFields,
+  readGameRewardSelectionsFromFormData,
+} from "@/lib/game-reward-selections";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
@@ -21,6 +26,12 @@ async function saveAdventureImage(file: File) {
 }
 
 async function parseGameForm(formData: FormData) {
+  const rewardStrings = hasStructuredGameRewardSelectionFields(formData)
+    ? buildStoredGameRewardStrings(readGameRewardSelectionsFromFormData(formData))
+    : {
+        magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
+        consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
+      };
   const participantsRaw = String(formData.get("participants") ?? "[]");
   let parsedParticipantsSource: unknown = [];
 
@@ -39,6 +50,7 @@ async function parseGameForm(formData: FormData) {
   const parsed = gameSchema.safeParse({
     title: String(formData.get("title") ?? ""),
     adventureCode: String(formData.get("adventureCode") ?? ""),
+    source: String(formData.get("source") ?? ""),
     gameSummary: String(formData.get("gameSummary") ?? ""),
     ticketPrice: String(formData.get("ticketPrice") ?? "Free"),
     datePlayed: String(formData.get("datePlayed") ?? ""),
@@ -48,8 +60,9 @@ async function parseGameForm(formData: FormData) {
     serviceHours: String(formData.get("serviceHours") ?? ""),
     downtimeDaysAwarded: String(formData.get("downtimeDaysAwarded") ?? "0"),
     rewardsSummary: String(formData.get("rewardsSummary") ?? ""),
-    magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
-    consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
+    magicItemsAwarded: rewardStrings.magicItemsAwarded,
+    consumablesAwarded: rewardStrings.consumablesAwarded,
+    spellbookAwarded: String(formData.get("spellbookAwarded") ?? ""),
     sessionNotes: String(formData.get("sessionNotes") ?? ""),
     status: String(formData.get("status") ?? "SCHEDULED"),
     participants: participantsResult.data,
@@ -150,6 +163,7 @@ export async function adminUpdateLeagueGame(formData: FormData) {
       data: {
         title: parsed.data.title,
         adventureCode: parsed.data.adventureCode,
+        source: parsed.data.source,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
         adventureImagePath,
@@ -162,6 +176,7 @@ export async function adminUpdateLeagueGame(formData: FormData) {
         rewardsSummary: parsed.data.rewardsSummary,
         magicItemsAwarded: parsed.data.magicItemsAwarded,
         consumablesAwarded: parsed.data.consumablesAwarded,
+        spellbookAwarded: parsed.data.spellbookAwarded,
         sessionNotes: parsed.data.sessionNotes,
         status: parsed.data.status,
       },
