@@ -6,6 +6,7 @@ import {
   approvePendingGameLog,
   deleteCharacter,
 } from "@/app/player/characters/[id]/actions";
+import { confirmCharacterTrade } from "@/app/player/characters/[id]/trades/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -40,6 +41,7 @@ type PageProps = {
     reviewed?: string;
     updated?: string;
     error?: string;
+    trade?: string;
   }>;
 };
 
@@ -144,6 +146,29 @@ function formatCharacterNotes(value: string | null | undefined) {
   return value?.trim() ? value : "None recorded";
 }
 
+function formatTradeItemSummary(item: {
+  item: string;
+  itemName: string;
+  minorProperty: string;
+  flavorNotes: string;
+}) {
+  const lines = [item.itemName || item.item];
+
+  if (item.itemName && item.itemName !== item.item) {
+    lines.push(`Counts as: ${item.item}`);
+  }
+
+  if (item.minorProperty) {
+    lines.push(`Minor Property: ${item.minorProperty}`);
+  }
+
+  if (item.flavorNotes) {
+    lines.push(`Notes: ${item.flavorNotes}`);
+  }
+
+  return lines;
+}
+
 const sectionItemHeaderStyle = {
   margin: 0,
   fontSize: "calc(1em + 4pt)",
@@ -193,6 +218,30 @@ export default async function CharacterLogsheetPage({
       _count: {
         select: {
           participants: true,
+        },
+      },
+      tradesProposed: {
+        include: {
+          recipientCharacter: {
+            include: {
+              user: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+      tradesReceived: {
+        include: {
+          proposerCharacter: {
+            include: {
+              user: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
         },
       },
     },
@@ -299,6 +348,9 @@ export default async function CharacterLogsheetPage({
   const gameLog = [...visibleGameLog].sort((left, right) => {
     return right.game.datePlayed.getTime() - left.game.datePlayed.getTime();
   });
+  const tradeLog = [...character.tradesProposed, ...character.tradesReceived].sort(
+    (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+  );
   const backHref = isOwner ? "/player" : isDm ? "/dm/players" : isAdminViewer ? "/admin/users" : "/";
 
   return (
@@ -332,6 +384,21 @@ export default async function CharacterLogsheetPage({
         {resolvedSearchParams?.error === "review-missing" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             That pending review is no longer available.
+          </p>
+        ) : null}
+        {resolvedSearchParams?.trade === "created" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Trade logged and sent to the other player for confirmation.
+          </p>
+        ) : null}
+        {resolvedSearchParams?.trade === "confirmed" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Trade confirmed.
+          </p>
+        ) : null}
+        {resolvedSearchParams?.trade === "missing" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            That trade is no longer available.
           </p>
         ) : null}
         <div className="section-heading">
@@ -376,6 +443,12 @@ export default async function CharacterLogsheetPage({
                   href={`/player/characters/${character.id}/games/new`}
                 >
                   Log game
+                </Link>
+                <Link
+                  className="button button-secondary"
+                  href={`/player/characters/${character.id}/trades/new`}
+                >
+                  Log trade
                 </Link>
                 <Link
                   className="button"
@@ -445,10 +518,26 @@ export default async function CharacterLogsheetPage({
             >
               <div>
                 <p className="muted" style={sectionItemHeaderStyle}>
+                  Character HP
+                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>
+                  {character.hitPoints ?? "Not added"}
+                </p>
+              </div>
+              <div>
+                <p className="muted" style={sectionItemHeaderStyle}>
                   Character AC
                 </p>
                 <p style={{ margin: "0.35rem 0 0" }}>
                   {character.armorClass ?? "Not added"}
+                </p>
+              </div>
+              <div>
+                <p className="muted" style={sectionItemHeaderStyle}>
+                  Passive Perception
+                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>
+                  {character.passivePerception ?? "Not added"}
                 </p>
               </div>
               <div>
@@ -877,6 +966,137 @@ export default async function CharacterLogsheetPage({
                   <tr>
                     <td className="muted" colSpan={isOwner ? 6 : 5}>
                       No adventures logged yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="list-card stack">
+          <div className="section-heading">
+            <h2 style={{ margin: 0 }}>Trade log</h2>
+          </div>
+
+          <div className="table-wrap">
+            <table className="ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Trade partner</th>
+                  <th>You send</th>
+                  <th>You receive</th>
+                  <th>Adventure codes</th>
+                  <th>Downtime</th>
+                  {isOwner ? <th>Action</th> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {tradeLog.length ? (
+                  tradeLog.map((trade) => {
+                    const isTradeProposer = trade.proposerCharacterId === character.id;
+                    const counterpartyCharacter = isTradeProposer
+                      ? trade.recipientCharacter
+                      : trade.proposerCharacter;
+                    const sentItemLines = formatTradeItemSummary({
+                      item: isTradeProposer ? trade.proposerItem : trade.recipientItem,
+                      itemName: isTradeProposer
+                        ? trade.proposerItemName
+                        : trade.recipientItemName,
+                      minorProperty: isTradeProposer
+                        ? trade.proposerMinorProperty
+                        : trade.recipientMinorProperty,
+                      flavorNotes: isTradeProposer
+                        ? trade.proposerFlavorNotes
+                        : trade.recipientFlavorNotes,
+                    });
+                    const receivedItemLines = formatTradeItemSummary({
+                      item: isTradeProposer ? trade.recipientItem : trade.proposerItem,
+                      itemName: isTradeProposer
+                        ? trade.recipientItemName
+                        : trade.proposerItemName,
+                      minorProperty: isTradeProposer
+                        ? trade.recipientMinorProperty
+                        : trade.proposerMinorProperty,
+                      flavorNotes: isTradeProposer
+                        ? trade.recipientFlavorNotes
+                        : trade.proposerFlavorNotes,
+                    });
+                    const canConfirmTrade =
+                      isOwner &&
+                      trade.status === "PENDING" &&
+                      trade.recipientCharacterId === character.id;
+
+                    return (
+                      <tr key={trade.id}>
+                        <td>{formatDate(trade.createdAt)}</td>
+                        <td>{trade.status === "CONFIRMED" ? "Confirmed" : "Pending"}</td>
+                        <td>
+                          <div>{counterpartyCharacter.name}</div>
+                          <div className="muted">{counterpartyCharacter.user.name}</div>
+                        </td>
+                        <td>
+                          {sentItemLines.map((line) => (
+                            <div key={`${trade.id}-send-${line}`}>{line}</div>
+                          ))}
+                        </td>
+                        <td>
+                          {receivedItemLines.map((line) => (
+                            <div key={`${trade.id}-receive-${line}`}>{line}</div>
+                          ))}
+                        </td>
+                        <td>
+                          <div>
+                            Sent:{" "}
+                            {isTradeProposer
+                              ? trade.proposerAdventureCode || "Not added"
+                              : trade.recipientAdventureCode || "Not added"}
+                          </div>
+                          <div>
+                            Received:{" "}
+                            {isTradeProposer
+                              ? trade.recipientAdventureCode || "Not added"
+                              : trade.proposerAdventureCode || "Not added"}
+                          </div>
+                        </td>
+                        <td>
+                          <div>
+                            Sent:{" "}
+                            {isTradeProposer
+                              ? trade.proposerDowntimeDaysSpent
+                              : trade.recipientDowntimeDaysSpent}
+                          </div>
+                          <div>
+                            Received:{" "}
+                            {isTradeProposer
+                              ? trade.recipientDowntimeDaysSpent
+                              : trade.proposerDowntimeDaysSpent}
+                          </div>
+                        </td>
+                        {isOwner ? (
+                          <td>
+                            {canConfirmTrade ? (
+                              <form action={confirmCharacterTrade.bind(null, character.id, trade.id)}>
+                                <button className="button button-secondary button-small" type="submit">
+                                  Confirm trade
+                                </button>
+                              </form>
+                            ) : trade.status === "PENDING" ? (
+                              <span className="muted">Pending other player</span>
+                            ) : (
+                              <span className="muted">Confirmed</span>
+                            )}
+                          </td>
+                        ) : null}
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td className="muted" colSpan={isOwner ? 8 : 7}>
+                      No trades logged yet.
                     </td>
                   </tr>
                 )}

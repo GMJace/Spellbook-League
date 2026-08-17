@@ -98,23 +98,30 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
-const optionalIntegerField = z.preprocess(
-  (value) => {
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      return trimmed === "" ? undefined : Number(trimmed);
-    }
+function createOptionalIntegerField(max: number) {
+  return z.preprocess(
+    (value) => {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed === "" ? undefined : Number(trimmed);
+      }
 
-    return value ?? undefined;
-  },
-  z.number().int().min(0).max(99).optional()
-);
+      return value ?? undefined;
+    },
+    z.number().int().min(0).max(max).optional()
+  );
+}
+
+const optionalIntegerField = createOptionalIntegerField(99);
+const optionalHitPointField = createOptionalIntegerField(999);
 
 export const characterSchema = z
   .object({
     name: z.string().min(2).max(60),
     characterSheetLink: z.string().trim().url().max(500).optional().or(z.literal("")),
+    hitPoints: optionalHitPointField,
     armorClass: optionalIntegerField,
+    passivePerception: optionalIntegerField,
     spellSaveDc: optionalIntegerField,
     class1Name: z.string().min(2).max(40),
     class1Subclass: z.string().max(80).optional().or(z.literal("")),
@@ -172,7 +179,9 @@ type CharacterFormData = z.infer<typeof characterSchema>;
 const characterFieldErrorMessages: Partial<Record<keyof CharacterFormData, string>> = {
   name: "Character name must be between 2 and 60 characters.",
   characterSheetLink: "Character sheet link must be a valid URL.",
+  hitPoints: "Character HP must be a whole number between 0 and 999.",
   armorClass: "Character AC must be a whole number between 0 and 99.",
+  passivePerception: "Passive Perception must be a whole number between 0 and 99.",
   spellSaveDc: "Character Spell Save DC must be a whole number between 0 and 99.",
   class1Name: "Choose a class for Class 1.",
   class1Subclass: "Class 1 subclass is too long.",

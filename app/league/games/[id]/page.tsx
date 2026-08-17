@@ -408,42 +408,6 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
           <div className="stack">
             <div>
               <p className="muted" style={{ margin: 0 }}>
-                Awarded Gold
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>{game.rewardsSummary || "None recorded"}</p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Downtime days awarded
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>{game.downtimeDaysAwarded ?? 0}</p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Magic items awarded
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>
-                {game.magicItemsAwarded || "None recorded"}
-              </p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Consumables awarded
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>
-                {game.consumablesAwarded || "None recorded"}
-              </p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Spellbooks awarded
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>
-                {game.spellbookAwarded || "None recorded"}
-              </p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
                 Session notes
               </p>
               <p style={{ margin: "0.35rem 0 0" }}>{game.sessionNotes || "No notes recorded."}</p>

@@ -51,8 +51,10 @@ type FormState = {
 type CharacterFormValues = {
   name: string;
   characterSheetLink: string | null;
+  hitPoints: number | null;
   armorClass: number | null;
   isPubliclyViewable: boolean;
+  passivePerception: number | null;
   spellSaveDc: number | null;
   tokenImagePath: string | null;
   class1Name: string;
@@ -839,6 +841,16 @@ export function CharacterForm({
 
       <div className="form-grid">
         <label>
+          Character HP
+          <input
+            name="hitPoints"
+            type="number"
+            min="0"
+            max="999"
+            defaultValue={initialValues?.hitPoints ?? ""}
+          />
+        </label>
+        <label>
           Character AC
           <input
             name="armorClass"
@@ -846,6 +858,16 @@ export function CharacterForm({
             min="0"
             max="99"
             defaultValue={initialValues?.armorClass ?? ""}
+          />
+        </label>
+        <label>
+          Passive Perception
+          <input
+            name="passivePerception"
+            type="number"
+            min="0"
+            max="99"
+            defaultValue={initialValues?.passivePerception ?? ""}
           />
         </label>
         <label>

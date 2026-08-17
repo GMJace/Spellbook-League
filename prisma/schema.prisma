@@ -100,6 +100,11 @@ enum TicketPayoutStatus {
   CANCELLED
 }
 
+enum CharacterTradeStatus {
+  PENDING
+  CONFIRMED
+}
+
 model User {
   id           String            @id @default(cuid())
   name         String
@@ -133,6 +138,9 @@ model User {
   ticketPayoutsAsDm TicketPayout[] @relation("TicketPayoutDmUser")
   ticketPayoutsCreated TicketPayout[] @relation("TicketPayoutCreatedBy")
   reportedPendingAdventureModules PendingAdventureModule[] @relation("PendingAdventureModuleReportedBy")
+  characterTradesProposed CharacterTrade[] @relation("CharacterTradeProposedByUser")
+  characterTradesReceived CharacterTrade[] @relation("CharacterTradeReceivedByUser")
+  characterTradesConfirmed CharacterTrade[] @relation("CharacterTradeConfirmedByUser")
 }
 
 model UserRole {
@@ -151,7 +159,9 @@ model Character {
   name         String
   isPubliclyViewable Boolean     @default(true)
   characterSheetLink String?
+  hitPoints    Int?
   armorClass   Int?
+  passivePerception Int?
   spellSaveDc  Int?
   tokenImagePath String?
   class1Name   String
@@ -185,6 +195,8 @@ model Character {
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   participants GameParticipant[]
   achievementAwards CharacterAchievement[]
+  tradesProposed CharacterTrade[] @relation("CharacterTradeProposerCharacter")
+  tradesReceived CharacterTrade[] @relation("CharacterTradeRecipientCharacter")
 }
 
 model Achievement {
@@ -213,6 +225,41 @@ model CharacterAchievement {
   @@index([achievementId])
   @@index([characterId, awardedAt])
   @@index([awardedByUserId, awardedAt])
+}
+
+model CharacterTrade {
+  id                          String               @id @default(cuid())
+  proposerUserId              String
+  proposerCharacterId         String
+  recipientUserId             String
+  recipientCharacterId        String
+  proposerItem                String
+  proposerItemName            String               @default("")
+  proposerMinorProperty       String               @default("")
+  proposerFlavorNotes         String               @default("")
+  proposerAdventureCode       String               @default("")
+  proposerDowntimeDaysSpent   Int                  @default(0)
+  recipientItem               String
+  recipientItemName           String               @default("")
+  recipientMinorProperty      String               @default("")
+  recipientFlavorNotes        String               @default("")
+  recipientAdventureCode      String               @default("")
+  recipientDowntimeDaysSpent  Int                  @default(0)
+  status                      CharacterTradeStatus @default(PENDING)
+  confirmedByUserId           String?
+  confirmedAt                 DateTime?
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  proposerUser                User                 @relation("CharacterTradeProposedByUser", fields: [proposerUserId], references: [id], onDelete: Cascade)
+  proposerCharacter           Character            @relation("CharacterTradeProposerCharacter", fields: [proposerCharacterId], references: [id], onDelete: Cascade)
+  recipientUser               User                 @relation("CharacterTradeReceivedByUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  recipientCharacter          Character            @relation("CharacterTradeRecipientCharacter", fields: [recipientCharacterId], references: [id], onDelete: Cascade)
+  confirmedByUser             User?                @relation("CharacterTradeConfirmedByUser", fields: [confirmedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([proposerCharacterId, createdAt(sort: Desc)])
+  @@index([recipientCharacterId, createdAt(sort: Desc)])
+  @@index([recipientUserId, status, createdAt(sort: Desc)])
+  @@index([proposerUserId, status, createdAt(sort: Desc)])
 }
 
 model Game {
