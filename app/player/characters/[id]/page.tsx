@@ -9,9 +9,12 @@ import {
 import { confirmCharacterTrade } from "@/app/player/characters/[id]/trades/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { CopyMusterInfoButton } from "@/components/copy-muster-info-button";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { TableActionMenu } from "@/components/table-action-menu";
 import {
   COMMON_MAGIC_ITEM_SLOT_COUNT,
+  formatClassSummary,
   formatFeatSelections,
   formatLanguageSelections,
   formatSkillSelections,
@@ -167,6 +170,21 @@ function formatTradeItemSummary(item: {
   }
 
   return lines;
+}
+
+function formatMusterMagicItem(item: {
+  value: string;
+  name: string;
+}) {
+  if (item.name && item.name !== item.value) {
+    return `${item.name} (counts as ${item.value})`;
+  }
+
+  return item.name || item.value;
+}
+
+function formatMusterList(values: string[]) {
+  return values.length ? values.join(", ") : "None recorded";
 }
 
 const sectionItemHeaderStyle = {
@@ -328,6 +346,27 @@ export default async function CharacterLogsheetPage({
   const visibleCharms = getVisibleSlottedItems(charms, [], [], [], getCharmLabel);
   const visibleBoon = boonSlotEnabled ? character.boon.trim() : "";
   const visibleBlessing = character.blessing.trim();
+  const musterText = [
+    `Character Name: ${character.name}`,
+    `Build: ${formatClassSummary(character) || "No classes recorded"}`,
+    `Character HP: ${character.hitPoints ?? "Not added"}`,
+    `Character AC: ${character.armorClass ?? "Not added"}`,
+    `Passive Perception: ${character.passivePerception ?? "Not added"}`,
+    `Spell Save DC: ${character.spellSaveDc ?? "Not added"}`,
+    `Uncommon Magic Items: ${formatMusterList(
+      visibleMagicItems.map((item) => formatMusterMagicItem(item))
+    )}`,
+    `Common Magic Items: ${formatMusterList(
+      visibleCommonMagicItems.map((item) => formatMusterMagicItem(item))
+    )}`,
+    `Consumables: ${formatMusterList(visibleConsumables.map((item) => item.value))}`,
+    `Blessings, Charms, Boons: ${formatMusterList(
+      [visibleBlessing, ...visibleCharms.map((item) => item.value), visibleBoon]
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )}`,
+    `Character Sheet Link: ${character.characterSheetLink || "Not added"}`,
+  ].join("\n");
   const upcomingGameSignups = character.participants
     .filter(
       (participant) =>
@@ -436,35 +475,46 @@ export default async function CharacterLogsheetPage({
             <Link className="button button-secondary" href={backHref}>
               Back
             </Link>
+            <CopyMusterInfoButton text={musterText} />
             {isOwner ? (
-              <>
+              <TableActionMenu
+                label="Character actions"
+                panelStyle={{ minWidth: "14rem" }}
+                summaryClassName="button-secondary"
+              >
                 <Link
-                  className="button button-secondary"
+                  className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/games/new`}
                 >
                   Log game
                 </Link>
                 <Link
-                  className="button button-secondary"
+                  className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/trades/new`}
                 >
                   Log trade
                 </Link>
                 <Link
-                  className="button"
+                  className="button button-secondary button-small"
+                  href={`/player/characters/${character.id}/trading-post`}
+                >
+                  Trading Post
+                </Link>
+                <Link
+                  className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/edit`}
                 >
                   Edit character log
                 </Link>
                 <form action={deleteCharacter.bind(null, character.id)}>
                   <ConfirmSubmitButton
-                    className="button button-danger"
+                    className="button button-danger button-small"
                     message="Delete this character? This cannot be undone."
                   >
                     Delete character
                   </ConfirmSubmitButton>
                 </form>
-              </>
+              </TableActionMenu>
             ) : null}
           </div>
         </div>
@@ -952,12 +1002,14 @@ export default async function CharacterLogsheetPage({
                       <td>{participant.game.tier.replaceAll("_", " ")}</td>
                       {isOwner ? (
                         <td>
-                          <Link
-                            className="button button-secondary button-small"
-                            href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
-                          >
-                            Edit log
-                          </Link>
+                          <TableActionMenu>
+                            <Link
+                              className="button button-secondary button-small"
+                              href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
+                            >
+                              Edit log
+                            </Link>
+                          </TableActionMenu>
                         </td>
                       ) : null}
                     </tr>
@@ -1078,11 +1130,13 @@ export default async function CharacterLogsheetPage({
                         {isOwner ? (
                           <td>
                             {canConfirmTrade ? (
-                              <form action={confirmCharacterTrade.bind(null, character.id, trade.id)}>
-                                <button className="button button-secondary button-small" type="submit">
-                                  Confirm trade
-                                </button>
-                              </form>
+                              <TableActionMenu>
+                                <form action={confirmCharacterTrade.bind(null, character.id, trade.id)}>
+                                  <button className="button button-secondary button-small" type="submit">
+                                    Confirm trade
+                                  </button>
+                                </form>
+                              </TableActionMenu>
                             ) : trade.status === "PENDING" ? (
                               <span className="muted">Pending other player</span>
                             ) : (
@@ -1139,12 +1193,14 @@ export default async function CharacterLogsheetPage({
                         <td>{getGameDmName(participant.game)}</td>
                         <td>{participant.game.tier.replaceAll("_", " ")}</td>
                         <td>
-                          <Link
-                            className="button button-secondary button-small"
-                            href={`/league/games/${participant.game.id}`}
-                          >
-                            View game
-                          </Link>
+                          <TableActionMenu>
+                            <Link
+                              className="button button-secondary button-small"
+                              href={`/league/games/${participant.game.id}`}
+                            >
+                              View game
+                            </Link>
+                          </TableActionMenu>
                         </td>
                       </tr>
                     ))

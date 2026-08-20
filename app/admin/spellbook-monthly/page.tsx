@@ -6,6 +6,7 @@ import {
 } from "@/app/admin/spellbook-monthly/actions";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { requireAdminUser } from "@/lib/admin";
 import {
   getAdminPatronMembershipRows,
@@ -249,15 +250,17 @@ export default async function AdminSpellbookMonthlyPage({
                       <td>{formatDateTime(subscriber.createdAt)}</td>
                       <td>{formatDateTime(subscriber.lastSubscribedAt)}</td>
                       <td>
-                        <form action={deleteSpellbookMonthlySubscriber}>
-                          <input name="subscriberId" type="hidden" value={subscriber.id} />
-                          <ConfirmSubmitButton
-                            className="button-danger button-small"
-                            message={`Delete ${subscriber.email} from SPELLBOOK Monthly subscribers?`}
-                          >
-                            Delete
-                          </ConfirmSubmitButton>
-                        </form>
+                        <TableActionMenu>
+                          <form action={deleteSpellbookMonthlySubscriber}>
+                            <input name="subscriberId" type="hidden" value={subscriber.id} />
+                            <ConfirmSubmitButton
+                              className="button-danger button-small"
+                              message={`Delete ${subscriber.email} from SPELLBOOK Monthly subscribers?`}
+                            >
+                              Delete
+                            </ConfirmSubmitButton>
+                          </form>
+                        </TableActionMenu>
                       </td>
                     </tr>
                   ))

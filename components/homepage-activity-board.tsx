@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { TableActionMenu } from "@/components/table-action-menu";
 import {
   formatClassSummary,
   getCharacterTier,
@@ -206,12 +207,14 @@ export function HomepagePlayerActivityCard({
                         <td>Tier {getCharacterTier(totalLevel)}</td>
                         <td>{row.gamesPlayed}</td>
                         <td>
-                          <Link
-                            className="button button-secondary button-small"
-                            href={`/player/characters/${row.id}`}
-                          >
-                            View
-                          </Link>
+                          <TableActionMenu>
+                            <Link
+                              className="button button-secondary button-small"
+                              href={`/player/characters/${row.id}`}
+                            >
+                              View
+                            </Link>
+                          </TableActionMenu>
                         </td>
                       </tr>
                     );
@@ -298,12 +301,14 @@ export function HomepageDmActivityCard({
                     <td>{row.name}</td>
                     <td>{row.gamesLogged}</td>
                     <td>
-                      <Link
-                        className="button button-secondary button-small"
-                        href={`/dm/${row.id}`}
-                      >
-                        View
-                      </Link>
+                      <TableActionMenu>
+                        <Link
+                          className="button button-secondary button-small"
+                          href={`/dm/${row.id}`}
+                        >
+                          View
+                        </Link>
+                      </TableActionMenu>
                     </td>
                   </tr>
                 )),

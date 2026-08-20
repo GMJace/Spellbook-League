@@ -4,6 +4,7 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { DatePickerField } from "@/components/date-picker-field";
 import { LocalizedEventTime } from "@/components/localized-event-time";
+import { TableActionMenu } from "@/components/table-action-menu";
 import {
   createGrimoireEvent,
   deleteGrimoireCuratedGame,
@@ -267,7 +268,7 @@ function SubmissionTable({
                     <td>{formatDateTime(submission.createdAt)}</td>
                     <td>{formatDateTime(submission.reviewedAt)}</td>
                     <td>
-                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <TableActionMenu>
                         {submission.status !== "APPROVED" ? (
                           <ModerationActionButton
                             decision="APPROVED"
@@ -284,7 +285,7 @@ function SubmissionTable({
                         ) : (
                           <span className="muted">Hidden</span>
                         )}
-                      </div>
+                      </TableActionMenu>
                     </td>
                   </tr>
                 );
@@ -1115,7 +1116,7 @@ export default async function AdminGrimoireGatheringPage({
                           </div>
                         </td>
                         <td>
-                          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <TableActionMenu>
                             <Link
                               className="button secondary ggcon-table-button"
                               href={`/admin/grimoire-gathering?editEvent=${event.id}`}
@@ -1137,7 +1138,7 @@ export default async function AdminGrimoireGatheringPage({
                                 Delete
                               </ConfirmSubmitButton>
                             </form>
-                          </div>
+                          </TableActionMenu>
                         </td>
                       </tr>
                     ))
@@ -1213,7 +1214,7 @@ export default async function AdminGrimoireGatheringPage({
                           </td>
                           <td>{game.seatCapacity}</td>
                           <td>
-                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                            <TableActionMenu>
                               <Link
                                 className="button secondary ggcon-table-button"
                                 href={
@@ -1239,7 +1240,7 @@ export default async function AdminGrimoireGatheringPage({
                                   Delete
                                 </ConfirmSubmitButton>
                               </form>
-                            </div>
+                            </TableActionMenu>
                           </td>
                         </tr>
                       ))

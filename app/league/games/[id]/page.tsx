@@ -9,8 +9,9 @@ import {
   TBD_CHARACTER_OPTION_LABEL,
   TBD_CHARACTER_VALUE,
 } from "@/lib/game-participants";
+import { parseStoredGameSummary } from "@/lib/game-summary";
 import { prisma } from "@/lib/prisma";
-import { formatStatus, formatTier, isPaidTicketPrice, splitBulletLines } from "@/lib/utils";
+import { formatStatus, formatTier, isPaidTicketPrice } from "@/lib/utils";
 import {
   leaveLeagueGame,
   signupForFreeLeagueGame,
@@ -149,7 +150,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
   );
   const signupMessage = renderSignupMessage(resolvedSearchParams.signup);
   const leaveMessage = renderLeaveMessage(resolvedSearchParams.leave, supportEmail);
-  const gameSummaryLines = splitBulletLines(game.gameSummary);
+  const parsedGameSummary = parseStoredGameSummary(game.gameSummary);
 
   return (
     <main className="page-shell">
@@ -199,12 +200,45 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
             <div className="stack">
               <div className="stack" style={{ gap: "0.45rem" }}>
                 <p className="eyebrow">Game Snapshot</p>
-                {gameSummaryLines.length ? (
+                {parsedGameSummary.isStructured ? (
+                  <div className="stack" style={{ gap: "0.75rem" }}>
+                    {parsedGameSummary.gameSummary ? (
+                      <div className="stack" style={{ gap: "0.35rem" }}>
+                        <strong>Game summary</strong>
+                        <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+                          {parsedGameSummary.gameSummary}
+                        </p>
+                      </div>
+                    ) : null}
+                    {parsedGameSummary.themes.length ? (
+                      <div className="stack" style={{ gap: "0.35rem" }}>
+                        <strong>Themes</strong>
+                        <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                          {parsedGameSummary.themes.map((line) => (
+                            <li key={`theme-${line}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {parsedGameSummary.contentAdvisories.length ? (
+                      <div className="stack" style={{ gap: "0.35rem" }}>
+                        <strong>Content Advisories</strong>
+                        <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                          {parsedGameSummary.contentAdvisories.map((line) => (
+                            <li key={`content-advisory-${line}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : parsedGameSummary.legacyLines.length ? (
                   <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
-                    {gameSummaryLines.map((line) => (
+                    {parsedGameSummary.legacyLines.map((line) => (
                       <li key={line}>{line}</li>
                     ))}
                   </ul>
+                ) : parsedGameSummary.gameSummary ? (
+                  <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{parsedGameSummary.gameSummary}</p>
                 ) : null}
                 <p className="muted" style={{ margin: 0 }}>
                   {game.adventureCode} ·{" "}
@@ -396,21 +430,6 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   )}
                 </div>
               ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="list-card stack">
-          <div className="section-heading">
-            <h2 style={{ margin: 0 }}>Session details</h2>
-          </div>
-
-          <div className="stack">
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Session notes
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>{game.sessionNotes || "No notes recorded."}</p>
             </div>
           </div>
         </div>

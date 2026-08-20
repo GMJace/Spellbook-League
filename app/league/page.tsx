@@ -1,5 +1,6 @@
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { getHomepageData } from "@/lib/data";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 import Link from "next/link";
@@ -149,7 +150,7 @@ export default async function LeaguePage() {
                         <td>{game.ticketPrice}</td>
                         <td>{signedUpCount}/{game.seatCapacity}</td>
                         <td>
-                          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <TableActionMenu>
                             <Link
                               className="button button-secondary button-small"
                               href={`/league/games/${game.id}`}
@@ -172,7 +173,7 @@ export default async function LeaguePage() {
                                 Add to cart
                               </Link>
                             ) : null}
-                          </div>
+                          </TableActionMenu>
                         </td>
                       </tr>
                     );

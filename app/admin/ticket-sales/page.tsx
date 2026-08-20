@@ -9,6 +9,7 @@ import {
   updateTicketPayoutGroup,
 } from "@/app/admin/ticket-sales/actions";
 import { AdminPageHeader } from "@/components/admin-page-header";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { requireTicketSalesAdminUser } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import {
@@ -905,35 +906,37 @@ export default async function AdminTicketSalesPage({
                         <strong>{formatUsd(rollup.combinedEstimatedPayoutUsd)}</strong>
                       </td>
                       <td>
-                        <form action={createPendingDmPayouts}>
-                          <input
-                            name="candidatesJson"
-                            type="hidden"
-                            value={JSON.stringify(
-                              openPayoutCandidates
-                                .filter((candidate) => candidate.dmLookupKey === rollup.dmLookupKey)
-                                .map((candidate) => ({
-                                  checkoutType: candidate.checkoutType,
-                                  dmName: candidate.dmName,
-                                  dmPaymentProfileId: candidate.dmPaymentProfileId ?? "",
-                                  dmUserId: candidate.dmUserId ?? "",
-                                  grossTicketSalesUsd: candidate.grossTicketSalesUsd,
-                                  notes: "",
-                                  payoutRatePct:
-                                    candidate.checkoutType === "LEAGUE"
-                                      ? activeSettings.leagueGameDmPayoutRatePct
-                                      : activeSettings.eventGameDmPayoutRatePct,
-                                  saleSourceId: candidate.saleSourceId,
-                                  saleSourceLabel: candidate.saleSourceLabel,
-                                  saleSourceType: candidate.saleSourceType,
-                                  seatCount: candidate.seatCount,
-                                })),
-                            )}
-                          />
-                          <button className="button-secondary button-small" type="submit">
-                            Add to payout log
-                          </button>
-                        </form>
+                        <TableActionMenu>
+                          <form action={createPendingDmPayouts}>
+                            <input
+                              name="candidatesJson"
+                              type="hidden"
+                              value={JSON.stringify(
+                                openPayoutCandidates
+                                  .filter((candidate) => candidate.dmLookupKey === rollup.dmLookupKey)
+                                  .map((candidate) => ({
+                                    checkoutType: candidate.checkoutType,
+                                    dmName: candidate.dmName,
+                                    dmPaymentProfileId: candidate.dmPaymentProfileId ?? "",
+                                    dmUserId: candidate.dmUserId ?? "",
+                                    grossTicketSalesUsd: candidate.grossTicketSalesUsd,
+                                    notes: "",
+                                    payoutRatePct:
+                                      candidate.checkoutType === "LEAGUE"
+                                        ? activeSettings.leagueGameDmPayoutRatePct
+                                        : activeSettings.eventGameDmPayoutRatePct,
+                                    saleSourceId: candidate.saleSourceId,
+                                    saleSourceLabel: candidate.saleSourceLabel,
+                                    saleSourceType: candidate.saleSourceType,
+                                    seatCount: candidate.seatCount,
+                                  })),
+                              )}
+                            />
+                            <button className="button-secondary button-small" type="submit">
+                              Add to payout log
+                            </button>
+                          </form>
+                        </TableActionMenu>
                       </td>
                     </tr>
                   ))
@@ -993,81 +996,83 @@ export default async function AdminTicketSalesPage({
                         {payout.status}
                       </td>
                       <td>
-                        <form
-                          action={updateTicketPayoutGroup}
-                          className="form-stack"
-                          style={{ minWidth: "260px" }}
-                        >
-                          <input
-                            name="groupKeyOrPayoutId"
-                            type="hidden"
-                            value={payout.groupKeyOrPayoutId}
-                          />
-                          <input
-                            name="isGrouped"
-                            type="hidden"
-                            value={payout.isGrouped ? "true" : "false"}
-                          />
-                          <label>
-                            Payment method
-                            <select
-                              defaultValue={payout.dmPaymentProfileId}
-                              name="dmPaymentProfileId"
-                            >
-                              <option value="">No payment method linked</option>
-                              {paymentProfiles
-                                .filter((profile) =>
-                                  profile.lookupKey ===
-                                  createDmPaymentLookupKey({
-                                    dmName: payout.dmName,
-                                    dmUserId: payout.dmUserId,
-                                  }),
-                                )
-                                .map((profile) => (
-                                  <option key={profile.id} value={profile.id}>
-                                    {formatPaymentMethodSummary(profile)}
+                        <TableActionMenu panelStyle={{ minWidth: "18rem" }}>
+                          <form
+                            action={updateTicketPayoutGroup}
+                            className="form-stack"
+                            style={{ minWidth: "260px" }}
+                          >
+                            <input
+                              name="groupKeyOrPayoutId"
+                              type="hidden"
+                              value={payout.groupKeyOrPayoutId}
+                            />
+                            <input
+                              name="isGrouped"
+                              type="hidden"
+                              value={payout.isGrouped ? "true" : "false"}
+                            />
+                            <label>
+                              Payment method
+                              <select
+                                defaultValue={payout.dmPaymentProfileId}
+                                name="dmPaymentProfileId"
+                              >
+                                <option value="">No payment method linked</option>
+                                {paymentProfiles
+                                  .filter((profile) =>
+                                    profile.lookupKey ===
+                                    createDmPaymentLookupKey({
+                                      dmName: payout.dmName,
+                                      dmUserId: payout.dmUserId,
+                                    }),
+                                  )
+                                  .map((profile) => (
+                                    <option key={profile.id} value={profile.id}>
+                                      {formatPaymentMethodSummary(profile)}
+                                    </option>
+                                  ))}
+                              </select>
+                            </label>
+                            <label>
+                              League ticket sales USD
+                              <input
+                                defaultValue={payout.leagueTicketSalesUsd}
+                                min="0"
+                                name="leagueTicketSalesUsd"
+                                step="0.01"
+                                type="number"
+                              />
+                            </label>
+                            <label>
+                              Event ticket sales USD
+                              <input
+                                defaultValue={payout.eventTicketSalesUsd}
+                                min="0"
+                                name="eventTicketSalesUsd"
+                                step="0.01"
+                                type="number"
+                              />
+                            </label>
+                            <label>
+                              Status
+                              <select defaultValue={payout.status} name="status">
+                                {TICKET_PAYOUT_STATUSES.map((status) => (
+                                  <option key={status} value={status}>
+                                    {status}
                                   </option>
                                 ))}
-                            </select>
-                          </label>
-                          <label>
-                            League ticket sales USD
-                            <input
-                              defaultValue={payout.leagueTicketSalesUsd}
-                              min="0"
-                              name="leagueTicketSalesUsd"
-                              step="0.01"
-                              type="number"
-                            />
-                          </label>
-                          <label>
-                            Event ticket sales USD
-                            <input
-                              defaultValue={payout.eventTicketSalesUsd}
-                              min="0"
-                              name="eventTicketSalesUsd"
-                              step="0.01"
-                              type="number"
-                            />
-                          </label>
-                          <label>
-                            Status
-                            <select defaultValue={payout.status} name="status">
-                              {TICKET_PAYOUT_STATUSES.map((status) => (
-                                <option key={status} value={status}>
-                                  {status}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label>
-                            Notes
-                            <textarea defaultValue={payout.notes} name="notes" rows={2} />
-                          </label>
-                          <button className="button-secondary button-small" type="submit">
-                            Update payout
-                          </button>
-                        </form>
+                              </select>
+                            </label>
+                            <label>
+                              Notes
+                              <textarea defaultValue={payout.notes} name="notes" rows={2} />
+                            </label>
+                            <button className="button-secondary button-small" type="submit">
+                              Update payout
+                            </button>
+                          </form>
+                        </TableActionMenu>
                       </td>
                     </tr>
                   )) 

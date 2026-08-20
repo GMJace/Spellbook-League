@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { AdminPageHeader } from "@/components/admin-page-header";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { adminDeleteLeagueGame } from "@/app/admin/league-games/actions";
 import { requireAdminUser } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -104,7 +105,7 @@ export default async function AdminLeagueGamesPage({
                           {availableSpots} of {game.seatCapacity}
                         </td>
                         <td>
-                          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <TableActionMenu>
                             <Link
                               className="button button-secondary button-small"
                               href={`/league/games/${game.id}`}
@@ -126,7 +127,7 @@ export default async function AdminLeagueGamesPage({
                                 Delete
                               </ConfirmSubmitButton>
                             </form>
-                          </div>
+                          </TableActionMenu>
                         </td>
                       </tr>
                     );

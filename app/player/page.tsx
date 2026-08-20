@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { getCharacterLimitForRoles } from "@/lib/character-limits";
 import {
   getCharacterTier,
@@ -301,7 +302,7 @@ export default async function PlayerDashboardPage({
                         <td>{game.ticketPrice}</td>
                         <td>{signedUpCount}/{game.seatCapacity}</td>
                         <td>
-                          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <TableActionMenu>
                             <Link
                               className="button button-secondary button-small"
                               href={`/league/games/${game.id}`}
@@ -316,7 +317,7 @@ export default async function PlayerDashboardPage({
                                 Add to cart
                               </Link>
                             ) : null}
-                          </div>
+                          </TableActionMenu>
                         </td>
                       </tr>
                     );

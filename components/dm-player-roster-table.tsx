@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { formatClassSummary } from "@/lib/character";
 
 export type DmPlayerRosterRow = {
@@ -185,12 +186,14 @@ export function DmPlayerRosterTable({
                   </td>
                   <td>{character.games}</td>
                   <td>
-                    <Link
-                      className="button button-secondary button-small"
-                      href={`/player/characters/${character.id}`}
-                    >
-                      View record
-                    </Link>
+                    <TableActionMenu>
+                      <Link
+                        className="button button-secondary button-small"
+                        href={`/player/characters/${character.id}`}
+                      >
+                        View record
+                      </Link>
+                    </TableActionMenu>
                   </td>
                 </tr>
               ))

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createAdventureModule } from "@/app/admin/modules/actions";
 import { AdminModuleForm } from "@/components/admin-module-form";
 import { AdminPageHeader } from "@/components/admin-page-header";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { normalizeAdventureLookupValue } from "@/lib/adventure-catalog";
 import { requireAdminUser } from "@/lib/admin";
 import {
@@ -244,12 +245,14 @@ export default async function AdminModulesPage({
                       <td>{formatDate(pendingModule.lastReportedAt)}</td>
                       <td>{pendingModule.reportCount}</td>
                       <td>
-                        <Link
-                          className="button button-secondary button-small"
-                          href={`/admin/modules/pending/${pendingModule.id}`}
-                        >
-                          Review
-                        </Link>
+                        <TableActionMenu>
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/admin/modules/pending/${pendingModule.id}`}
+                          >
+                            Review
+                          </Link>
+                        </TableActionMenu>
                       </td>
                     </tr>
                   ))
@@ -497,12 +500,14 @@ export default async function AdminModulesPage({
                       <td>{module.sourceSheet || "Unknown source"}</td>
                       <td>{formatDate(module.updatedAt)}</td>
                       <td>
-                        <Link
-                          className="button button-secondary button-small"
-                          href={`/admin/modules/${module.id}/edit`}
-                        >
-                          Edit
-                        </Link>
+                        <TableActionMenu>
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/admin/modules/${module.id}/edit`}
+                          >
+                            Edit
+                          </Link>
+                        </TableActionMenu>
                       </td>
                     </tr>
                   ))

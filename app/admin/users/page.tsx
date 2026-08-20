@@ -4,6 +4,7 @@ import { AdminUserRemovalCard } from "@/components/admin-user-removal-card";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { TableActionMenu } from "@/components/table-action-menu";
 import {
   addProDmToRoster,
   addEventAdminRole,
@@ -299,7 +300,7 @@ export default async function AdminUsersPage({
                         </Link>
                       </td>
                       <td>
-                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <TableActionMenu panelStyle={{ minWidth: "15rem" }}>
                           <form action={updateProDmRating} style={{ display: "flex", gap: "0.5rem" }}>
                             <input name="targetUserId" type="hidden" value={user.id} />
                             <select
@@ -326,7 +327,7 @@ export default async function AdminUsersPage({
                               Remove
                             </ConfirmSubmitButton>
                           </form>
-                        </div>
+                        </TableActionMenu>
                       </td>
                     </tr>
                   ))
@@ -384,17 +385,19 @@ export default async function AdminUsersPage({
                         {review.notes || "No notes provided"}
                       </td>
                       <td>
-                        <form action={deleteProDmReview}>
-                          <input name="reviewId" type="hidden" value={review.id} />
-                          <ConfirmSubmitButton
-                            className="button-danger button-small"
-                            message={`Delete the DM rating for ${
-                              userMap.get(review.userId)?.name ?? "this DM"
-                            }? This cannot be undone.`}
-                          >
-                            Delete
-                          </ConfirmSubmitButton>
-                        </form>
+                        <TableActionMenu>
+                          <form action={deleteProDmReview}>
+                            <input name="reviewId" type="hidden" value={review.id} />
+                            <ConfirmSubmitButton
+                              className="button-danger button-small"
+                              message={`Delete the DM rating for ${
+                                userMap.get(review.userId)?.name ?? "this DM"
+                              }? This cannot be undone.`}
+                            >
+                              Delete
+                            </ConfirmSubmitButton>
+                          </form>
+                        </TableActionMenu>
                       </td>
                     </tr>
                   ))
@@ -551,7 +554,7 @@ export default async function AdminUsersPage({
                     <td>{formatDate(user.createdAt)}</td>
                     <td>
                       {user.id === adminUser.id ? (
-                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <TableActionMenu>
                           <Link
                             className="button button-secondary button-small"
                             href={`/admin/users/${user.id}`}
@@ -559,9 +562,9 @@ export default async function AdminUsersPage({
                             View profile
                           </Link>
                           <span className="muted">Current account</span>
-                        </div>
+                        </TableActionMenu>
                       ) : (
-                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <TableActionMenu panelStyle={{ minWidth: "18rem" }}>
                           <Link
                             className="button button-secondary button-small"
                             href={`/admin/users/${user.id}`}
@@ -653,7 +656,7 @@ export default async function AdminUsersPage({
                               </ConfirmSubmitButton>
                             </form>
                           )}
-                        </div>
+                        </TableActionMenu>
                       )}
                     </td>
                   </tr>

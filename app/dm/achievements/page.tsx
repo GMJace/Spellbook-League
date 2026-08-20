@@ -2,6 +2,7 @@
 import Link from "next/link";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { requireRole } from "@/lib/auth";
 import { canViewPrivateCharacterRoster } from "@/lib/character-visibility";
 import {
@@ -278,12 +279,14 @@ export default async function DmAchievementsPage({ searchParams }: PageProps) {
                         <td>{character._count.participants}</td>
                         <td>{character._count.achievementAwards}</td>
                         <td>
-                          <Link
-                            className="button secondary button-small"
-                            href={`/dm/achievements/award/${character.id}`}
-                          >
-                            AWARD ACHIEVEMENT
-                          </Link>
+                          <TableActionMenu>
+                            <Link
+                              className="button secondary button-small"
+                              href={`/dm/achievements/award/${character.id}`}
+                            >
+                              AWARD ACHIEVEMENT
+                            </Link>
+                          </TableActionMenu>
                         </td>
                       </tr>
                     );

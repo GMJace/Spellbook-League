@@ -105,6 +105,28 @@ enum CharacterTradeStatus {
   CONFIRMED
 }
 
+enum TradingPostRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  VERY_RARE
+  LEGENDARY
+  UNIQUE
+}
+
+enum TradingPostListingStatus {
+  ACTIVE
+  TRADED
+  WITHDRAWN
+}
+
+enum TradingPostProposalStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
 model User {
   id           String            @id @default(cuid())
   name         String
@@ -141,6 +163,9 @@ model User {
   characterTradesProposed CharacterTrade[] @relation("CharacterTradeProposedByUser")
   characterTradesReceived CharacterTrade[] @relation("CharacterTradeReceivedByUser")
   characterTradesConfirmed CharacterTrade[] @relation("CharacterTradeConfirmedByUser")
+  tradingPostListings TradingPostListing[] @relation("TradingPostListingUser")
+  tradingPostProposals TradingPostProposal[] @relation("TradingPostProposalUser")
+  reviewedTradingPostProposals TradingPostProposal[] @relation("TradingPostProposalReviewedByUser")
 }
 
 model UserRole {
@@ -197,6 +222,8 @@ model Character {
   achievementAwards CharacterAchievement[]
   tradesProposed CharacterTrade[] @relation("CharacterTradeProposerCharacter")
   tradesReceived CharacterTrade[] @relation("CharacterTradeRecipientCharacter")
+  tradingPostListings TradingPostListing[] @relation("TradingPostListingCharacter")
+  tradingPostProposals TradingPostProposal[] @relation("TradingPostProposalCharacter")
 }
 
 model Achievement {
@@ -259,6 +286,56 @@ model CharacterTrade {
   @@index([proposerCharacterId, createdAt(sort: Desc)])
   @@index([recipientCharacterId, createdAt(sort: Desc)])
   @@index([recipientUserId, status, createdAt(sort: Desc)])
+  @@index([proposerUserId, status, createdAt(sort: Desc)])
+}
+
+model TradingPostListing {
+  id                String                   @id @default(cuid())
+  userId            String
+  characterId       String
+  rarity            TradingPostRarity
+  item              String
+  itemName          String                   @default("")
+  minorProperty     String                   @default("")
+  flavorNotes       String                   @default("")
+  adventureCode     String                   @default("")
+  downtimeDaysSpent Int                      @default(0)
+  lookingFor        String                   @default("")
+  status            TradingPostListingStatus @default(ACTIVE)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  user              User                     @relation("TradingPostListingUser", fields: [userId], references: [id], onDelete: Cascade)
+  character         Character                @relation("TradingPostListingCharacter", fields: [characterId], references: [id], onDelete: Cascade)
+  proposals         TradingPostProposal[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([characterId, status, createdAt(sort: Desc)])
+  @@index([userId, status, createdAt(sort: Desc)])
+}
+
+model TradingPostProposal {
+  id                String                    @id @default(cuid())
+  listingId         String
+  proposerUserId    String
+  proposerCharacterId String
+  item              String
+  itemName          String                    @default("")
+  minorProperty     String                    @default("")
+  flavorNotes       String                    @default("")
+  adventureCode     String                    @default("")
+  downtimeDaysSpent Int                       @default(0)
+  status            TradingPostProposalStatus @default(PENDING)
+  reviewedAt        DateTime?
+  reviewedByUserId  String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  listing           TradingPostListing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  proposerUser      User                      @relation("TradingPostProposalUser", fields: [proposerUserId], references: [id], onDelete: Cascade)
+  proposerCharacter Character                 @relation("TradingPostProposalCharacter", fields: [proposerCharacterId], references: [id], onDelete: Cascade)
+  reviewedByUser    User?                     @relation("TradingPostProposalReviewedByUser", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([listingId, status, createdAt(sort: Desc)])
+  @@index([proposerCharacterId, status, createdAt(sort: Desc)])
   @@index([proposerUserId, status, createdAt(sort: Desc)])
 }
 

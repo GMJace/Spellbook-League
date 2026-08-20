@@ -2288,6 +2288,67 @@ textarea {
   font-weight: 700;
 }
 
+.table-action-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.table-action-menu-summary {
+  list-style: none;
+}
+
+.table-action-menu-summary::-webkit-details-marker {
+  display: none;
+}
+
+.table-action-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  min-width: 12rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: 0.7rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(14, 18, 24, 0.98);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+  z-index: 30;
+}
+
+.table-action-menu-panel > * {
+  width: 100%;
+}
+
+.table-action-menu-panel form {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.table-action-menu-panel a,
+.table-action-menu-panel button {
+  width: 100%;
+  justify-content: center;
+}
+
+.table-action-menu-panel input,
+.table-action-menu-panel select,
+.table-action-menu-panel textarea {
+  width: 100%;
+}
+
+.table-action-menu-form {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.table-action-menu-form input,
+.table-action-menu-form select,
+.table-action-menu-form textarea {
+  width: 100%;
+}
+
 .guide-copy {
   max-width: 60rem;
   font-size: 1.05rem;

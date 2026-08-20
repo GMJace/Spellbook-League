@@ -6,6 +6,7 @@ import { lookupAdventureCatalogAutofill } from "@/lib/adventure-catalog-client";
 import { BulletTextarea } from "@/components/bullet-textarea";
 import { DatePickerField } from "@/components/date-picker-field";
 import { GameRewardFields } from "@/components/game-reward-fields";
+import { parseStoredGameSummary, serializeGameSummarySections } from "@/lib/game-summary";
 import {
   TBD_CHARACTER_LABEL,
   TBD_CHARACTER_OPTION_LABEL,
@@ -195,11 +196,19 @@ export function GameForm({
   submitGame,
   submitLabel = "Save game",
 }: GameFormProps) {
+  const parsedInitialGameSummary = useMemo(
+    () => parseStoredGameSummary(initialValues?.gameSummary),
+    [initialValues?.gameSummary]
+  );
   const [search, setSearch] = useState("");
   const [titleValue, setTitleValue] = useState(initialValues?.title ?? "");
   const [adventureCodeValue, setAdventureCodeValue] = useState(initialValues?.adventureCode ?? "");
   const [sourceValue, setSourceValue] = useState(initialValues?.source ?? "");
-  const [gameSummaryValue, setGameSummaryValue] = useState(initialValues?.gameSummary ?? "");
+  const [gameSummaryValue, setGameSummaryValue] = useState(parsedInitialGameSummary.gameSummary);
+  const [themesValue, setThemesValue] = useState(parsedInitialGameSummary.themes.join("\n"));
+  const [contentAdvisoriesValue, setContentAdvisoriesValue] = useState(
+    parsedInitialGameSummary.contentAdvisories.join("\n")
+  );
   const [durationValue, setDurationValue] = useState(initialValues?.duration ?? "");
   const [tierValue, setTierValue] = useState(initialValues?.tier ?? "TIER_1");
   const [serviceHoursValue, setServiceHoursValue] = useState(initialValues?.serviceHours ?? "");
@@ -246,6 +255,11 @@ export function GameForm({
 
   const errorTextStyle = { color: "#8f341b", margin: 0 };
   const fieldBlockStyle = { gap: "0.35rem" };
+  const helperLabelNoteStyle = {
+    fontSize: "0.78rem",
+    fontWeight: 400,
+    lineHeight: 1.35,
+  } as const;
 
   async function autofillAdventureDetails() {
     if (!titleValue.trim() && !adventureCodeValue.trim()) {
@@ -268,7 +282,11 @@ export function GameForm({
       setTitleValue(match.title);
       setAdventureCodeValue(match.adventureCode);
       setSourceValue(match.source);
-      setGameSummaryValue(match.gameSummary);
+      const parsedAutofillGameSummary = parseStoredGameSummary(match.gameSummary);
+
+      setGameSummaryValue(parsedAutofillGameSummary.gameSummary);
+      setThemesValue(parsedAutofillGameSummary.themes.join("\n"));
+      setContentAdvisoriesValue(parsedAutofillGameSummary.contentAdvisories.join("\n"));
       setDurationValue(match.duration);
       setTierValue(match.tier);
       setServiceHoursValue(match.serviceHours);
@@ -343,6 +361,22 @@ export function GameForm({
           try {
             const formData = new FormData(event.currentTarget);
             formData.set("participants", JSON.stringify(participants));
+            formData.set(
+              "gameSummary",
+              serializeGameSummarySections({
+                contentAdvisories: String(formData.get("contentAdvisories") ?? "")
+                  .replace(/\r\n/g, "\n")
+                  .split("\n")
+                  .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+                  .filter(Boolean),
+                gameSummary: String(formData.get("gameSummaryText") ?? ""),
+                themes: String(formData.get("themes") ?? "")
+                  .replace(/\r\n/g, "\n")
+                  .split("\n")
+                  .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+                  .filter(Boolean),
+              })
+            );
 
             const adventureImage = formData.get("adventureImage");
 
@@ -633,11 +667,23 @@ export function GameForm({
       ) : null}
 
       <label>
-        Game summary (Include themes and content advisories)
+        <span
+          style={{
+            alignItems: "baseline",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.45rem",
+          }}
+        >
+          <span>Game summary</span>
+          <span className="muted" style={helperLabelNoteStyle}>
+            Use full sentences or paragraphs here.
+          </span>
+        </span>
         <textarea
           aria-invalid={Boolean(getFieldError("gameSummary"))}
           value={gameSummaryValue}
-          name="gameSummary"
+          name="gameSummaryText"
           onChange={(event) => {
             setGameSummaryValue(event.target.value);
             clearFieldError("gameSummary");
@@ -647,12 +693,72 @@ export function GameForm({
       {getFieldError("gameSummary") ? (
         <p style={errorTextStyle}>{getFieldError("gameSummary")}</p>
       ) : null}
-      <p className="muted" style={{ margin: 0 }}>
-        Each line is a bullet point.
-      </p>
 
       <label>
-        Service hours (AL DM rewards)
+        <span
+          style={{
+            alignItems: "baseline",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.45rem",
+          }}
+        >
+          <span>Themes</span>
+          <span className="muted" style={helperLabelNoteStyle}>
+            Each line is a bullet point.
+          </span>
+        </span>
+        <BulletTextarea
+          key={`themes-${themesValue}`}
+          aria-invalid={Boolean(getFieldError("gameSummary"))}
+          defaultValue={themesValue}
+          name="themes"
+          onBlur={() => {
+            clearFieldError("gameSummary");
+          }}
+        />
+      </label>
+
+      <label>
+        <span
+          style={{
+            alignItems: "baseline",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.45rem",
+          }}
+        >
+          <span>Content Advisories</span>
+          <span className="muted" style={helperLabelNoteStyle}>
+            Each line is a bullet point.
+          </span>
+        </span>
+        <BulletTextarea
+          key={`content-advisories-${contentAdvisoriesValue}`}
+          aria-invalid={Boolean(getFieldError("gameSummary"))}
+          defaultValue={contentAdvisoriesValue}
+          name="contentAdvisories"
+          onBlur={() => {
+            clearFieldError("gameSummary");
+          }}
+        />
+      </label>
+
+      <label>
+        <span
+          style={{
+            alignItems: "baseline",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.45rem",
+          }}
+        >
+          <span>Service hours (AL DM rewards)</span>
+          <span className="muted" style={helperLabelNoteStyle}>
+            Optional. Enter the Adventurers League service hours earned for running this game.
+            Decimals like 2.5 are fine.
+          </span>
+        </span>
         <input
           aria-invalid={Boolean(getFieldError("serviceHours"))}
           value={serviceHoursValue}
@@ -669,10 +775,6 @@ export function GameForm({
       {getFieldError("serviceHours") ? (
         <p style={errorTextStyle}>{getFieldError("serviceHours")}</p>
       ) : null}
-      <p className="muted" style={{ margin: 0 }}>
-        Optional. Enter the Adventurers League service hours earned for running
-        this game. Decimals like 2.5 are fine.
-      </p>
 
       <div className="form-grid">
         <div className="stack" style={fieldBlockStyle}>

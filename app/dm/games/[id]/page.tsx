@@ -8,7 +8,7 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { prisma } from "@/lib/prisma";
-import { splitBulletLines } from "@/lib/utils";
+import { parseStoredGameSummary } from "@/lib/game-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +67,7 @@ export default async function DmGameDetailPage({ params }: PageProps) {
   }
 
   const availableSpots = Math.max((game.seatCapacity ?? 0) - game.participants.length, 0);
-  const gameSummaryLines = splitBulletLines(game.gameSummary);
+  const parsedGameSummary = parseStoredGameSummary(game.gameSummary);
   const sortedParticipants = [...game.participants].sort(
     (left, right) =>
       left.user.name.localeCompare(right.user.name) ||
@@ -131,12 +131,45 @@ export default async function DmGameDetailPage({ params }: PageProps) {
             <div className="stack">
               <div className="stack" style={{ gap: "0.45rem" }}>
                 <p className="eyebrow">Game Snapshot</p>
-                {gameSummaryLines.length ? (
+                {parsedGameSummary.isStructured ? (
+                  <div className="stack" style={{ gap: "0.75rem" }}>
+                    {parsedGameSummary.gameSummary ? (
+                      <div className="stack" style={{ gap: "0.35rem" }}>
+                        <strong>Game summary</strong>
+                        <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+                          {parsedGameSummary.gameSummary}
+                        </p>
+                      </div>
+                    ) : null}
+                    {parsedGameSummary.themes.length ? (
+                      <div className="stack" style={{ gap: "0.35rem" }}>
+                        <strong>Themes</strong>
+                        <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                          {parsedGameSummary.themes.map((line) => (
+                            <li key={`theme-${line}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {parsedGameSummary.contentAdvisories.length ? (
+                      <div className="stack" style={{ gap: "0.35rem" }}>
+                        <strong>Content Advisories</strong>
+                        <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+                          {parsedGameSummary.contentAdvisories.map((line) => (
+                            <li key={`content-advisory-${line}`}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : parsedGameSummary.legacyLines.length ? (
                   <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
-                    {gameSummaryLines.map((line) => (
+                    {parsedGameSummary.legacyLines.map((line) => (
                       <li key={line}>{line}</li>
                     ))}
                   </ul>
+                ) : parsedGameSummary.gameSummary ? (
+                  <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{parsedGameSummary.gameSummary}</p>
                 ) : null}
                 <p className="muted" style={{ margin: 0 }}>
                   {game.adventureCode} ·{" "}

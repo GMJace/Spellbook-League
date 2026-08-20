@@ -28,6 +28,21 @@ export default async function GrimoireGameDetailPage({ params }: PageProps) {
   }
 
   const openSeats = Math.max(game.seatCapacity - game.signedUp.length, 0);
+  const publicDetails = game.details.filter((detail) => {
+    const normalizedDetail = detail.trim().toLowerCase();
+
+    return ![
+      "awarded gold:",
+      "magic items awarded:",
+      "consumables awarded:",
+      "spellbooks awarded:",
+      "session notes/story awards:",
+      "boons, blessings, and charms:",
+      "boons awarded:",
+      "blessings awarded:",
+      "charms awarded:",
+    ].some((prefix) => normalizedDetail.startsWith(prefix));
+  });
 
   return (
     <main className="page-shell">
@@ -136,7 +151,7 @@ export default async function GrimoireGameDetailPage({ params }: PageProps) {
         <section className="card ledger-panel stack">
           <p className="eyebrow">What To Expect</p>
           <ul className="contact-list ggcon-feature-list">
-            {game.details.map((detail) => (
+            {publicDetails.map((detail) => (
               <li key={detail}>{detail}</li>
             ))}
           </ul>
