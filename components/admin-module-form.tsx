@@ -8,6 +8,7 @@ import {
   type AdminModuleUncommonPlusMagicItem,
 } from "@/components/admin-module-reward-fields";
 import { ADVENTURE_CATALOG_TIER_OPTIONS } from "@/lib/adventure-catalog";
+import { parseStoredGameSummary } from "@/lib/game-summary";
 
 type AdminModuleFormValues = {
   moduleId?: string;
@@ -55,6 +56,13 @@ export function AdminModuleForm({
   submitLabel,
   uncommonPlusRarityByItem,
 }: AdminModuleFormProps) {
+  const parsedGameSummary = parseStoredGameSummary(initialValues.gameSummary);
+  const helperLabelNoteStyle = {
+    fontSize: "0.78rem",
+    fontWeight: 400,
+    lineHeight: 1.35,
+  } as const;
+
   return (
     <>
       {initialValues.moduleId ? (
@@ -105,12 +113,65 @@ export function AdminModuleForm({
       ) : null}
 
       <label>
-        Game summary (Include themes and content advisories)
-        <BulletTextarea defaultValue={initialValues.gameSummary} name="gameSummary" />
+        <span
+          style={{
+            alignItems: "baseline",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.45rem",
+          }}
+        >
+          <span>Game summary</span>
+          <span className="muted" style={helperLabelNoteStyle}>
+            Use full sentences or paragraphs here.
+          </span>
+        </span>
+        <textarea
+          defaultValue={parsedGameSummary.gameSummary}
+          name="gameSummaryText"
+          rows={6}
+        />
       </label>
-      <p className="muted" style={{ margin: 0 }}>
-        Each line is a bullet point.
-      </p>
+
+      <label>
+        <span
+          style={{
+            alignItems: "baseline",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.45rem",
+          }}
+        >
+          <span>Themes</span>
+          <span className="muted" style={helperLabelNoteStyle}>
+            Each line is a bullet point.
+          </span>
+        </span>
+        <BulletTextarea
+          defaultValue={parsedGameSummary.themes.join("\n")}
+          name="themes"
+        />
+      </label>
+
+      <label>
+        <span
+          style={{
+            alignItems: "baseline",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.45rem",
+          }}
+        >
+          <span>Content Advisories</span>
+          <span className="muted" style={helperLabelNoteStyle}>
+            Each line is a bullet point.
+          </span>
+        </span>
+        <BulletTextarea
+          defaultValue={parsedGameSummary.contentAdvisories.join("\n")}
+          name="contentAdvisories"
+        />
+      </label>
 
       <div className="form-grid">
         <label>

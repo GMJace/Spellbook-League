@@ -421,6 +421,12 @@ export default async function CharacterTradingPostPage({
           </form>
         </section>
 
+        <img
+          alt="Trading Post divider"
+          className="homepage-roster-divider"
+          src="/divider4.png"
+        />
+
         <section className="list-card stack">
           <div className="section-heading">
             <div className="stack" style={{ gap: "0.35rem" }}>
@@ -438,6 +444,11 @@ export default async function CharacterTradingPostPage({
                 gap: "1rem",
                 gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
                 alignItems: "start",
+                padding: "1rem",
+                borderRadius: "24px",
+                border: "1px solid rgba(255, 255, 255, 0.14)",
+                background:
+                  "linear-gradient(180deg, rgba(22, 28, 38, 0.96), rgba(10, 14, 20, 0.9))",
               }}
             >
               {activeListings.map((listing) => {
@@ -451,6 +462,10 @@ export default async function CharacterTradingPostPage({
                     style={{
                       gap: "0.85rem",
                       minHeight: "100%",
+                      border: "1px solid rgba(255, 255, 255, 0.16)",
+                      background:
+                        "linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))",
+                      boxShadow: "0 18px 36px rgba(0, 0, 0, 0.22)",
                     }}
                   >
                     <div className="stack" style={{ gap: "0.25rem" }}>
@@ -516,6 +531,12 @@ export default async function CharacterTradingPostPage({
             </p>
           )}
         </section>
+
+        <img
+          alt="Trade proposal divider"
+          className="homepage-roster-divider"
+          src="/divider4.png"
+        />
 
         <section className="list-card stack">
           <div className="section-heading">

@@ -14,6 +14,7 @@ import {
   readGameRewardSelectionsFromFormData,
 } from "@/lib/game-reward-selections";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
+import { syncPendingAdventureModuleFromPlayerLog } from "@/lib/pending-adventure-modules";
 import { prisma } from "@/lib/prisma";
 import { sendNewGameSignupAlertEmail } from "@/lib/transactional-email";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
@@ -670,6 +671,21 @@ export async function createGame(formData: FormData) {
     );
   }
 
+  await syncPendingAdventureModuleFromPlayerLog({
+    adventureCode: parsed.data.adventureCode,
+    title: parsed.data.title,
+    tier: parsed.data.tier,
+    source: parsed.data.source,
+    dmName: user.name,
+    datePlayed: parsed.data.datePlayed,
+    rewardsSummary: parsed.data.rewardsSummary,
+    magicItemsAwarded: parsed.data.magicItemsAwarded,
+    consumablesAwarded: parsed.data.consumablesAwarded,
+    spellbookAwarded: parsed.data.spellbookAwarded,
+    sessionNotes: parsed.data.sessionNotes,
+    reportedByUserId: user.id,
+  });
+
   redirect(`/dm/games/${game.createdGame.id}`);
 }
 
@@ -842,6 +858,21 @@ export async function updateGame(formData: FormData) {
             : `/league/games/${game.id}`,
         })),
     ]);
+  });
+
+  await syncPendingAdventureModuleFromPlayerLog({
+    adventureCode: parsed.data.adventureCode,
+    title: parsed.data.title,
+    tier: parsed.data.tier,
+    source: parsed.data.source,
+    dmName: currentUser.name,
+    datePlayed: parsed.data.datePlayed,
+    rewardsSummary: parsed.data.rewardsSummary,
+    magicItemsAwarded: parsed.data.magicItemsAwarded,
+    consumablesAwarded: parsed.data.consumablesAwarded,
+    spellbookAwarded: parsed.data.spellbookAwarded,
+    sessionNotes: parsed.data.sessionNotes,
+    reportedByUserId: currentUser.id,
   });
 
   redirect(`/dm/games/${game.id}`);

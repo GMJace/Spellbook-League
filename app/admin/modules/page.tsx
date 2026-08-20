@@ -135,8 +135,12 @@ export default async function AdminModulesPage({
     conflict: "A module with that code, title, and tier already exists.",
     created: "Module created.",
     "image-invalid": "Adventure art must be an image file under 5 MB.",
-    invalid: "The requested module record could not be loaded.",
-    "pending-invalid": "The pending module could not be loaded.",
+    invalid:
+      "Please review the module details. A required field may be missing, or one of the text fields may be too long.",
+    missing: "The requested module record could not be loaded.",
+    "pending-invalid":
+      "Please review the pending module details. A required field may be missing, or one of the text fields may be too long.",
+    "pending-missing": "The pending module could not be loaded.",
     "pending-promoted": "Pending module moved into the live module catalog.",
   };
   const moduleMessage = params.module ? moduleMessageMap[params.module] : "";

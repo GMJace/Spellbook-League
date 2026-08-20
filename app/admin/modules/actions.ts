@@ -10,6 +10,7 @@ import {
   serializeAdventureCatalogList,
 } from "@/lib/adventure-catalog";
 import { requireAdminUser } from "@/lib/admin";
+import { serializeGameSummarySections } from "@/lib/game-summary";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
 
@@ -43,8 +44,8 @@ const adventureModuleSchema = z.object({
   title: z.string().trim().min(1).max(160),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   duration: z.string().trim().max(80).default(""),
-  sourceSheet: z.string().trim().max(160).default(""),
-  gameSummary: z.string().trim().max(1500).default(""),
+  sourceSheet: z.string().trim().max(2000).default(""),
+  gameSummary: z.string().trim().max(4000).default(""),
   serviceHours: z.preprocess(
     (value) => {
       if (typeof value === "string") {
@@ -68,17 +69,17 @@ const adventureModuleSchema = z.object({
     z.number().int().min(0).max(999)
   ),
   gold: z.string().trim().max(240).default(""),
-  spellbook: z.string().trim().max(2000).default(""),
-  storyAwards: z.string().trim().max(4000).default(""),
-  sourceNotes: z.string().trim().max(4000).default(""),
+  spellbook: z.string().trim().max(4000).default(""),
+  storyAwards: z.string().trim().max(8000).default(""),
+  sourceNotes: z.string().trim().max(8000).default(""),
   commonMagicItems: structuredMagicItemSchema,
   uncommonPlusMagicItems: uncommonPlusMagicItemSchema,
   consumables: simpleListSchema,
   boons: simpleListSchema,
   blessings: simpleListSchema,
   charms: simpleListSchema,
-  additionalMagicRewardNotes: z.string().trim().max(4000).default(""),
-  additionalConsumableNotes: z.string().trim().max(4000).default(""),
+  additionalMagicRewardNotes: z.string().trim().max(8000).default(""),
+  additionalConsumableNotes: z.string().trim().max(8000).default(""),
 });
 
 const updateAdventureModuleSchema = adventureModuleSchema.extend({
@@ -244,7 +245,7 @@ async function requireAdventureModule(moduleId: string) {
   });
 
   if (!module) {
-    redirect("/admin/modules?module=invalid");
+    redirect("/admin/modules?module=missing");
   }
 
   return module;
@@ -259,13 +260,24 @@ async function requirePendingAdventureModule(pendingModuleId: string) {
   });
 
   if (!pendingModule) {
-    redirect("/admin/modules?module=pending-invalid");
+    redirect("/admin/modules?module=pending-missing");
   }
 
   return pendingModule;
 }
 
 function buildAdventureModuleFormSource(formData: FormData, moduleId = "") {
+  const themes = String(formData.get("themes") ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+    .filter(Boolean);
+  const contentAdvisories = String(formData.get("contentAdvisories") ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+    .filter(Boolean);
+
   return {
     moduleId: moduleId ?? "",
     adventureCode: String(formData.get("adventureCode") ?? ""),
@@ -273,7 +285,11 @@ function buildAdventureModuleFormSource(formData: FormData, moduleId = "") {
     tier: String(formData.get("tier") ?? "TIER_1"),
     duration: String(formData.get("duration") ?? ""),
     sourceSheet: String(formData.get("sourceSheet") ?? ""),
-    gameSummary: String(formData.get("gameSummary") ?? ""),
+    gameSummary: serializeGameSummarySections({
+      contentAdvisories,
+      gameSummary: String(formData.get("gameSummaryText") ?? ""),
+      themes,
+    }),
     serviceHours: String(formData.get("serviceHours") ?? ""),
     downtimeDaysAwarded: String(formData.get("downtimeDaysAwarded") ?? "0"),
     gold: String(formData.get("gold") ?? ""),
