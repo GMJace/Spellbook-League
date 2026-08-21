@@ -439,10 +439,10 @@ export default async function CharacterTradingPostPage({
 
           {activeListings.length ? (
             <div
+              className="trading-post-active-grid"
               style={{
                 display: "grid",
                 gap: "1rem",
-                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
                 alignItems: "start",
                 padding: "1rem",
                 borderRadius: "24px",

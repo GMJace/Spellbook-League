@@ -45,6 +45,9 @@ type PageProps = {
     updated?: string;
     error?: string;
     trade?: string;
+    imported?: string;
+    logged?: string;
+    updatedLog?: string;
   }>;
 };
 
@@ -410,6 +413,12 @@ export default async function CharacterLogsheetPage({
             Game logged for this character.
           </p>
         ) : null}
+        {resolvedSearchParams?.imported ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Imported {resolvedSearchParams.imported} game log
+            {resolvedSearchParams.imported === "1" ? " entry." : " entries."}
+          </p>
+        ) : null}
         {resolvedSearchParams?.updatedLog === "1" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             Logged game updated.
@@ -487,6 +496,12 @@ export default async function CharacterLogsheetPage({
                   href={`/player/characters/${character.id}/games/new`}
                 >
                   Log game
+                </Link>
+                <Link
+                  className="button button-secondary button-small"
+                  href={`/player/characters/${character.id}/games/import`}
+                >
+                  Import logsheet
                 </Link>
                 <Link
                   className="button button-secondary button-small"

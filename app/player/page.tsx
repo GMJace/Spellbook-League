@@ -14,7 +14,7 @@ import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 export default async function PlayerDashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ characterLimit?: string; limit?: string }>;
+  searchParams?: Promise<{ characterLimit?: string; limit?: string; charactersImported?: string }>;
 }) {
   const user = await requireRole("PLAYER");
   const playerName = user.name ?? user.email ?? "Player";
@@ -92,6 +92,12 @@ export default async function PlayerDashboardPage({
             </p>
           ) : null}
         </div>
+      ) : null}
+      {resolvedSearchParams?.charactersImported ? (
+        <p style={{ color: "#ffffff", margin: 0 }}>
+          Imported {resolvedSearchParams.charactersImported} character logsheet
+          {resolvedSearchParams.charactersImported === "1" ? "." : "s."}
+        </p>
       ) : null}
       <section className="card ledger-panel stack">
         <div

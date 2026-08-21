@@ -2349,6 +2349,10 @@ textarea {
   width: 100%;
 }
 
+.trading-post-active-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .guide-copy {
   max-width: 60rem;
   font-size: 1.05rem;
@@ -2363,6 +2367,10 @@ textarea {
 }
 
 @media (max-width: 860px) {
+  .trading-post-active-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   body {
     font-size: 1.12rem;
     line-height: 1.2;
@@ -2549,6 +2557,12 @@ textarea {
 
   .table-wrap {
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 720px) {
+  .trading-post-active-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

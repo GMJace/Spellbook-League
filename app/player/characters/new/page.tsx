@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { importCharacterLogsheet } from "@/app/player/characters/new/actions";
 import { CharacterForm } from "@/components/character-form";
 import { getCharacterLimitForRoles } from "@/lib/character-limits";
 import {
@@ -78,6 +80,39 @@ export default async function NewCharacterPage({
           and current build tracking.
         </p>
       </div>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.75rem",
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
+        <Link className="button button-secondary" href="/player/character-logsheet-template">
+          Download character import template
+        </Link>
+        <p className="muted" style={{ margin: 0 }}>
+          Fill out this CSV template to prepare for character logsheet imports.
+        </p>
+      </div>
+      <form action={importCharacterLogsheet} className="list-card form-stack">
+        <div>
+          <h2 style={{ margin: 0 }}>Import a character logsheet</h2>
+          <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+            Upload the completed CSV template to create one or more character logs from the sheet.
+          </p>
+        </div>
+        <label>
+          Completed character logsheet spreadsheet
+          <input
+            accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            name="characterLogsheetFile"
+            required
+            type="file"
+          />
+        </label>
+        <button type="submit">Import character logsheet</button>
+      </form>
       {query.message ? (
         <p style={{ color: "#ffffff", margin: 0 }}>{query.message}</p>
       ) : query.error === "invalid" ? (

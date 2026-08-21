@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import { requireRole } from "@/lib/auth";
 import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import {
@@ -10,14 +11,27 @@ import {
   readGameRewardSelectionsFromFormData,
 } from "@/lib/game-reward-selections";
 import { createNotification } from "@/lib/notifications";
+import {
+  buildImportedRewardStrings,
+  getImportedCellValue,
+  getMissingPlayerLogsheetFields,
+  isMeaningfulPlayerLogsheetRow,
+  normalizeImportedTier,
+  normalizePlayerLogsheetHeader,
+  PLAYER_LOGSHEET_IMPORT_HEADER_ALIASES,
+  type PlayerLogsheetImportField,
+} from "@/lib/player-logsheet-import";
 import { syncPendingAdventureModuleFromPlayerLog } from "@/lib/pending-adventure-modules";
 import { prisma } from "@/lib/prisma";
+import { parseUploadedTabularFile } from "@/lib/tabular-import";
 import { z } from "zod";
+
+const MAX_LOGSHEET_IMPORT_SIZE = 2 * 1024 * 1024;
 
 const playerGameLogSchema = z.object({
   title: z.string().trim().min(2).max(120),
   adventureCode: z.string().trim().min(2).max(40),
-  source: z.string().trim().max(160).default(""),
+  source: z.string().trim().max(2000).default(""),
   datePlayed: z.string().min(1),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   dmName: z.string().trim().min(2).max(80),
@@ -114,6 +128,104 @@ function getSubmittedRewardStrings(formData: FormData) {
   return buildStoredGameRewardStrings(readGameRewardSelectionsFromFormData(formData));
 }
 
+type PlayerGameLogInput = z.infer<typeof playerGameLogSchema>;
+
+function normalizeImportDate(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  if (/^\d+(\.\d+)?$/.test(trimmed)) {
+    const numericValue = Number(trimmed);
+
+    if (Number.isFinite(numericValue)) {
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const milliseconds = Math.round(numericValue * 24 * 60 * 60 * 1000);
+      return new Date(excelEpoch.getTime() + milliseconds).toISOString();
+    }
+  }
+
+  return trimmed;
+}
+
+function isValidImportedDate(value: string) {
+  return !Number.isNaN(new Date(value).getTime());
+}
+
+function buildImportErrorHref(characterId: string, code: string, details = "") {
+  const searchParams = new URLSearchParams({ error: code });
+
+  if (details.trim()) {
+    searchParams.set("details", details.trim());
+  }
+
+  return `/player/characters/${characterId}/games/import?${searchParams.toString()}`;
+}
+
+function buildImportedRowRecord(
+  normalizedHeaders: string[],
+  row: string[],
+) {
+  const result = {} as Record<PlayerLogsheetImportField, string>;
+
+  for (const [field, aliases] of Object.entries(
+    PLAYER_LOGSHEET_IMPORT_HEADER_ALIASES,
+  ) as Array<[PlayerLogsheetImportField, string[]]>) {
+    result[field] = getImportedCellValue(normalizedHeaders, row, aliases);
+  }
+
+  return result;
+}
+
+async function createApprovedPlayerManagedGameLog({
+  character,
+  data,
+  tx,
+  user,
+}: {
+  character: { id: string; name: string };
+  data: PlayerGameLogInput;
+  tx: Prisma.TransactionClient;
+  user: { id: string; name: string };
+}) {
+  const participantDefaults = getApprovedParticipantUpdate(data.status);
+
+  const createdGame = await tx.game.create({
+    data: {
+      dmId: null,
+      loggedByUserId: user.id,
+      dmName: data.dmName,
+      title: data.title,
+      adventureCode: data.adventureCode,
+      source: data.source,
+      adventureImagePath: null,
+      datePlayed: new Date(data.datePlayed),
+      tier: data.tier,
+      serviceHours: 0,
+      rewardsSummary: data.rewardsSummary,
+      magicItemsAwarded: data.magicItemsAwarded,
+      consumablesAwarded: data.consumablesAwarded,
+      spellbookAwarded: data.spellbookAwarded,
+      consequencesSummary: "",
+      sessionNotes: data.sessionNotes,
+      status: data.status,
+    },
+  });
+
+  await tx.gameParticipant.create({
+    data: {
+      gameId: createdGame.id,
+      characterId: character.id,
+      userId: user.id,
+      ...participantDefaults,
+    },
+  });
+
+  return createdGame;
+}
+
 export async function createPlayerGameLog(formData: FormData) {
   const characterId = String(formData.get("characterId") ?? "");
 
@@ -143,39 +255,14 @@ export async function createPlayerGameLog(formData: FormData) {
     redirect(`/player/characters/${characterId}/games/new?error=invalid`);
   }
 
-  const participantDefaults = getApprovedParticipantUpdate(parsed.data.status);
   const formattedDate = formatNotificationDate(parsed.data.datePlayed);
 
   const game = await prisma.$transaction(async (tx) => {
-    const createdGame = await tx.game.create({
-      data: {
-        dmId: null,
-        loggedByUserId: user.id,
-        dmName: parsed.data.dmName,
-        title: parsed.data.title,
-        adventureCode: parsed.data.adventureCode,
-        source: parsed.data.source,
-        adventureImagePath: null,
-        datePlayed: new Date(parsed.data.datePlayed),
-        tier: parsed.data.tier,
-        serviceHours: 0,
-        rewardsSummary: parsed.data.rewardsSummary,
-        magicItemsAwarded: parsed.data.magicItemsAwarded,
-        consumablesAwarded: parsed.data.consumablesAwarded,
-        spellbookAwarded: parsed.data.spellbookAwarded,
-        consequencesSummary: "",
-        sessionNotes: parsed.data.sessionNotes,
-        status: parsed.data.status,
-      },
-    });
-
-    await tx.gameParticipant.create({
-      data: {
-        gameId: createdGame.id,
-        characterId: character.id,
-        userId: user.id,
-        ...participantDefaults,
-      },
+    const createdGame = await createApprovedPlayerManagedGameLog({
+      character,
+      data: parsed.data,
+      tx,
+      user,
     });
 
     await createNotification(tx, {
@@ -217,6 +304,164 @@ export async function createPlayerGameLog(formData: FormData) {
   revalidatePath("/admin/modules");
 
   redirect(`/player/characters/${characterId}?logged=1`);
+}
+
+export async function importPlayerGameLogsheet(formData: FormData) {
+  const characterId = String(formData.get("characterId") ?? "");
+
+  if (!characterId) {
+    redirect("/player");
+  }
+
+  const { user, character } = await requireOwnedCharacter(characterId);
+  const file = formData.get("logsheetFile");
+
+  if (!(file instanceof File) || file.size <= 0) {
+    redirect(buildImportErrorHref(character.id, "missing-file"));
+  }
+
+  if (file.size > MAX_LOGSHEET_IMPORT_SIZE) {
+    redirect(buildImportErrorHref(character.id, "file-too-large"));
+  }
+
+  const filename = file.name.toLowerCase();
+
+  if (!filename.endsWith(".csv") && !filename.endsWith(".xlsx") && !filename.endsWith(".xls")) {
+    redirect(buildImportErrorHref(character.id, "invalid-file"));
+  }
+
+  const rows = await parseUploadedTabularFile(file);
+
+  if (!rows.length) {
+    redirect(buildImportErrorHref(character.id, "empty-file"));
+  }
+
+  const headerRow = rows[0].map((value) => normalizePlayerLogsheetHeader(value));
+  const missingHeaders = getMissingPlayerLogsheetFields(headerRow);
+
+  if (missingHeaders.length) {
+    redirect(
+      buildImportErrorHref(
+        character.id,
+        "invalid-headers",
+        `Missing columns: ${missingHeaders.join(", ")}`,
+      ),
+    );
+  }
+
+  const parsedRows: PlayerGameLogInput[] = [];
+  const rowErrors: string[] = [];
+
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index] ?? [];
+
+    if (!isMeaningfulPlayerLogsheetRow(headerRow, row)) {
+      continue;
+    }
+
+    const record = buildImportedRowRecord(headerRow, row);
+    const importedRewardStrings = buildImportedRewardStrings(headerRow, row);
+    const normalizedDate = normalizeImportDate(record.datePlayed);
+    const normalizedTier = normalizeImportedTier(record.tier);
+
+    if (!normalizedDate || !isValidImportedDate(normalizedDate)) {
+      rowErrors.push(`Row ${index + 1}: Date Played is not a valid date.`);
+      continue;
+    }
+
+    if (!normalizedTier) {
+      rowErrors.push(`Row ${index + 1}: Tier must be Tier 1-4 or TIER_1-TIER_4.`);
+      continue;
+    }
+
+    const parsed = playerGameLogSchema.safeParse({
+      title: record.title,
+      adventureCode: record.adventureCode,
+      source: record.source,
+      datePlayed: normalizedDate,
+      tier: normalizedTier,
+      dmName: record.dmName,
+      rewardsSummary: record.rewardsSummary,
+      magicItemsAwarded: importedRewardStrings.magicItemsAwarded || record.magicItemsAwarded,
+      consumablesAwarded: importedRewardStrings.consumablesAwarded || record.consumablesAwarded,
+      spellbookAwarded: importedRewardStrings.spellbookAwarded || record.spellbookAwarded,
+      sessionNotes: importedRewardStrings.sessionNotes || record.sessionNotes,
+      status: "COMPLETED",
+    });
+
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue?.path?.[0];
+      rowErrors.push(
+        `Row ${index + 1}: ${typeof path === "string" ? path : "game details"} could not be imported.`,
+      );
+      continue;
+    }
+
+    parsedRows.push(parsed.data);
+  }
+
+  if (!parsedRows.length && !rowErrors.length) {
+    redirect(buildImportErrorHref(character.id, "no-rows"));
+  }
+
+  if (rowErrors.length) {
+    redirect(
+      buildImportErrorHref(
+        character.id,
+        "invalid-rows",
+        rowErrors.slice(0, 5).join(" "),
+      ),
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const row of parsedRows) {
+      await createApprovedPlayerManagedGameLog({
+        character,
+        data: row,
+        tx,
+        user,
+      });
+    }
+
+    await createNotification(tx, {
+      userId: user.id,
+      createdByUserId: user.id,
+      type: "GAME_LOGGED",
+      title: `Imported ${parsedRows.length} game log entr${parsedRows.length === 1 ? "y" : "ies"}`,
+      body: `You imported ${parsedRows.length} completed game log entr${parsedRows.length === 1 ? "y" : "ies"} for ${character.name}.`,
+      details: [
+        { label: "Character", value: character.name },
+        { label: "Imported rows", value: String(parsedRows.length) },
+      ],
+      actionLabel: "Open character",
+      actionHref: `/player/characters/${character.id}`,
+    });
+  });
+
+  for (const row of parsedRows) {
+    await syncPendingAdventureModuleFromPlayerLog({
+      adventureCode: row.adventureCode,
+      title: row.title,
+      tier: row.tier,
+      source: row.source,
+      dmName: row.dmName,
+      datePlayed: row.datePlayed,
+      rewardsSummary: row.rewardsSummary,
+      magicItemsAwarded: row.magicItemsAwarded,
+      consumablesAwarded: row.consumablesAwarded,
+      spellbookAwarded: row.spellbookAwarded,
+      sessionNotes: row.sessionNotes,
+      reportedByUserId: user.id,
+    });
+  }
+
+  revalidatePath("/player");
+  revalidatePath(`/player/characters/${character.id}`);
+  revalidatePath("/admin/modules");
+
+  redirect(`/player/characters/${character.id}?imported=${parsedRows.length}`);
 }
 
 export async function updatePlayerGameLog(
