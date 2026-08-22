@@ -15,6 +15,7 @@ import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { createNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { sendGrimoireSubmissionStatusEmail } from "@/lib/transactional-email";
+import { GRIMOIRE_DISCORD_SETTINGS_ID } from "@/lib/grimoire-discord";
 import {
   createCuratedGameRedirectPath,
   updateCuratedGameRedirectPath,
@@ -70,6 +71,11 @@ const curatedGameSchema = z.object({
 
 const deleteGameSchema = z.object({
   gameId: z.string().trim().min(1),
+});
+
+const discordSettingsSchema = z.object({
+  inviteUrl: z.string().trim().url().max(500),
+  password: z.string().trim().min(1).max(120),
 });
 
 const MAX_GRIMOIRE_COVER_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -277,6 +283,30 @@ function buildGrimoireGameRedirect({
   return `/admin/grimoire-gathering?${params.toString()}${hash}`;
 }
 
+function buildGrimoireDiscordRedirect({
+  details,
+  status,
+}: {
+  details?: string;
+  status: string;
+}) {
+  const params = new URLSearchParams({ discord: status });
+
+  if (details) {
+    params.set("discordDetails", details);
+  }
+
+  return `/admin/grimoire-gathering?${params.toString()}`;
+}
+
+function getGrimoireDiscordSettingsDelegate() {
+  return (prisma as typeof prisma & {
+    grimoireDiscordSettings?: {
+      upsert?: (...args: any[]) => Promise<any>;
+    };
+  }).grimoireDiscordSettings;
+}
+
 type ExistingCuratedGameRecord = {
   adventureImagePath: string | null;
   eventId: string;
@@ -387,6 +417,58 @@ export async function createGrimoireEvent(formData: FormData) {
 
   revalidateGrimoirePaths({ eventId: generatedEventId });
   redirect("/admin/grimoire-gathering?event=created");
+}
+
+export async function updateGrimoireDiscordSettings(formData: FormData) {
+  await requireGrimoireAdminUser();
+
+  const parsed = discordSettingsSchema.safeParse({
+    inviteUrl: formData.get("inviteUrl"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    const details = parsed.error.issues[0]?.message ?? "Enter a valid invite URL and password.";
+    redirect(
+      buildGrimoireDiscordRedirect({
+        details,
+        status: "invalid",
+      }),
+    );
+  }
+
+  const delegate = getGrimoireDiscordSettingsDelegate();
+
+  if (!delegate?.upsert) {
+    redirect(
+      buildGrimoireDiscordRedirect({
+        details: "Apply the latest Prisma schema/client update first, then try saving Discord access again.",
+        status: "unavailable",
+      }),
+    );
+  }
+
+  await delegate.upsert({
+    where: {
+      id: GRIMOIRE_DISCORD_SETTINGS_ID,
+    },
+    update: {
+      inviteUrl: parsed.data.inviteUrl,
+      password: parsed.data.password,
+    },
+    create: {
+      id: GRIMOIRE_DISCORD_SETTINGS_ID,
+      inviteUrl: parsed.data.inviteUrl,
+      password: parsed.data.password,
+    },
+  });
+
+  revalidateGrimoirePaths();
+  redirect(
+    buildGrimoireDiscordRedirect({
+      status: "updated",
+    }),
+  );
 }
 
 export async function updateGrimoireEvent(formData: FormData) {

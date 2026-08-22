@@ -32,9 +32,6 @@ export default async function NewCharacterTradePage({
         id: {
           not: id,
         },
-        userId: {
-          not: user.id,
-        },
         user: {
           roles: {
             some: {
@@ -67,8 +64,9 @@ export default async function NewCharacterTradePage({
           <p className="eyebrow">Character logsheet</p>
           <h1>Log a trade for {character.name}</h1>
           <p className="muted">
-            Record an item trade between this character and another player character. The other
-            player can confirm it from their trade log.
+            Record an item trade between this character and another character. Linked characters on
+            SPELLBOOK can confirm the trade from their trade log, and off-app trades can be entered
+            manually.
           </p>
         </div>
         {query.trade === "invalid" ? (
@@ -77,11 +75,6 @@ export default async function NewCharacterTradePage({
         {query.trade === "missing" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             The selected player or character could not be found.
-          </p>
-        ) : null}
-        {!targetCharacters.length ? (
-          <p className="muted" style={{ margin: 0 }}>
-            No other player characters are available for a trade yet.
           </p>
         ) : null}
         <PlayerTradeLogForm

@@ -14,7 +14,13 @@ function fallbackCopyText(text: string) {
   document.body.removeChild(textarea);
 }
 
-export function CopyMusterInfoButton({ text }: { text: string }) {
+export function CopyMusterInfoButton({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -36,7 +42,7 @@ export function CopyMusterInfoButton({ text }: { text: string }) {
 
   return (
     <button
-      className="button button-secondary"
+      className={className ?? "button button-secondary"}
       onClick={handleCopy}
       type="button"
     >

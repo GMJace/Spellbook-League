@@ -5,17 +5,20 @@ export function TableActionMenu({
   label = "Actions",
   panelStyle,
   summaryClassName,
+  summarySmall = true,
 }: {
   children: ReactNode;
   label?: string;
   panelStyle?: CSSProperties;
   summaryClassName?: string;
+  summarySmall?: boolean;
 }) {
   return (
     <details className="table-action-menu">
       <summary
         className={[
-          "button button-secondary button-small table-action-menu-summary",
+          "button button-secondary table-action-menu-summary",
+          summarySmall ? "button-small" : "",
           summaryClassName ?? "",
         ]
           .filter(Boolean)

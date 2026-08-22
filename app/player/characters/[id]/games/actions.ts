@@ -588,3 +588,61 @@ export async function updatePlayerGameLog(
 
   redirect(`/player/characters/${characterId}?updatedLog=1`);
 }
+
+export async function deletePlayerGameLog(characterId: string, gameId: string) {
+  if (!characterId || !gameId) {
+    redirect("/player");
+  }
+
+  const { user, character, participant } = await requireOwnedLoggedGame(characterId, gameId);
+  const isPlayerManagedLog = participant.game.loggedByUserId === user.id;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.gameParticipant.delete({
+      where: {
+        id: participant.id,
+      },
+    });
+
+    if (isPlayerManagedLog) {
+      const remainingParticipants = await tx.gameParticipant.count({
+        where: {
+          gameId: participant.gameId,
+        },
+      });
+
+      if (remainingParticipants === 0) {
+        await tx.game.delete({
+          where: {
+            id: participant.gameId,
+          },
+        });
+      }
+    }
+
+    await createNotification(tx, {
+      userId: user.id,
+      createdByUserId: user.id,
+      type: "GAME_LOGGED",
+      title: `Game log deleted: ${participant.game.title}`,
+      body: `You removed the log for ${participant.game.title} from ${character.name}.`,
+      details: [
+        { label: "Adventure", value: participant.game.adventureCode },
+        { label: "Character", value: character.name },
+      ],
+      actionLabel: "Open character",
+      actionHref: `/player/characters/${character.id}`,
+    });
+  });
+
+  revalidatePath("/player");
+  revalidatePath(`/player/characters/${character.id}`);
+  revalidatePath(`/player/characters/${character.id}/games/${gameId}`);
+  revalidatePath(`/player/characters/${character.id}/games/${gameId}/edit`);
+
+  if (!isPlayerManagedLog) {
+    revalidatePath(`/dm/games/${gameId}`);
+  }
+
+  redirect(`/player/characters/${character.id}?deletedLog=1`);
+}

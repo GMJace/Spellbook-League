@@ -6,7 +6,11 @@ import {
   approvePendingGameLog,
   deleteCharacter,
 } from "@/app/player/characters/[id]/actions";
-import { confirmCharacterTrade } from "@/app/player/characters/[id]/trades/actions";
+import { deletePlayerGameLog } from "@/app/player/characters/[id]/games/actions";
+import {
+  confirmCharacterTrade,
+  deleteCharacterTrade,
+} from "@/app/player/characters/[id]/trades/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { CopyMusterInfoButton } from "@/components/copy-muster-info-button";
@@ -35,6 +39,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+const TRADE_DOWNTIME_DAYS = 5;
 
 type PageProps = {
   params: Promise<{
@@ -45,9 +50,11 @@ type PageProps = {
     updated?: string;
     error?: string;
     trade?: string;
+    downtime?: string;
     imported?: string;
     logged?: string;
     updatedLog?: string;
+    deletedLog?: string;
   }>;
 };
 
@@ -152,11 +159,16 @@ function formatCharacterNotes(value: string | null | undefined) {
   return value?.trim() ? value : "None recorded";
 }
 
+function formatOptionalLogText(value: string | null | undefined) {
+  return value?.trim() ? value : "Not added";
+}
+
 function formatTradeItemSummary(item: {
   item: string;
   itemName: string;
   minorProperty: string;
   flavorNotes: string;
+  specialNotes: string;
 }) {
   const lines = [item.itemName || item.item];
 
@@ -170,6 +182,10 @@ function formatTradeItemSummary(item: {
 
   if (item.flavorNotes) {
     lines.push(`Notes: ${item.flavorNotes}`);
+  }
+
+  if (item.specialNotes) {
+    lines.push(`Special Notes: ${item.specialNotes}`);
   }
 
   return lines;
@@ -193,6 +209,12 @@ function formatMusterList(values: string[]) {
 const sectionItemHeaderStyle = {
   margin: 0,
   fontSize: "calc(1em + 4pt)",
+} as const;
+
+const whiteLineDividerStyle = {
+  width: "100%",
+  height: "1px",
+  background: "rgba(255, 255, 255, 0.85)",
 } as const;
 
 const detailCardStyle = {
@@ -263,6 +285,14 @@ export default async function CharacterLogsheetPage({
         },
         orderBy: {
           createdAt: "desc",
+        },
+      },
+      downtimeEntries: {
+        include: {
+          user: true,
+        },
+        orderBy: {
+          spentAt: "desc",
         },
       },
     },
@@ -393,6 +423,21 @@ export default async function CharacterLogsheetPage({
   const tradeLog = [...character.tradesProposed, ...character.tradesReceived].sort(
     (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
   );
+  const earnedDowntimeDays = visibleGameLog.length * 10;
+  const tradeDowntimeDaysSpent = tradeLog.reduce((total, trade) => {
+    if (trade.status !== "CONFIRMED") {
+      return total;
+    }
+
+    return total + TRADE_DOWNTIME_DAYS;
+  }, 0);
+  const loggedDowntimeDaysSpent = character.downtimeEntries.reduce(
+    (total, entry) => total + entry.downtimeDaysSpent,
+    0
+  );
+  const totalDowntimeDaysSpent = tradeDowntimeDaysSpent + loggedDowntimeDaysSpent;
+  const remainingDowntimeDays = earnedDowntimeDays - totalDowntimeDaysSpent;
+  const tradeLogPlaceholderCount = Math.max(0, 5 - tradeLog.length - (tradeLog.length ? 0 : 1));
   const backHref = isOwner ? "/player" : isDm ? "/dm/players" : isAdminViewer ? "/admin/users" : "/";
 
   return (
@@ -424,6 +469,11 @@ export default async function CharacterLogsheetPage({
             Logged game updated.
           </p>
         ) : null}
+        {resolvedSearchParams?.deletedLog === "1" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Logged game deleted.
+          </p>
+        ) : null}
         {resolvedSearchParams?.error === "review-invalid" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             Review the log details and try again.
@@ -444,9 +494,24 @@ export default async function CharacterLogsheetPage({
             Trade confirmed.
           </p>
         ) : null}
+        {resolvedSearchParams?.trade === "updated" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Trade updated.
+          </p>
+        ) : null}
+        {resolvedSearchParams?.trade === "deleted" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Trade deleted.
+          </p>
+        ) : null}
         {resolvedSearchParams?.trade === "missing" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             That trade is no longer available.
+          </p>
+        ) : null}
+        {resolvedSearchParams?.downtime === "logged" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Downtime logged for this character.
           </p>
         ) : null}
         <div className="section-heading">
@@ -484,13 +549,17 @@ export default async function CharacterLogsheetPage({
             <Link className="button button-secondary" href={backHref}>
               Back
             </Link>
-            <CopyMusterInfoButton text={musterText} />
             {isOwner ? (
               <TableActionMenu
                 label="Character actions"
                 panelStyle={{ minWidth: "14rem" }}
                 summaryClassName="button-secondary"
+                summarySmall={false}
               >
+                <CopyMusterInfoButton
+                  className="button button-secondary button-small"
+                  text={musterText}
+                />
                 <Link
                   className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/games/new`}
@@ -508,6 +577,12 @@ export default async function CharacterLogsheetPage({
                   href={`/player/characters/${character.id}/trades/new`}
                 >
                   Log trade
+                </Link>
+                <Link
+                  className="button button-secondary button-small"
+                  href={`/player/characters/${character.id}/downtime/new`}
+                >
+                  Log downtime
                 </Link>
                 <Link
                   className="button button-secondary button-small"
@@ -578,7 +653,7 @@ export default async function CharacterLogsheetPage({
               style={{
                 display: "grid",
                 gap: "1rem",
-                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
               }}
             >
               <div>
@@ -985,10 +1060,81 @@ export default async function CharacterLogsheetPage({
 
         <div className="list-card stack">
           <img
-            alt="Adventure log divider"
+            alt="Downtime divider"
             className="homepage-roster-divider"
             src="/divider4.png"
           />
+
+          <div className="section-heading">
+            <div>
+              <h2 style={{ margin: 0 }}>Downtime Log</h2>
+              <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                Earned DT is 10 downtime days for each approved logged game. Spent DT includes
+                confirmed trade downtime and all downtime log entries. Remaining DT equals Earned
+                DT minus Spent DT.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gap: "1rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            }}
+          >
+            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
+              <span className="metric-label">Earned DT</span>
+              <strong className="metric-value">{earnedDowntimeDays}</strong>
+            </div>
+            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
+              <span className="metric-label">Spent DT</span>
+              <strong className="metric-value">{totalDowntimeDaysSpent}</strong>
+            </div>
+            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
+              <span className="metric-label">Remaining DT</span>
+              <strong className="metric-value">{remainingDowntimeDays}</strong>
+            </div>
+          </div>
+
+          <div className="table-wrap">
+            <table className="ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Activity</th>
+                  <th>DT spent</th>
+                  <th>Related code</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {character.downtimeEntries.length ? (
+                  character.downtimeEntries.map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{formatDate(entry.spentAt)}</td>
+                      <td>{entry.activity}</td>
+                      <td>{entry.downtimeDaysSpent}</td>
+                      <td>{formatOptionalLogText(entry.relatedAdventureCode)}</td>
+                      <td style={{ whiteSpace: "pre-wrap" }}>
+                        {formatOptionalLogText(entry.notes)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="muted" colSpan={5}>
+                      No downtime logged yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="list-card stack">
+          <div aria-hidden="true" style={whiteLineDividerStyle} />
 
           <div className="section-heading">
             <h2 style={{ margin: 0 }}>Adventure log</h2>
@@ -1020,10 +1166,30 @@ export default async function CharacterLogsheetPage({
                           <TableActionMenu>
                             <Link
                               className="button button-secondary button-small"
+                              href={`/player/characters/${character.id}/games/${participant.game.id}`}
+                            >
+                              View log
+                            </Link>
+                            <Link
+                              className="button button-secondary button-small"
                               href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
                             >
                               Edit log
                             </Link>
+                            <form
+                              action={deletePlayerGameLog.bind(
+                                null,
+                                character.id,
+                                participant.game.id,
+                              )}
+                            >
+                              <ConfirmSubmitButton
+                                className="button button-danger button-small"
+                                message="Delete this logged game? This cannot be undone."
+                              >
+                                Delete log
+                              </ConfirmSubmitButton>
+                            </form>
                           </TableActionMenu>
                         </td>
                       ) : null}
@@ -1042,6 +1208,8 @@ export default async function CharacterLogsheetPage({
         </div>
 
         <div className="list-card stack">
+          <div aria-hidden="true" style={whiteLineDividerStyle} />
+
           <div className="section-heading">
             <h2 style={{ margin: 0 }}>Trade log</h2>
           </div>
@@ -1067,6 +1235,12 @@ export default async function CharacterLogsheetPage({
                     const counterpartyCharacter = isTradeProposer
                       ? trade.recipientCharacter
                       : trade.proposerCharacter;
+                    const counterpartyCharacterName = isTradeProposer
+                      ? trade.recipientCharacterName
+                      : trade.proposerCharacterName;
+                    const counterpartyPlayerName = isTradeProposer
+                      ? trade.recipientPlayerName
+                      : trade.proposerPlayerName;
                     const sentItemLines = formatTradeItemSummary({
                       item: isTradeProposer ? trade.proposerItem : trade.recipientItem,
                       itemName: isTradeProposer
@@ -1078,6 +1252,9 @@ export default async function CharacterLogsheetPage({
                       flavorNotes: isTradeProposer
                         ? trade.proposerFlavorNotes
                         : trade.recipientFlavorNotes,
+                      specialNotes: isTradeProposer
+                        ? trade.proposerSpecialNotes
+                        : trade.recipientSpecialNotes,
                     });
                     const receivedItemLines = formatTradeItemSummary({
                       item: isTradeProposer ? trade.recipientItem : trade.proposerItem,
@@ -1090,6 +1267,9 @@ export default async function CharacterLogsheetPage({
                       flavorNotes: isTradeProposer
                         ? trade.recipientFlavorNotes
                         : trade.proposerFlavorNotes,
+                      specialNotes: isTradeProposer
+                        ? trade.recipientSpecialNotes
+                        : trade.proposerSpecialNotes,
                     });
                     const canConfirmTrade =
                       isOwner &&
@@ -1101,8 +1281,10 @@ export default async function CharacterLogsheetPage({
                         <td>{formatDate(trade.createdAt)}</td>
                         <td>{trade.status === "CONFIRMED" ? "Confirmed" : "Pending"}</td>
                         <td>
-                          <div>{counterpartyCharacter.name}</div>
-                          <div className="muted">{counterpartyCharacter.user.name}</div>
+                          <div>{counterpartyCharacterName || counterpartyCharacter?.name || "Unknown character"}</div>
+                          <div className="muted">
+                            {counterpartyPlayerName || counterpartyCharacter?.user?.name || "Unknown player"}
+                          </div>
                         </td>
                         <td>
                           {sentItemLines.map((line) => (
@@ -1130,33 +1312,43 @@ export default async function CharacterLogsheetPage({
                         </td>
                         <td>
                           <div>
-                            Sent:{" "}
-                            {isTradeProposer
-                              ? trade.proposerDowntimeDaysSpent
-                              : trade.recipientDowntimeDaysSpent}
+                            Sent: {TRADE_DOWNTIME_DAYS}
                           </div>
                           <div>
-                            Received:{" "}
-                            {isTradeProposer
-                              ? trade.recipientDowntimeDaysSpent
-                              : trade.proposerDowntimeDaysSpent}
+                            Received: {TRADE_DOWNTIME_DAYS}
                           </div>
                         </td>
                         {isOwner ? (
                           <td>
-                            {canConfirmTrade ? (
-                              <TableActionMenu>
+                            <TableActionMenu>
+                              <Link
+                                className="button button-secondary button-small"
+                                href={`/player/characters/${character.id}/trades/${trade.id}`}
+                              >
+                                View trade
+                              </Link>
+                              <Link
+                                className="button button-secondary button-small"
+                                href={`/player/characters/${character.id}/trades/${trade.id}/edit`}
+                              >
+                                Edit trade
+                              </Link>
+                              <form action={deleteCharacterTrade.bind(null, character.id, trade.id)}>
+                                <ConfirmSubmitButton
+                                  className="button button-danger button-small"
+                                  message="Delete this trade? This cannot be undone."
+                                >
+                                  Delete trade
+                                </ConfirmSubmitButton>
+                              </form>
+                              {canConfirmTrade ? (
                                 <form action={confirmCharacterTrade.bind(null, character.id, trade.id)}>
                                   <button className="button button-secondary button-small" type="submit">
                                     Confirm trade
                                   </button>
                                 </form>
-                              </TableActionMenu>
-                            ) : trade.status === "PENDING" ? (
-                              <span className="muted">Pending other player</span>
-                            ) : (
-                              <span className="muted">Confirmed</span>
-                            )}
+                              ) : null}
+                            </TableActionMenu>
                           </td>
                         ) : null}
                       </tr>
@@ -1169,6 +1361,18 @@ export default async function CharacterLogsheetPage({
                     </td>
                   </tr>
                 )}
+                {Array.from({ length: tradeLogPlaceholderCount }, (_, index) => (
+                  <tr key={`trade-placeholder-${index}`}>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    {isOwner ? <td>&nbsp;</td> : null}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -1176,6 +1380,12 @@ export default async function CharacterLogsheetPage({
 
         {isOwner ? (
           <div className="list-card stack">
+            <img
+              alt="Upcoming games divider"
+              className="homepage-roster-divider"
+              src="/divider4.png"
+            />
+
             <div className="section-heading">
               <div>
                 <h2 style={{ margin: 0 }}>Upcoming signed-up games</h2>
@@ -1234,6 +1444,8 @@ export default async function CharacterLogsheetPage({
 
         {isOwner ? (
           <div className="list-card stack">
+            <div aria-hidden="true" style={whiteLineDividerStyle} />
+
             <div className="section-heading">
               <div>
                 <h2 style={{ margin: 0 }}>Completed games awaiting approval</h2>

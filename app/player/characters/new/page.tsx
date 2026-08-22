@@ -113,6 +113,11 @@ export default async function NewCharacterPage({
         </label>
         <button type="submit">Import character logsheet</button>
       </form>
+      <img
+        alt="Character import divider"
+        className="homepage-roster-divider"
+        src="/divider4.png"
+      />
       {query.message ? (
         <p style={{ color: "#ffffff", margin: 0 }}>{query.message}</p>
       ) : query.error === "invalid" ? (

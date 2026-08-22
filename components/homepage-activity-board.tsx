@@ -144,7 +144,7 @@ export function HomepagePlayerActivityCard({
                 <th>Build</th>
                 <th>Tier</th>
                 <th>Games</th>
-                <th>Record</th>
+                <th>Actions</th>
               </tr>
               <tr className="table-filter-row">
                 <th>
@@ -207,14 +207,12 @@ export function HomepagePlayerActivityCard({
                         <td>Tier {getCharacterTier(totalLevel)}</td>
                         <td>{row.gamesPlayed}</td>
                         <td>
-                          <TableActionMenu>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/player/characters/${row.id}`}
-                            >
-                              View
-                            </Link>
-                          </TableActionMenu>
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/player/characters/${row.id}`}
+                          >
+                            View
+                          </Link>
                         </td>
                       </tr>
                     );

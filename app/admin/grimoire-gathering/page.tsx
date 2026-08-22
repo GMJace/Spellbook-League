@@ -10,9 +10,11 @@ import {
   deleteGrimoireCuratedGame,
   deleteGrimoireEvent,
   moderateGrimoireDmSubmission,
+  updateGrimoireDiscordSettings,
   updateGrimoireEvent,
 } from "@/app/admin/grimoire-gathering/actions";
 import { requireGrimoireAdminUser } from "@/lib/admin";
+import { getGrimoireDiscordSettings } from "@/lib/grimoire-discord";
 import { formatGrimoireTier } from "@/lib/grimoire";
 import {
   STANDARD_GRIMOIRE_TIME_SLOTS,
@@ -308,6 +310,8 @@ export default async function AdminGrimoireGatheringPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    discord?: string;
+    discordDetails?: string;
     event?: string;
     eventDetails?: string;
     game?: string;
@@ -320,7 +324,7 @@ export default async function AdminGrimoireGatheringPage({
   await requireGrimoireAdminUser();
 
   const params = await searchParams;
-  const [events, games, submissions] = await Promise.all([
+  const [events, games, submissions, discordSettings] = await Promise.all([
     prisma.grimoireEvent.findMany({
       include: {
         slots: {
@@ -357,6 +361,7 @@ export default async function AdminGrimoireGatheringPage({
     prisma.grimoireDmSubmission.findMany({
       orderBy: [{ status: "asc" }, { slotStartAt: "asc" }, { createdAt: "asc" }],
     }),
+    getGrimoireDiscordSettings(),
   ]);
 
   const slotOccupancy = new Map<string, number>();
@@ -456,6 +461,11 @@ export default async function AdminGrimoireGatheringPage({
     "invalid-save":
       "The requested Grimoire event change could not be completed because the event could not be saved.",
   };
+  const discordMessageMap: Record<string, string> = {
+    invalid: "The Grimoire Discord settings could not be saved.",
+    unavailable: "The Grimoire Discord settings are not available yet on this Prisma client.",
+    updated: "Grimoire Discord settings updated.",
+  };
   const gameMessageMap: Record<string, string> = {
     created: "Grimoire game created.",
     updated: "Grimoire game updated.",
@@ -468,6 +478,8 @@ export default async function AdminGrimoireGatheringPage({
     invalid: "The requested moderation action could not be completed.",
   };
 
+  const discordMessage = params.discord ? discordMessageMap[params.discord] : "";
+  const discordDetails = params.discordDetails ?? "";
   const eventMessage = params.event ? eventMessageMap[params.event] : "";
   const eventDetails = params.eventDetails ?? "";
   const gameMessage = params.game ? gameMessageMap[params.game] : "";
@@ -530,6 +542,56 @@ export default async function AdminGrimoireGatheringPage({
               </div>
             </div>
             </div>
+
+            <section className="list-card stack">
+              <img
+                alt="Grimoire divider"
+                className="ggcon-table-divider"
+                src="/divider4.png"
+              />
+              <div>
+                <h2 style={{ margin: 0 }}>Discord access</h2>
+                <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                  Update the password-protected public Discord invite shown on the
+                  Grimoire Gathering page.
+                </p>
+              </div>
+              {discordMessage ? (
+                <div className="stack" style={{ gap: "0.35rem" }}>
+                  <p style={{ color: "#ffffff", margin: 0 }}>{discordMessage}</p>
+                  {discordDetails ? (
+                    <p style={{ color: "#d7d7d7", margin: 0 }}>{discordDetails}</p>
+                  ) : null}
+                </div>
+              ) : null}
+              <form action={updateGrimoireDiscordSettings} className="form-stack">
+                <div className="form-grid">
+                  <label>
+                    Discord invite URL
+                    <input
+                      defaultValue={discordSettings.inviteUrl}
+                      name="inviteUrl"
+                      required
+                      type="url"
+                    />
+                  </label>
+                  <label>
+                    Discord password
+                    <input
+                      defaultValue={discordSettings.password}
+                      name="password"
+                      required
+                      type="text"
+                    />
+                  </label>
+                </div>
+                <div className="inline-actions">
+                  <button className="button" type="submit">
+                    Save Discord access
+                  </button>
+                </div>
+              </form>
+            </section>
           </>
         ) : null}
 

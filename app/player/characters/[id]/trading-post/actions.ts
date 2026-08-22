@@ -9,6 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { formatTradingPostRarity } from "@/lib/trading-post";
 
+const TRADE_DOWNTIME_DAYS = 5;
+
 const listingSchema = z.object({
   characterId: z.string().trim().min(1),
   rarity: z.enum(["COMMON", "UNCOMMON", "RARE", "VERY_RARE", "LEGENDARY", "UNIQUE"]),
@@ -368,13 +370,13 @@ export async function acceptTradingPostProposal(characterId: string, proposalId:
         proposerMinorProperty: proposal.listing.minorProperty,
         proposerFlavorNotes: proposal.listing.flavorNotes,
         proposerAdventureCode: proposal.listing.adventureCode,
-        proposerDowntimeDaysSpent: proposal.listing.downtimeDaysSpent,
+        proposerDowntimeDaysSpent: TRADE_DOWNTIME_DAYS,
         recipientItem: proposal.item,
         recipientItemName: proposal.itemName,
         recipientMinorProperty: proposal.minorProperty,
         recipientFlavorNotes: proposal.flavorNotes,
         recipientAdventureCode: proposal.adventureCode,
-        recipientDowntimeDaysSpent: proposal.downtimeDaysSpent,
+        recipientDowntimeDaysSpent: TRADE_DOWNTIME_DAYS,
         status: "CONFIRMED",
         confirmedByUserId: user.id,
         confirmedAt: new Date(),
