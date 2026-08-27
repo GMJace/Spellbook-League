@@ -12,6 +12,14 @@ export const CHARACTER_LOGSHEET_IMPORT_TEMPLATE_HEADERS = [
   "Character Name",
   "Character Sheet Link",
   "Publicly Viewable",
+  "Blindsight",
+  "Blindsight Ft",
+  "Darkvision",
+  "Darkvision Ft",
+  "Tremorsense",
+  "Tremorsense Ft",
+  "Truesight",
+  "Truesight Ft",
   "Character HP",
   "Character AC",
   "Passive Perception",
@@ -176,6 +184,25 @@ function splitCharacterImportValues(value: string) {
   );
 }
 
+function getImportedVisionDistance(
+  normalizedHeaders: string[],
+  row: string[],
+  label: "Blindsight" | "Darkvision" | "Tremorsense" | "Truesight",
+) {
+  const enabledValue = getCharacterImportedCellValue(normalizedHeaders, row, label).trim();
+  const distanceValue = getCharacterImportedCellValue(
+    normalizedHeaders,
+    row,
+    `${label} Ft`,
+  ).trim();
+
+  if (distanceValue) {
+    return distanceValue;
+  }
+
+  return parseCharacterImportBoolean(enabledValue) ? "0" : "";
+}
+
 function buildCaseInsensitiveChoiceMap(options: string[]) {
   return new Map(options.map((option) => [option.trim().toLowerCase(), option]));
 }
@@ -314,6 +341,10 @@ export function buildImportedCharacterRow(
     isPubliclyViewable: parseCharacterImportBoolean(
       getCharacterImportedCellValue(normalizedHeaders, row, "Publicly Viewable"),
     ),
+    blindsightFt: getImportedVisionDistance(normalizedHeaders, row, "Blindsight"),
+    darkvisionFt: getImportedVisionDistance(normalizedHeaders, row, "Darkvision"),
+    tremorsenseFt: getImportedVisionDistance(normalizedHeaders, row, "Tremorsense"),
+    truesightFt: getImportedVisionDistance(normalizedHeaders, row, "Truesight"),
     hitPoints: getCharacterImportedCellValue(normalizedHeaders, row, "Character HP").trim(),
     armorClass: getCharacterImportedCellValue(normalizedHeaders, row, "Character AC").trim(),
     passivePerception: getCharacterImportedCellValue(

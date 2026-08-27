@@ -25,6 +25,7 @@ import {
   getLeagueLegalToolOptions,
 } from "@/lib/league-legal-choices";
 import { prisma } from "@/lib/prisma";
+import { rebuildTidingAwards } from "@/lib/tidings";
 import {
   getTokenImageUpload,
   removeTokenImageUpload,
@@ -83,6 +84,7 @@ function compressSlottedSelections(
 }
 
 const pendingGameLogSchema = z.object({
+  downtimeDaysAwarded: z.coerce.number().int().min(0).max(999),
   rewardsSummary: z.string().trim().min(1).max(1000),
   magicItemsAwarded: z.string().trim().max(1500).optional().or(z.literal("")),
   consumablesAwarded: z.string().trim().max(500).optional().or(z.literal("")),
@@ -169,6 +171,10 @@ export async function updateCharacter(
   const parsed = characterSchema.safeParse({
     name: formData.get("name"),
     characterSheetLink: formData.get("characterSheetLink"),
+    blindsightFt: formData.get("blindsightFt"),
+    darkvisionFt: formData.get("darkvisionFt"),
+    tremorsenseFt: formData.get("tremorsenseFt"),
+    truesightFt: formData.get("truesightFt"),
     hitPoints: formData.get("hitPoints"),
     armorClass: formData.get("armorClass"),
     passivePerception: formData.get("passivePerception"),
@@ -389,6 +395,10 @@ export async function updateCharacter(
       name: parsed.data.name,
       isPubliclyViewable,
       characterSheetLink: parsed.data.characterSheetLink || null,
+      blindsightFt: parsed.data.blindsightFt ?? null,
+      darkvisionFt: parsed.data.darkvisionFt ?? null,
+      tremorsenseFt: parsed.data.tremorsenseFt ?? null,
+      truesightFt: parsed.data.truesightFt ?? null,
       hitPoints: parsed.data.hitPoints ?? null,
       armorClass: parsed.data.armorClass ?? null,
       passivePerception: parsed.data.passivePerception ?? null,
@@ -505,6 +515,7 @@ export async function approvePendingGameLog(
   }
 
   const parsed = pendingGameLogSchema.safeParse({
+    downtimeDaysAwarded: formData.get("downtimeDaysAwarded"),
     rewardsSummary: formData.get("rewardsSummary"),
     magicItemsAwarded: formData.get("magicItemsAwarded") ?? "",
     consumablesAwarded: formData.get("consumablesAwarded") ?? "",
@@ -521,6 +532,7 @@ export async function approvePendingGameLog(
     data: {
       logStatus: "APPROVED",
       approvedAt: new Date(),
+      logDowntimeDaysAwarded: parsed.data.downtimeDaysAwarded,
       logRewardsSummary: parsed.data.rewardsSummary,
       logMagicItemsAwarded: parsed.data.magicItemsAwarded || "",
       logConsumablesAwarded: parsed.data.consumablesAwarded || "",
@@ -528,6 +540,8 @@ export async function approvePendingGameLog(
       logSessionNotes: parsed.data.sessionNotes || "",
     },
   });
+
+  await rebuildTidingAwards();
 
   revalidatePath("/player");
   revalidatePath(`/player/characters/${characterId}`);

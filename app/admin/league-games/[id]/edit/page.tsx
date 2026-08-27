@@ -69,6 +69,8 @@ export default async function AdminLeagueGameEditPage({ params }: PageProps) {
     source: game.source,
     gameSummary: game.gameSummary,
     ticketPrice: game.ticketPrice,
+    isGrimTidings: game.isGrimTidings,
+    grimTidingCost: String(game.grimTidingCost ?? 1),
     adventureImagePath: game.adventureImagePath,
     consumablesAwarded: game.consumablesAwarded,
     datePlayed: formatDateInput(game.datePlayed),

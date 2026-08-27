@@ -119,7 +119,9 @@ export default async function EditCharacterPage({
 
       <section className="card ledger-panel stack">
         {query.message ? (
-          <p style={{ color: "#ffffff", margin: 0 }}>{query.message}</p>
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Could not save character logsheet: {query.message}
+          </p>
         ) : query.error === "invalid" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>Please complete the character details.</p>
         ) : null}
@@ -151,6 +153,10 @@ export default async function EditCharacterPage({
             name: character.name,
             characterSheetLink: character.characterSheetLink,
             isPubliclyViewable: character.isPubliclyViewable,
+            blindsightFt: character.blindsightFt,
+            darkvisionFt: character.darkvisionFt,
+            tremorsenseFt: character.tremorsenseFt,
+            truesightFt: character.truesightFt,
             hitPoints: character.hitPoints,
             armorClass: character.armorClass,
             passivePerception: character.passivePerception,

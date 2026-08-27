@@ -5,7 +5,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { requireTicketSalesAdminUser } from "@/lib/admin";
+import { requireAdminUser, requireTicketSalesAdminUser } from "@/lib/admin";
+import {
+  buildStoredGameRewardStrings,
+  hasStructuredGameRewardSelectionFields,
+  readGameRewardSelectionsFromFormData,
+} from "@/lib/game-reward-selections";
+import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import {
   calculatePayoutAmount,
   DM_PAYMENT_METHOD_TYPES,
@@ -14,8 +20,13 @@ import {
 } from "@/lib/ticket-sales";
 import { createRefundReceiptNumber } from "@/lib/ticket-receipts";
 import { prisma } from "@/lib/prisma";
+import { spendTidingsForGame } from "@/lib/tidings";
+import { isPaidTicketPrice } from "@/lib/utils";
+import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
 
 const ticketSalesPath = "/admin/accounting";
+const grimTidingsPath = "/admin/grimtidings";
+const MAX_ADVENTURE_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const settingsSchema = z.object({
   eventGameDmPayoutRatePct: z.coerce.number().min(0).max(100),
@@ -49,6 +60,112 @@ function getTicketSalesPrisma() {
       upsert?: (...args: any[]) => Promise<any>;
     };
   };
+}
+
+async function saveAdventureImage(file: File) {
+  if (!file.type.startsWith("image/")) {
+    return { error: "Adventure art must be an image file." } as const;
+  }
+
+  if (file.size > MAX_ADVENTURE_IMAGE_SIZE) {
+    return { error: "Adventure art must be 5 MB or smaller." } as const;
+  }
+
+  return { path: await convertImageFileToDataUrl(file) } as const;
+}
+
+async function parseAdminGrimTidingsGameForm(formData: FormData) {
+  const rewardStrings = hasStructuredGameRewardSelectionFields(formData)
+    ? buildStoredGameRewardStrings(readGameRewardSelectionsFromFormData(formData))
+    : {
+        magicItemsAwarded: String(formData.get("magicItemsAwarded") ?? ""),
+        consumablesAwarded: String(formData.get("consumablesAwarded") ?? ""),
+      };
+  const participantsRaw = String(formData.get("participants") ?? "[]");
+  let parsedParticipantsSource: unknown = [];
+
+  try {
+    parsedParticipantsSource = JSON.parse(participantsRaw);
+  } catch {
+    return { error: "Please complete all required game fields." } as const;
+  }
+
+  const participantsResult = gameParticipantsSchema.safeParse(parsedParticipantsSource);
+
+  if (!participantsResult.success) {
+    return { error: "Please complete all required game fields." } as const;
+  }
+
+  const parsed = gameSchema.safeParse({
+    title: String(formData.get("title") ?? ""),
+    adventureCode: String(formData.get("adventureCode") ?? ""),
+    source: String(formData.get("source") ?? ""),
+    gameSummary: String(formData.get("gameSummary") ?? ""),
+    ticketPrice: "Free",
+    isGrimTidings: true,
+    grimTidingCost: String(formData.get("grimTidingCost") ?? "1"),
+    datePlayed: String(formData.get("datePlayed") ?? ""),
+    duration: String(formData.get("duration") ?? ""),
+    tier: String(formData.get("tier") ?? "TIER_1"),
+    seatCapacity: String(formData.get("seatCapacity") ?? "6"),
+    serviceHours: String(formData.get("serviceHours") ?? ""),
+    downtimeDaysAwarded: String(formData.get("downtimeDaysAwarded") ?? "0"),
+    rewardsSummary: String(formData.get("rewardsSummary") ?? ""),
+    magicItemsAwarded: rewardStrings.magicItemsAwarded,
+    consumablesAwarded: rewardStrings.consumablesAwarded,
+    spellbookAwarded: String(formData.get("spellbookAwarded") ?? ""),
+    sessionNotes: String(formData.get("sessionNotes") ?? ""),
+    status: String(formData.get("status") ?? "SCHEDULED"),
+    participants: participantsResult.data,
+  });
+
+  if (!parsed.success) {
+    return { error: "Please complete all required game fields." } as const;
+  }
+
+  if (!parsed.data.isGrimTidings || isPaidTicketPrice(parsed.data.ticketPrice)) {
+    return {
+      error: "Grim Tidings games must use the Free price option.",
+    } as const;
+  }
+
+  const seenCharacterIds = new Set<string>();
+
+  for (const participant of parsed.data.participants) {
+    if (participant.characterId && seenCharacterIds.has(participant.characterId)) {
+      return { error: "A character cannot be added to the same game twice." } as const;
+    }
+
+    if (participant.characterId) {
+      seenCharacterIds.add(participant.characterId);
+    }
+  }
+
+  const players = await prisma.user.findMany({
+    where: {
+      id: { in: parsed.data.participants.map((participant) => participant.userId) },
+    },
+    include: {
+      roles: true,
+      characters: true,
+    },
+  });
+
+  const playerMap = new Map(players.map((player) => [player.id, player]));
+
+  for (const participant of parsed.data.participants) {
+    const selectedUser = playerMap.get(participant.userId);
+    const hasRole = selectedUser?.roles.some((role) => role.role === "PLAYER");
+    const ownsCharacter = participant.characterId
+      ? selectedUser?.characters.some((character) => character.id === participant.characterId)
+      : true;
+
+    if (!selectedUser || !hasRole || !ownsCharacter) {
+      return { error: "One or more selected participants are invalid." } as const;
+    }
+  }
+
+  return { data: parsed.data } as const;
 }
 
 function requireTicketSalesDelegate<TDelegate>(
@@ -236,12 +353,124 @@ const payoutGroupUpdateSchema = z.object({
 });
 
 function redirectToTicketSales(
-  section: "payment" | "payout" | "refund" | "settings" | "spellbook-expense",
+  section: "payment" | "payout" | "refund" | "settings" | "spellbook-expense" | "tidings",
   status: string,
 ): never {
   const params = new URLSearchParams();
   params.set(section, status);
   redirect(`${ticketSalesPath}?${params.toString()}`);
+}
+
+export async function createAdminGrimTidingsGame(formData: FormData) {
+  const currentUser = await requireAdminUser();
+  const parsed = await parseAdminGrimTidingsGameForm(formData);
+
+  if ("error" in parsed) {
+    return { error: parsed.error };
+  }
+
+  const adventureImageFile = formData.get("adventureImage");
+  const reuseAdventureImagePath = String(formData.get("reuseAdventureImagePath") ?? "").trim();
+  let adventureImagePath: null | string = reuseAdventureImagePath || null;
+
+  if (adventureImageFile instanceof File && adventureImageFile.size > 0) {
+    const uploadResult = await saveAdventureImage(adventureImageFile);
+
+    if ("error" in uploadResult) {
+      return {
+        error: uploadResult.error,
+        fieldErrors: {
+          adventureImage: uploadResult.error,
+        },
+      };
+    }
+
+    adventureImagePath = uploadResult.path;
+  }
+
+  const participantLogData = {
+    approvedAt: null,
+    logConsumablesAwarded: null,
+    logMagicItemsAwarded: null,
+    logRewardsSummary: null,
+    logSessionNotes: null,
+    logSpellbookAwarded: null,
+    logStatus: "APPROVED" as const,
+  };
+
+  try {
+    const createdGame = await prisma.$transaction(async (tx) => {
+      const game = await tx.game.create({
+        data: {
+          dmId: null,
+          loggedByUserId: currentUser.id,
+          dmName: "SPELLBOOK DM",
+          title: parsed.data.title,
+          adventureCode: parsed.data.adventureCode,
+          source: parsed.data.source,
+          gameSummary: parsed.data.gameSummary,
+          ticketPrice: "Free",
+          isGrimTidings: true,
+          grimTidingCost: parsed.data.grimTidingCost,
+          ticketAccessCodeHash: null,
+          adventureImagePath,
+          datePlayed: new Date(parsed.data.datePlayed),
+          duration: parsed.data.duration,
+          tier: parsed.data.tier,
+          seatCapacity: parsed.data.seatCapacity,
+          serviceHours: parsed.data.serviceHours,
+          downtimeDaysAwarded: parsed.data.downtimeDaysAwarded,
+          rewardsSummary: parsed.data.rewardsSummary,
+          magicItemsAwarded: parsed.data.magicItemsAwarded,
+          consumablesAwarded: parsed.data.consumablesAwarded,
+          spellbookAwarded: parsed.data.spellbookAwarded,
+          consequencesSummary: "",
+          sessionNotes: parsed.data.sessionNotes,
+          status: parsed.data.status,
+        },
+      });
+
+      for (const participant of parsed.data.participants) {
+        await spendTidingsForGame(tx, {
+          amount: Math.max(parsed.data.grimTidingCost, 1),
+          gameId: game.id,
+          reason: "Admin Grim Tidings seat assignment",
+          sourceLabel: `${game.title} (${game.adventureCode})`,
+          userId: participant.userId,
+        });
+      }
+
+      if (parsed.data.participants.length) {
+        await tx.gameParticipant.createMany({
+          data: parsed.data.participants.map((participant) => ({
+            gameId: game.id,
+            characterId: participant.characterId,
+            userId: participant.userId,
+            ...participantLogData,
+          })),
+        });
+      }
+
+      return game;
+    });
+
+    revalidatePath(grimTidingsPath);
+    revalidatePath("/admin/league-games");
+    revalidatePath("/league");
+    revalidatePath("/league/cart");
+    revalidatePath(`/league/games/${createdGame.id}`);
+    revalidatePath("/");
+
+    redirect(`${grimTidingsPath}?tidings=created`);
+  } catch (error) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_TIDINGS") {
+      return {
+        error: "One or more selected players do not have enough Tidings for this game.",
+      };
+    }
+
+    throw error;
+  }
 }
 
 function parseOptionalDate(value: string) {

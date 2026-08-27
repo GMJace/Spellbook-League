@@ -6,6 +6,7 @@ import {
   approvePendingGameLog,
   deleteCharacter,
 } from "@/app/player/characters/[id]/actions";
+import { deleteCharacterDowntimeEntry } from "@/app/player/characters/[id]/downtime/actions";
 import { deletePlayerGameLog } from "@/app/player/characters/[id]/games/actions";
 import {
   confirmCharacterTrade,
@@ -13,7 +14,10 @@ import {
 } from "@/app/player/characters/[id]/trades/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
-import { CopyMusterInfoButton } from "@/components/copy-muster-info-button";
+import {
+  CopyMusterInfoButton,
+  CopyPlayerTokenButton,
+} from "@/components/copy-muster-info-button";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { TableActionMenu } from "@/components/table-action-menu";
 import {
@@ -46,6 +50,8 @@ type PageProps = {
     id: string;
   }>;
   searchParams?: Promise<{
+    created?: string;
+    importedCharacter?: string;
     reviewed?: string;
     updated?: string;
     error?: string;
@@ -194,12 +200,18 @@ function formatTradeItemSummary(item: {
 function formatMusterMagicItem(item: {
   value: string;
   name: string;
+  minorProperty?: string;
 }) {
-  if (item.name && item.name !== item.value) {
-    return `${item.name} (counts as ${item.value})`;
+  const baseValue =
+    item.name && item.name !== item.value
+      ? `${item.name} (counts as ${item.value})`
+      : item.name || item.value;
+
+  if (item.minorProperty) {
+    return `${baseValue} [Minor Property: ${item.minorProperty}]`;
   }
 
-  return item.name || item.value;
+  return baseValue;
 }
 
 function formatMusterList(values: string[]) {
@@ -225,6 +237,18 @@ const detailCardStyle = {
   border: "1px solid rgba(255, 255, 255, 0.08)",
   background: "rgba(255, 255, 255, 0.02)",
   alignContent: "start",
+} as const;
+
+const fiveRowTableWrapStyle = {
+  minHeight: "22rem",
+  maxHeight: "22rem",
+  overflowY: "auto",
+} as const;
+
+const tenRowTableWrapStyle = {
+  minHeight: "38rem",
+  maxHeight: "38rem",
+  overflowY: "auto",
 } as const;
 
 export default async function CharacterLogsheetPage({
@@ -379,26 +403,56 @@ export default async function CharacterLogsheetPage({
   const visibleCharms = getVisibleSlottedItems(charms, [], [], [], getCharmLabel);
   const visibleBoon = boonSlotEnabled ? character.boon.trim() : "";
   const visibleBlessing = character.blessing.trim();
+  const visibleFeats = formatFeatSelections(character.feats)
+    .split("\n")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const visibleVision = [
+    character.blindsightFt != null
+      ? character.blindsightFt > 0
+        ? `Blindsight ${character.blindsightFt} ft.`
+        : "Blindsight"
+      : "",
+    character.darkvisionFt != null
+      ? character.darkvisionFt > 0
+        ? `Darkvision ${character.darkvisionFt} ft.`
+        : "Darkvision"
+      : "",
+    character.tremorsenseFt != null
+      ? character.tremorsenseFt > 0
+        ? `Tremorsense ${character.tremorsenseFt} ft.`
+        : "Tremorsense"
+      : "",
+    character.truesightFt != null
+      ? character.truesightFt > 0
+        ? `Truesight ${character.truesightFt} ft.`
+        : "Truesight"
+      : "",
+  ]
+    .map((value) => value.trim())
+    .filter(Boolean);
   const musterText = [
-    `Character Name: ${character.name}`,
-    `Build: ${formatClassSummary(character) || "No classes recorded"}`,
-    `Character HP: ${character.hitPoints ?? "Not added"}`,
-    `Character AC: ${character.armorClass ?? "Not added"}`,
-    `Passive Perception: ${character.passivePerception ?? "Not added"}`,
-    `Spell Save DC: ${character.spellSaveDc ?? "Not added"}`,
-    `Uncommon Magic Items: ${formatMusterList(
+    `**Character Name:** ${character.name}`,
+    `**Build:** ${formatClassSummary(character) || "No classes recorded"}`,
+    `**Character HP:** ${character.hitPoints ?? "Not added"}`,
+    `**Character AC:** ${character.armorClass ?? "Not added"}`,
+    `**Passive Perception:** ${character.passivePerception ?? "Not added"}`,
+    `**Spell Save DC:** ${character.spellSaveDc ?? "Not added"}`,
+    `**Vision:** ${formatMusterList(visibleVision)}`,
+    `**Uncommon Magic Items:** ${formatMusterList(
       visibleMagicItems.map((item) => formatMusterMagicItem(item))
     )}`,
-    `Common Magic Items: ${formatMusterList(
+    `**Common Magic Items:** ${formatMusterList(
       visibleCommonMagicItems.map((item) => formatMusterMagicItem(item))
     )}`,
-    `Consumables: ${formatMusterList(visibleConsumables.map((item) => item.value))}`,
-    `Blessings, Charms, Boons: ${formatMusterList(
+    `**Consumables:** ${formatMusterList(visibleConsumables.map((item) => item.value))}`,
+    `**Blessings, Charms, Boons:** ${formatMusterList(
       [visibleBlessing, ...visibleCharms.map((item) => item.value), visibleBoon]
         .map((value) => value.trim())
         .filter(Boolean)
     )}`,
-    `Character Sheet Link: ${character.characterSheetLink || "Not added"}`,
+    `**Feats:** ${formatMusterList(visibleFeats)}`,
+    `**Character Sheet Link:** ${character.characterSheetLink || "Not added"}`,
   ].join("\n");
   const upcomingGameSignups = character.participants
     .filter(
@@ -423,7 +477,15 @@ export default async function CharacterLogsheetPage({
   const tradeLog = [...character.tradesProposed, ...character.tradesReceived].sort(
     (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
   );
-  const earnedDowntimeDays = visibleGameLog.length * 10;
+  const earnedDowntimeDays = visibleGameLog.reduce((total, participant) => {
+    const downtimeDaysAwarded =
+      participant.logDowntimeDaysAwarded ??
+      (participant.game.downtimeDaysAwarded > 0
+        ? participant.game.downtimeDaysAwarded
+        : 10);
+
+    return total + downtimeDaysAwarded;
+  }, 0);
   const tradeDowntimeDaysSpent = tradeLog.reduce((total, trade) => {
     if (trade.status !== "CONFIRMED") {
       return total;
@@ -438,6 +500,11 @@ export default async function CharacterLogsheetPage({
   const totalDowntimeDaysSpent = tradeDowntimeDaysSpent + loggedDowntimeDaysSpent;
   const remainingDowntimeDays = earnedDowntimeDays - totalDowntimeDaysSpent;
   const tradeLogPlaceholderCount = Math.max(0, 5 - tradeLog.length - (tradeLog.length ? 0 : 1));
+  const downtimeLogPlaceholderCount = Math.max(
+    0,
+    5 - character.downtimeEntries.length - (character.downtimeEntries.length ? 0 : 1)
+  );
+  const adventureLogPlaceholderCount = Math.max(0, 10 - gameLog.length - (gameLog.length ? 0 : 1));
   const backHref = isOwner ? "/player" : isDm ? "/dm/players" : isAdminViewer ? "/admin/users" : "/";
 
   return (
@@ -451,6 +518,13 @@ export default async function CharacterLogsheetPage({
         {resolvedSearchParams?.updated === "1" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             Character updated.
+          </p>
+        ) : null}
+        {resolvedSearchParams?.created === "1" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            {resolvedSearchParams.importedCharacter === "1"
+              ? "Character imported."
+              : "Character created."}
           </p>
         ) : null}
         {resolvedSearchParams?.logged === "1" ? (
@@ -514,6 +588,16 @@ export default async function CharacterLogsheetPage({
             Downtime logged for this character.
           </p>
         ) : null}
+        {resolvedSearchParams?.downtime === "updated" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Downtime updated for this character.
+          </p>
+        ) : null}
+        {resolvedSearchParams?.downtime === "deleted" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Downtime deleted for this character.
+          </p>
+        ) : null}
         <div className="section-heading">
           <div
             style={{
@@ -559,6 +643,10 @@ export default async function CharacterLogsheetPage({
                 <CopyMusterInfoButton
                   className="button button-secondary button-small"
                   text={musterText}
+                />
+                <CopyPlayerTokenButton
+                  className="button button-secondary button-small"
+                  tokenImagePath={character.tokenImagePath}
                 />
                 <Link
                   className="button button-secondary button-small"
@@ -656,6 +744,14 @@ export default async function CharacterLogsheetPage({
                 gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
               }}
             >
+              <div style={{ gridColumn: "1 / -1" }}>
+                <p className="muted" style={sectionItemHeaderStyle}>
+                  Vision
+                </p>
+                <p style={{ margin: "0.35rem 0 0" }}>
+                  {visibleVision.length ? visibleVision.join(", ") : "Not added"}
+                </p>
+              </div>
               <div>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Character HP
@@ -1060,161 +1156,16 @@ export default async function CharacterLogsheetPage({
 
         <div className="list-card stack">
           <img
-            alt="Downtime divider"
+            alt="Trade log divider"
             className="homepage-roster-divider"
             src="/divider4.png"
           />
 
           <div className="section-heading">
-            <div>
-              <h2 style={{ margin: 0 }}>Downtime Log</h2>
-              <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                Earned DT is 10 downtime days for each approved logged game. Spent DT includes
-                confirmed trade downtime and all downtime log entries. Remaining DT equals Earned
-                DT minus Spent DT.
-              </p>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gap: "1rem",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            }}
-          >
-            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
-              <span className="metric-label">Earned DT</span>
-              <strong className="metric-value">{earnedDowntimeDays}</strong>
-            </div>
-            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
-              <span className="metric-label">Spent DT</span>
-              <strong className="metric-value">{totalDowntimeDaysSpent}</strong>
-            </div>
-            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
-              <span className="metric-label">Remaining DT</span>
-              <strong className="metric-value">{remainingDowntimeDays}</strong>
-            </div>
-          </div>
-
-          <div className="table-wrap">
-            <table className="ledger-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Activity</th>
-                  <th>DT spent</th>
-                  <th>Related code</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {character.downtimeEntries.length ? (
-                  character.downtimeEntries.map((entry) => (
-                    <tr key={entry.id}>
-                      <td>{formatDate(entry.spentAt)}</td>
-                      <td>{entry.activity}</td>
-                      <td>{entry.downtimeDaysSpent}</td>
-                      <td>{formatOptionalLogText(entry.relatedAdventureCode)}</td>
-                      <td style={{ whiteSpace: "pre-wrap" }}>
-                        {formatOptionalLogText(entry.notes)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={5}>
-                      No downtime logged yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="list-card stack">
-          <div aria-hidden="true" style={whiteLineDividerStyle} />
-
-          <div className="section-heading">
-            <h2 style={{ margin: 0 }}>Adventure log</h2>
-          </div>
-
-          <div className="table-wrap">
-            <table className="ledger-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Code</th>
-                  <th>Title</th>
-                  <th>DM</th>
-                  <th>Tier</th>
-                  {isOwner ? <th>Actions</th> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {gameLog.length ? (
-                  gameLog.map((participant) => (
-                    <tr key={participant.id}>
-                      <td>{formatDate(participant.game.datePlayed)}</td>
-                      <td>{participant.game.adventureCode}</td>
-                      <td>{participant.game.title}</td>
-                      <td>{getGameDmName(participant.game)}</td>
-                      <td>{participant.game.tier.replaceAll("_", " ")}</td>
-                      {isOwner ? (
-                        <td>
-                          <TableActionMenu>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/player/characters/${character.id}/games/${participant.game.id}`}
-                            >
-                              View log
-                            </Link>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
-                            >
-                              Edit log
-                            </Link>
-                            <form
-                              action={deletePlayerGameLog.bind(
-                                null,
-                                character.id,
-                                participant.game.id,
-                              )}
-                            >
-                              <ConfirmSubmitButton
-                                className="button button-danger button-small"
-                                message="Delete this logged game? This cannot be undone."
-                              >
-                                Delete log
-                              </ConfirmSubmitButton>
-                            </form>
-                          </TableActionMenu>
-                        </td>
-                      ) : null}
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={isOwner ? 6 : 5}>
-                      No adventures logged yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="list-card stack">
-          <div aria-hidden="true" style={whiteLineDividerStyle} />
-
-          <div className="section-heading">
             <h2 style={{ margin: 0 }}>Trade log</h2>
           </div>
 
-          <div className="table-wrap">
+          <div className="table-wrap" style={fiveRowTableWrapStyle}>
             <table className="ledger-table">
               <thead>
                 <tr>
@@ -1222,8 +1173,9 @@ export default async function CharacterLogsheetPage({
                   <th>Status</th>
                   <th>Trade partner</th>
                   <th>You send</th>
+                  <th>You send (code)</th>
                   <th>You receive</th>
-                  <th>Adventure codes</th>
+                  <th>You receive (code)</th>
                   <th>Downtime</th>
                   {isOwner ? <th>Action</th> : null}
                 </tr>
@@ -1292,31 +1244,22 @@ export default async function CharacterLogsheetPage({
                           ))}
                         </td>
                         <td>
+                          {isTradeProposer
+                            ? trade.proposerAdventureCode || "Not added"
+                            : trade.recipientAdventureCode || "Not added"}
+                        </td>
+                        <td>
                           {receivedItemLines.map((line) => (
                             <div key={`${trade.id}-receive-${line}`}>{line}</div>
                           ))}
                         </td>
                         <td>
-                          <div>
-                            Sent:{" "}
-                            {isTradeProposer
-                              ? trade.proposerAdventureCode || "Not added"
-                              : trade.recipientAdventureCode || "Not added"}
-                          </div>
-                          <div>
-                            Received:{" "}
-                            {isTradeProposer
-                              ? trade.recipientAdventureCode || "Not added"
-                              : trade.proposerAdventureCode || "Not added"}
-                          </div>
+                          {isTradeProposer
+                            ? trade.recipientAdventureCode || "Not added"
+                            : trade.proposerAdventureCode || "Not added"}
                         </td>
                         <td>
-                          <div>
-                            Sent: {TRADE_DOWNTIME_DAYS}
-                          </div>
-                          <div>
-                            Received: {TRADE_DOWNTIME_DAYS}
-                          </div>
+                          {TRADE_DOWNTIME_DAYS}
                         </td>
                         {isOwner ? (
                           <td>
@@ -1356,7 +1299,7 @@ export default async function CharacterLogsheetPage({
                   })
                 ) : (
                   <tr>
-                    <td className="muted" colSpan={isOwner ? 8 : 7}>
+                    <td className="muted" colSpan={isOwner ? 9 : 8}>
                       No trades logged yet.
                     </td>
                   </tr>
@@ -1365,6 +1308,199 @@ export default async function CharacterLogsheetPage({
                   <tr key={`trade-placeholder-${index}`}>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    {isOwner ? <td>&nbsp;</td> : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div aria-hidden="true" style={whiteLineDividerStyle} />
+        </div>
+
+        <div className="list-card stack">
+          <div className="section-heading">
+            <div>
+              <h2 style={{ margin: 0 }}>Downtime Log</h2>
+              <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                Earned DT is 10 downtime days for each approved logged game. Spent DT includes
+                confirmed trade downtime and all downtime log entries. Remaining DT equals Earned
+                DT minus Spent DT.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gap: "1rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            }}
+          >
+            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
+              <span className="metric-label">Earned DT</span>
+              <strong className="metric-value">{earnedDowntimeDays}</strong>
+            </div>
+            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
+              <span className="metric-label">Spent DT</span>
+              <strong className="metric-value">{totalDowntimeDaysSpent}</strong>
+            </div>
+            <div className="metric" style={{ display: "grid", gap: "0.35rem" }}>
+              <span className="metric-label">Remaining DT</span>
+              <strong className="metric-value">{remainingDowntimeDays}</strong>
+            </div>
+          </div>
+
+          <div className="table-wrap" style={fiveRowTableWrapStyle}>
+            <table className="ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Activity</th>
+                  <th>DT spent</th>
+                  <th>Related code</th>
+                  <th>Notes</th>
+                  {isOwner ? <th>Actions</th> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {character.downtimeEntries.length ? (
+                  character.downtimeEntries.map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{formatDate(entry.spentAt)}</td>
+                      <td>{entry.activity}</td>
+                      <td>{entry.downtimeDaysSpent}</td>
+                      <td>{formatOptionalLogText(entry.relatedAdventureCode)}</td>
+                      <td style={{ whiteSpace: "pre-wrap" }}>
+                        {formatOptionalLogText(entry.notes)}
+                      </td>
+                      {isOwner ? (
+                        <td>
+                          <TableActionMenu>
+                            <Link
+                              className="button button-secondary button-small"
+                              href={`/player/characters/${character.id}/downtime/${entry.id}/edit`}
+                            >
+                              Edit downtime
+                            </Link>
+                            <form
+                              action={deleteCharacterDowntimeEntry.bind(
+                                null,
+                                character.id,
+                                entry.id,
+                              )}
+                            >
+                              <ConfirmSubmitButton
+                                className="button button-danger button-small"
+                                message="Delete this downtime entry? This cannot be undone."
+                              >
+                                Delete downtime
+                              </ConfirmSubmitButton>
+                            </form>
+                          </TableActionMenu>
+                        </td>
+                      ) : null}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="muted" colSpan={isOwner ? 6 : 5}>
+                      No downtime logged yet.
+                    </td>
+                  </tr>
+                )}
+                {Array.from({ length: downtimeLogPlaceholderCount }, (_, index) => (
+                  <tr key={`downtime-placeholder-${index}`}>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    {isOwner ? <td>&nbsp;</td> : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="list-card stack">
+          <div aria-hidden="true" style={whiteLineDividerStyle} />
+
+          <div className="section-heading">
+            <h2 style={{ margin: 0 }}>Adventure log</h2>
+          </div>
+
+          <div className="table-wrap" style={tenRowTableWrapStyle}>
+            <table className="ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Code</th>
+                  <th>Title</th>
+                  <th>DM</th>
+                  <th>Tier</th>
+                  {isOwner ? <th>Actions</th> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {gameLog.length ? (
+                  gameLog.map((participant) => (
+                    <tr key={participant.id}>
+                      <td>{formatDate(participant.game.datePlayed)}</td>
+                      <td>{participant.game.adventureCode}</td>
+                      <td>{participant.game.title}</td>
+                      <td>{getGameDmName(participant.game)}</td>
+                      <td>{participant.game.tier.replaceAll("_", " ")}</td>
+                      {isOwner ? (
+                        <td>
+                          <TableActionMenu>
+                            <Link
+                              className="button button-secondary button-small"
+                              href={`/player/characters/${character.id}/games/${participant.game.id}`}
+                            >
+                              View log
+                            </Link>
+                            <Link
+                              className="button button-secondary button-small"
+                              href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
+                            >
+                              Edit log
+                            </Link>
+                            <form
+                              action={deletePlayerGameLog.bind(
+                                null,
+                                character.id,
+                                participant.game.id,
+                              )}
+                            >
+                              <ConfirmSubmitButton
+                                className="button button-danger button-small"
+                                message="Delete this logged game? This cannot be undone."
+                              >
+                                Delete log
+                              </ConfirmSubmitButton>
+                            </form>
+                          </TableActionMenu>
+                        </td>
+                      ) : null}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="muted" colSpan={isOwner ? 6 : 5}>
+                      No adventures logged yet.
+                    </td>
+                  </tr>
+                )}
+                {Array.from({ length: adventureLogPlaceholderCount }, (_, index) => (
+                  <tr key={`adventure-placeholder-${index}`}>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
@@ -1502,6 +1638,20 @@ export default async function CharacterLogsheetPage({
                     </div>
                   </div>
 
+                  <label>
+                    Downtime days awarded
+                    <input
+                      defaultValue={String(
+                        participant.logDowntimeDaysAwarded ??
+                          (participant.game.downtimeDaysAwarded > 0
+                            ? participant.game.downtimeDaysAwarded
+                            : 10)
+                      )}
+                      min="0"
+                      name="downtimeDaysAwarded"
+                      type="number"
+                    />
+                  </label>
                   <label>
                     Awarded Gold
                     <textarea

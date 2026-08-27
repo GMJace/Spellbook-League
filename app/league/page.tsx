@@ -147,7 +147,11 @@ export default async function LeaguePage() {
                         </td>
                         <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
                         <td>{formatTier(game.tier)}</td>
-                        <td>{game.ticketPrice}</td>
+                        <td>
+                          {game.isGrimTidings
+                            ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                            : game.ticketPrice}
+                        </td>
                         <td>{signedUpCount}/{game.seatCapacity}</td>
                         <td>
                           <TableActionMenu>

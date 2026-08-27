@@ -53,6 +53,11 @@ export default async function PlayerGameLogDetailPage({
 
   const characterLabel = getParticipantCharacterLabel(participant.character?.name);
   const isDmManagedLog = participant.game.loggedByUserId !== user.id;
+  const effectiveDowntimeDaysAwarded =
+    participant.logDowntimeDaysAwarded ??
+    (participant.game.downtimeDaysAwarded > 0
+      ? participant.game.downtimeDaysAwarded
+      : 10);
   const effectiveRewardsSummary =
     participant.logRewardsSummary ?? participant.game.rewardsSummary;
   const effectiveMagicItemsAwarded =
@@ -121,6 +126,10 @@ export default async function PlayerGameLogDetailPage({
             <div className="stack" style={{ gap: "0.35rem" }}>
               <span className="muted">Dungeon Master</span>
               <strong>{formatOptionalText(participant.game.dmName)}</strong>
+            </div>
+            <div className="stack" style={{ gap: "0.35rem" }}>
+              <span className="muted">Downtime days awarded</span>
+              <strong>{effectiveDowntimeDaysAwarded}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
               <span className="muted">Source (DM&apos;s Guild link)</span>

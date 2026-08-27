@@ -36,6 +36,11 @@ const adminNavigationLinks = [
     roles: ["ADMIN", "EVENT_ADMIN"],
   },
   {
+    href: "/admin/grimtidings",
+    label: "Grim Tidings",
+    roles: ["ADMIN", "LEAGUE_ADMIN"],
+  },
+  {
     href: "/admin/league-choices",
     label: "League legal choices",
     roles: ["ADMIN", "LEAGUE_ADMIN"],

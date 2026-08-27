@@ -34,6 +34,8 @@ export type GameFormInitialValues = {
   source: string;
   gameSummary: string;
   ticketPrice: string;
+  isGrimTidings?: boolean;
+  grimTidingCost?: string;
   hasTicketAccessCode?: boolean;
   datePlayed: string;
   duration: string;
@@ -81,6 +83,8 @@ type GameFormFieldName =
   | "source"
   | "gameSummary"
   | "ticketPrice"
+  | "isGrimTidings"
+  | "grimTidingCost"
   | "ticketAccessCode"
   | "datePlayed"
   | "duration"
@@ -241,6 +245,9 @@ export function GameForm({
   const [isPending, startTransition] = useTransition();
   const resolvedTicketPrice = initialValues?.ticketPrice ?? "Free";
   const [selectedTicketPrice, setSelectedTicketPrice] = useState(resolvedTicketPrice);
+  const [isGrimTidingsValue, setIsGrimTidingsValue] = useState(
+    Boolean(initialValues?.isGrimTidings),
+  );
   const [adventureImagePreviewPath, setAdventureImagePreviewPath] = useState(
     initialValues?.adventureImagePath ?? null
   );
@@ -248,7 +255,8 @@ export function GameForm({
     (option) => option.value === resolvedTicketPrice,
   );
   const showTicketAccessCodeControls =
-    isPaidTicketPrice(selectedTicketPrice) || Boolean(initialValues?.hasTicketAccessCode);
+    !isGrimTidingsValue &&
+    (isPaidTicketPrice(selectedTicketPrice) || Boolean(initialValues?.hasTicketAccessCode));
   const availableStatuses = allowCancelledStatus
     ? statuses
     : statuses.filter((status) => status.value !== "CANCELLED");
@@ -481,8 +489,9 @@ export function GameForm({
             Price
             <select
               aria-invalid={Boolean(getFieldError("ticketPrice"))}
-              defaultValue={resolvedTicketPrice}
+              disabled={isGrimTidingsValue}
               name="ticketPrice"
+              value={isGrimTidingsValue ? "Free" : selectedTicketPrice}
               onChange={(event) => {
                 setSelectedTicketPrice(event.target.value);
                 clearFieldError("ticketPrice");
@@ -500,10 +509,71 @@ export function GameForm({
               ))}
             </select>
           </label>
+          {isGrimTidingsValue ? (
+            <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+              Grim Tidings games use the Free price option and are claimed from the league cart by
+              spending Tidings.
+            </p>
+          ) : null}
           {getFieldError("ticketPrice") ? (
             <p style={errorTextStyle}>{getFieldError("ticketPrice")}</p>
           ) : null}
         </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label
+            className="muted ggcon-meta-note"
+            style={{ alignItems: "center", display: "flex", gap: "0.55rem", minHeight: "2.6rem" }}
+          >
+            <input
+              checked={isGrimTidingsValue}
+              name="isGrimTidings"
+              onChange={(event) => {
+                const nextValue = event.target.checked;
+
+                setIsGrimTidingsValue(nextValue);
+                clearFieldError("isGrimTidings");
+                clearFieldError("grimTidingCost");
+                clearFieldError("ticketPrice");
+                clearFieldError("ticketAccessCode");
+
+                if (nextValue) {
+                  setSelectedTicketPrice("Free");
+                }
+              }}
+              type="checkbox"
+            />
+            <span>Grim Tidings game</span>
+          </label>
+          <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+            Limited-access league game that players unlock by spending Tidings.
+          </p>
+          {getFieldError("isGrimTidings") ? (
+            <p style={errorTextStyle}>{getFieldError("isGrimTidings")}</p>
+          ) : null}
+        </div>
+        {isGrimTidingsValue ? (
+          <div className="stack" style={fieldBlockStyle}>
+            <label>
+              Tiding cost
+              <input
+                aria-invalid={Boolean(getFieldError("grimTidingCost"))}
+                defaultValue={initialValues?.grimTidingCost ?? "1"}
+                min="1"
+                max="99"
+                name="grimTidingCost"
+                type="number"
+              />
+            </label>
+            <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+              One signup spends this many Tidings from the player account.
+            </p>
+            {getFieldError("grimTidingCost") ? (
+              <p style={errorTextStyle}>{getFieldError("grimTidingCost")}</p>
+            ) : null}
+          </div>
+        ) : (
+          <input name="grimTidingCost" type="hidden" value={initialValues?.grimTidingCost ?? "1"} />
+        )}
         {showTicketAccessCodeControls ? (
           <div className="stack" style={fieldBlockStyle}>
             <label>

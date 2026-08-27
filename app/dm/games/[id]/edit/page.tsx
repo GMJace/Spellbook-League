@@ -96,6 +96,8 @@ export default async function EditGamePage({ params }: PageProps) {
     source: game.source,
     gameSummary: game.gameSummary,
     ticketPrice: game.ticketPrice,
+    isGrimTidings: game.isGrimTidings,
+    grimTidingCost: String(game.grimTidingCost ?? 1),
     hasTicketAccessCode: Boolean(game.ticketAccessCodeHash),
     adventureImagePath: game.adventureImagePath,
     consumablesAwarded: game.consumablesAwarded,

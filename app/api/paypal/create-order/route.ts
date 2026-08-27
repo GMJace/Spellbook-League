@@ -23,6 +23,7 @@ import { ensureAutomaticTicketPayoutsForCheckoutOrder } from "@/lib/ticket-payou
 import { createSaleReceiptNumber } from "@/lib/ticket-receipts";
 import { prisma } from "@/lib/prisma";
 import { releaseExpiredStoreCreditReservations, roundUsdAmount } from "@/lib/store-credit";
+import { processCompletedGrimTidingsCheckout } from "@/lib/tidings";
 import { getTierValue, isPaidTicketPrice, parseTicketPriceUsd } from "@/lib/utils";
 
 const leagueItemSchema = z.object({
@@ -114,6 +115,8 @@ function serializeLeagueItems(
     characterName: string;
     gameId: string;
     guestEmails: string[];
+    grimTidingCost: number;
+    isGrimTidings: boolean;
     quantity: number;
   }>,
   gamesById: Map<
@@ -133,6 +136,8 @@ function serializeLeagueItems(
       characterName: item.characterName,
       gameId: item.gameId,
       guestEmails: item.guestEmails,
+      grimTidingCost: item.grimTidingCost,
+      isGrimTidings: item.isGrimTidings,
       quantity: item.quantity,
       ticketPrice: game?.ticketPrice ?? "Unknown",
       title: game?.title ?? "Unknown game",
@@ -214,10 +219,14 @@ async function buildLeagueCheckout(
     characterName: string;
     gameId: string;
     guestEmails: string[];
+    grimTidingCost: number;
+    isGrimTidings: boolean;
     quantity: number;
   }> = [];
   const summaryParts: string[] = [];
   let subtotalUsd = 0;
+  let hasGrimTidingsSelections = false;
+  let hasPaidLeagueSelections = false;
 
   if (payload.membershipQuantity > 0) {
     if (!membershipSettings?.isActive) {
@@ -253,7 +262,17 @@ async function buildLeagueCheckout(
       throw new Error("Choose one of your characters for each league game before checkout.");
     }
 
-    if (!isPaidTicketPrice(game.ticketPrice)) {
+    if (game.isGrimTidings) {
+      hasGrimTidingsSelections = true;
+
+      if (item.quantity !== 1) {
+        throw new Error(`${game.title} can only be checked out one seat at a time.`);
+      }
+
+      if (item.guestEmails.length > 0) {
+        throw new Error(`${game.title} cannot include guest tickets in the cart.`);
+      }
+    } else if (!isPaidTicketPrice(game.ticketPrice)) {
       throw new Error(`${game.title} is not a paid checkout game.`);
     }
 
@@ -274,34 +293,48 @@ async function buildLeagueCheckout(
       throw new Error(`${game.title} does not have enough remaining seats.`);
     }
 
-    const unitPriceUsd = parseTicketPriceUsd(game.ticketPrice);
-    subtotalUsd += unitPriceUsd * item.quantity;
-    paypalItems.push({
-      name: game.title.slice(0, 120),
-      quantity: String(item.quantity),
-      unit_amount: {
-        currency_code: "USD",
-        value: formatPayPalAmount(unitPriceUsd),
-      },
-    });
+    if (!game.isGrimTidings) {
+      hasPaidLeagueSelections = true;
+      const unitPriceUsd = parseTicketPriceUsd(game.ticketPrice);
+      subtotalUsd += unitPriceUsd * item.quantity;
+      paypalItems.push({
+        name: game.title.slice(0, 120),
+        quantity: String(item.quantity),
+        unit_amount: {
+          currency_code: "USD",
+          value: formatPayPalAmount(unitPriceUsd),
+        },
+      });
 
-    const emailSummary = item.guestEmails.length
-      ? `; Guest emails: ${item.guestEmails.join(", ")}`
-      : "";
-    summaryParts.push(
-      `${game.title} x${item.quantity} (${game.ticketPrice}); Character: ${getParticipantCharacterLabel(character?.name)}${emailSummary}`,
-    );
+      const emailSummary = item.guestEmails.length
+        ? `; Guest emails: ${item.guestEmails.join(", ")}`
+        : "";
+      summaryParts.push(
+        `${game.title} x${item.quantity} (${game.ticketPrice}); Character: ${getParticipantCharacterLabel(character?.name)}${emailSummary}`,
+      );
+    } else {
+      summaryParts.push(
+        `${game.title} x${item.quantity} (${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}); Character: ${getParticipantCharacterLabel(character?.name)}`,
+      );
+    }
+
     serializedItems.push({
       characterId: character?.id ?? null,
       characterName: getParticipantCharacterLabel(character?.name),
       gameId: item.gameId,
       guestEmails: item.guestEmails,
+      grimTidingCost: Math.max(game.grimTidingCost ?? 1, 1),
+      isGrimTidings: game.isGrimTidings,
       quantity: item.quantity,
     });
   }
 
-  if (!subtotalUsd) {
-    throw new Error("Select a paid league ticket or the Grimoire Guild membership before checkout.");
+  if (hasGrimTidingsSelections && (hasPaidLeagueSelections || payload.membershipQuantity > 0)) {
+    throw new Error("Grim Tidings games must be checked out separately from paid league games and memberships.");
+  }
+
+  if (!subtotalUsd && !hasGrimTidingsSelections) {
+    throw new Error("Select a paid league ticket, a Grim Tidings game, or the Grimoire Guild membership before checkout.");
   }
 
   const taxUsd = roundUsdAmount(subtotalUsd * (salesTaxRatePct / 100));
@@ -628,7 +661,7 @@ export async function POST(request: Request) {
 
     if (payableAmountUsd <= 0) {
       if (!checkoutUser) {
-        throw new Error("Sign in before using account credit for checkout.");
+        throw new Error("Sign in before completing checkout.");
       }
 
       const completedCheckout = await prisma.$transaction(async (tx) => {
@@ -666,7 +699,7 @@ export async function POST(request: Request) {
           },
         });
 
-        return tx.checkoutOrder.create({
+        const completedOrder = await tx.checkoutOrder.create({
           data: {
             amountUsd: 0,
             checkoutType: canonicalCheckout.checkoutType,
@@ -685,6 +718,15 @@ export async function POST(request: Request) {
             userId: currentUser.id,
           },
         });
+
+        if (canonicalCheckout.checkoutType === "LEAGUE") {
+          await processCompletedGrimTidingsCheckout(tx, {
+            itemDataJson: canonicalCheckout.itemDataJson,
+            userId: currentUser.id,
+          });
+        }
+
+        return completedOrder;
       });
 
       const membership = getLeagueCheckoutMembershipFromValue(canonicalCheckout.itemDataJson);

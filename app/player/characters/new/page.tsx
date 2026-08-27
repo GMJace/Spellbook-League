@@ -119,7 +119,9 @@ export default async function NewCharacterPage({
         src="/divider4.png"
       />
       {query.message ? (
-        <p style={{ color: "#ffffff", margin: 0 }}>{query.message}</p>
+        <p style={{ color: "#ffffff", margin: 0 }}>
+          Could not save character logsheet: {query.message}
+        </p>
       ) : query.error === "invalid" ? (
         <p style={{ color: "#ffffff", margin: 0 }}>Please complete the character details.</p>
       ) : null}

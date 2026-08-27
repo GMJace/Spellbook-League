@@ -100,7 +100,7 @@ export default async function GrimoireGatheringPage({
           </p>
           <p className="ggcon-lead ggcon-hero-copy-body">
             <GrimoireGatheringText /> is <RainbowSpellbook />
-            &apos;s monthly online convention,
+            &apos;s online convention,
             bringing players and Dungeon Masters together for a weekend of
             Dungeons &amp; Dragons adventures, organized play, one-shots, and
             epic community games.
@@ -134,7 +134,7 @@ export default async function GrimoireGatheringPage({
         </p>
         <p className="ggcon-lead ggcon-hero-copy-body">
           <GrimoireGatheringText /> is <RainbowSpellbook />
-          &apos;s monthly online convention,
+          &apos;s online convention,
           bringing players and Dungeon Masters together for a weekend of
           Dungeons &amp; Dragons adventures, organized play, one-shots, and
           epic community games.

@@ -127,6 +127,16 @@ enum TradingPostProposalStatus {
   WITHDRAWN
 }
 
+enum TidingAwardRole {
+  PLAYER
+  DM
+}
+
+enum TidingSourceType {
+  PLAYER_LOG
+  DM_LOG
+}
+
 model User {
   id           String            @id @default(cuid())
   name         String
@@ -167,6 +177,10 @@ model User {
   tradingPostListings TradingPostListing[] @relation("TradingPostListingUser")
   tradingPostProposals TradingPostProposal[] @relation("TradingPostProposalUser")
   reviewedTradingPostProposals TradingPostProposal[] @relation("TradingPostProposalReviewedByUser")
+  tidingAwards TidingAward[] @relation("UserTidingAwards")
+  playerTidingAwards TidingAward[] @relation("PlayerTidingAwards")
+  dmTidingAwards TidingAward[] @relation("DmTidingAwards")
+  tidingSpends TidingSpend[] @relation("UserTidingSpends")
 }
 
 model UserRole {
@@ -185,6 +199,10 @@ model Character {
   name         String
   isPubliclyViewable Boolean     @default(true)
   characterSheetLink String?
+  blindsightFt Int?
+  darkvisionFt Int?
+  tremorsenseFt Int?
+  truesightFt  Int?
   hitPoints    Int?
   armorClass   Int?
   passivePerception Int?
@@ -376,6 +394,8 @@ model Game {
   gameSummary         String            @default("")
   ticketPrice         String            @default("Free")
   ticketAccessCodeHash String?
+  isGrimTidings       Boolean           @default(false)
+  grimTidingCost      Int               @default(1)
   adventureImagePath  String?
   datePlayed          DateTime
   duration            String            @default("")
@@ -395,6 +415,7 @@ model Game {
   dm                  User?             @relation("GameDungeonMaster", fields: [dmId], references: [id], onDelete: Cascade)
   loggedByUser        User?             @relation("GameLoggedBy", fields: [loggedByUserId], references: [id], onDelete: SetNull)
   participants        GameParticipant[]
+  tidingSpends        TidingSpend[]
 }
 
 model GameParticipant {
@@ -404,6 +425,7 @@ model GameParticipant {
   userId                String
   logStatus             ParticipantLogStatus @default(APPROVED)
   approvedAt            DateTime?
+  logDowntimeDaysAwarded Int?
   logRewardsSummary     String?
   logMagicItemsAwarded  String?
   logConsumablesAwarded String?
@@ -415,6 +437,47 @@ model GameParticipant {
   user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([gameId, characterId])
+}
+
+model TidingAward {
+  id            String           @id @default(cuid())
+  sessionKey    String
+  role          TidingAwardRole
+  sourceType    TidingSourceType
+  userId        String
+  playerUserId  String
+  dmUserId      String?
+  adventureCode String
+  dmName        String
+  earnedAt      DateTime
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  user          User             @relation("UserTidingAwards", fields: [userId], references: [id], onDelete: Cascade)
+  playerUser    User             @relation("PlayerTidingAwards", fields: [playerUserId], references: [id], onDelete: Cascade)
+  dmUser        User?            @relation("DmTidingAwards", fields: [dmUserId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionKey, role])
+  @@index([userId, earnedAt(sort: Desc)])
+  @@index([playerUserId, earnedAt(sort: Desc)])
+  @@index([dmUserId, earnedAt(sort: Desc)])
+}
+
+model TidingSpend {
+  id          String    @id @default(cuid())
+  userId      String
+  gameId      String?
+  amount      Int       @default(1)
+  reason      String
+  sourceLabel String    @default("")
+  spentAt     DateTime  @default(now())
+  refundedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation("UserTidingSpends", fields: [userId], references: [id], onDelete: Cascade)
+  game        Game?     @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  @@index([userId, spentAt(sort: Desc)])
+  @@index([gameId, spentAt(sort: Desc)])
 }
 
 model AdventureCatalog {

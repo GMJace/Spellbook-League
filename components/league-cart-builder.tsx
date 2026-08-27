@@ -21,6 +21,8 @@ type LeagueCartGame = {
   adventureCode: string;
   datePlayed: string;
   dmName: string;
+  grimTidingCost: number;
+  isGrimTidings: boolean;
   tier: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
   ticketPrice: string;
   ticketPriceUsd: number;
@@ -37,6 +39,7 @@ type PlayerCharacter = {
 
 type LeagueCartBuilderProps = {
   availableStoreCreditUsd: number;
+  availableTidings: number;
   currentPatronAccessEndsAt: null | string;
   games: LeagueCartGame[];
   initialSelectedGameIds: string[];
@@ -66,6 +69,7 @@ function formatPriceLabel(amount: number) {
 
 export function LeagueCartBuilder({
   availableStoreCreditUsd,
+  availableTidings,
   currentPatronAccessEndsAt,
   games,
   initialSelectedGameIds,
@@ -102,13 +106,23 @@ export function LeagueCartBuilder({
   const [redeemingGameId, setRedeemingGameId] = useState<string | null>(null);
 
   const updateSelectedQuantity = (gameId: string, quantity: number) => {
+    const game = games.find((entry) => entry.id === gameId);
+    const normalizedQuantity = game?.isGrimTidings ? (quantity > 0 ? 1 : 0) : quantity;
+
     setSelectedGameQuantities((current) => ({
       ...current,
-      [gameId]: quantity,
+      [gameId]: normalizedQuantity,
     }));
     setGuestEmailsByGame((current) => {
+      if (game?.isGrimTidings) {
+        return {
+          ...current,
+          [gameId]: [],
+        };
+      }
+
       const nextEmails = current[gameId] ?? [];
-      const guestTicketCount = Math.max(quantity - 1, 0);
+      const guestTicketCount = Math.max(normalizedQuantity - 1, 0);
 
       return {
         ...current,
@@ -118,11 +132,10 @@ export function LeagueCartBuilder({
       };
     });
     setSelectedCharacterByGame((current) => {
-      if (quantity <= 0) {
+      if (normalizedQuantity <= 0) {
         return current;
       }
 
-      const game = games.find((entry) => entry.id === gameId);
       const eligibleCharacters = playerCharacters.filter(
         (character) => character.tier === game?.tier,
       );
@@ -246,9 +259,18 @@ export function LeagueCartBuilder({
     };
   });
   const subtotal = selectedGames.reduce(
-    (total, game) => total + game.ticketPriceUsd * (selectedGameQuantities[game.id] ?? 0),
+    (total, game) =>
+      game.isGrimTidings
+        ? total
+        : total + game.ticketPriceUsd * (selectedGameQuantities[game.id] ?? 0),
     0,
   ) + membershipProduct.priceUsd * membershipQuantity;
+  const selectedTidingsRequired = selectedGames.reduce(
+    (total, game) =>
+      total +
+      (game.isGrimTidings ? game.grimTidingCost * (selectedGameQuantities[game.id] ?? 0) : 0),
+    0,
+  );
   const { payableAmountUsd, storeCreditAppliedUsd: appliedStoreCreditUsd, taxUsd } =
     calculateCheckoutTotals({
       availableStoreCreditUsd,
@@ -258,7 +280,16 @@ export function LeagueCartBuilder({
   const hasSelections = selectedGames.length > 0 || membershipQuantity > 0;
   const hasInvalidSelectedCharacters = selectedGameCharacterIssues.some((entry) => !entry.valid);
   const hasMembershipSignInIssue = membershipQuantity > 0 && !isPlayerSignedIn;
+  const hasGrimTidingsSelection = selectedGames.some((game) => game.isGrimTidings);
+  const hasPaidLeagueSelection = selectedGames.some((game) => !game.isGrimTidings);
+  const hasMixedTidingsAndUsdSelections =
+    hasGrimTidingsSelection && (hasPaidLeagueSelection || membershipQuantity > 0);
+  const hasInsufficientTidings = selectedTidingsRequired > availableTidings;
   const guestEmailIssues = selectedGames.flatMap((game) => {
+    if (game.isGrimTidings) {
+      return [];
+    }
+
     const quantity = selectedGameQuantities[game.id] ?? 0;
     const requiredGuestCount = Math.max(quantity - 1, 0);
     const guestEmails = (guestEmailsByGame[game.id] ?? []).slice(0, requiredGuestCount);
@@ -288,7 +319,9 @@ export function LeagueCartBuilder({
         ? `; Guest emails: ${guestEmails.join(", ")}`
         : "";
 
-      return `${game.title} x${selectedGameQuantities[game.id] ?? 0} (${game.ticketPrice}); Character: ${characterName}${guestEmailSummary}`;
+      return game.isGrimTidings
+        ? `${game.title} x${selectedGameQuantities[game.id] ?? 0} (${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}); Character: ${characterName}`
+        : `${game.title} x${selectedGameQuantities[game.id] ?? 0} (${game.ticketPrice}); Character: ${characterName}${guestEmailSummary}`;
     })
     .concat(
       membershipQuantity > 0
@@ -322,7 +355,7 @@ export function LeagueCartBuilder({
             <p className="eyebrow">Customize Purchase</p>
             <h1 style={{ margin: 0 }}>League Cart</h1>
             <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-              Add store items and priced league games to your cart before continuing to checkout.
+              Add memberships, paid league games, and Grim Tidings games to your cart before continuing to checkout.
             </p>
           </div>
 
@@ -356,7 +389,9 @@ export function LeagueCartBuilder({
                           {game.title} x{selectedGameQuantities[game.id] ?? 0}
                         </span>
                         <strong>
-                          {formatUsd(game.ticketPriceUsd * (selectedGameQuantities[game.id] ?? 0))}
+                          {game.isGrimTidings
+                            ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                            : formatUsd(game.ticketPriceUsd * (selectedGameQuantities[game.id] ?? 0))}
                         </strong>
                       </div>
                       <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
@@ -376,9 +411,22 @@ export function LeagueCartBuilder({
                           Extra tickets: {guestEmails.join(", ")}
                         </p>
                       ) : null}
+                      {game.isGrimTidings ? (
+                        <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                          Grim Tidings seats are single-seat checkouts and cannot include guest tickets.
+                        </p>
+                      ) : null}
                     </div>
                   );
                 })}
+                {selectedTidingsRequired > 0 ? (
+                  <div className="ggcon-summary-line">
+                    <span>Tidings to spend</span>
+                    <strong>
+                      {selectedTidingsRequired} Tiding{selectedTidingsRequired === 1 ? "" : "s"}
+                    </strong>
+                  </div>
+                ) : null}
                 <div className="ggcon-summary-total">
                   <span>Subtotal</span>
                   <strong>{formatUsd(subtotal)}</strong>
@@ -404,7 +452,7 @@ export function LeagueCartBuilder({
               </div>
             ) : (
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-                Add a paid league game or the Grimoire Guild membership to start checkout.
+                Add a paid league game, a Grim Tidings game, or the Grimoire Guild membership to start checkout.
               </p>
             )}
           </div>
@@ -429,6 +477,11 @@ export function LeagueCartBuilder({
                   : ""}
               </p>
             ) : null}
+            {hasGrimTidingsSelection ? (
+              <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                Available Tidings: {availableTidings}. Selected Grim Tidings games will spend {selectedTidingsRequired} Tiding{selectedTidingsRequired === 1 ? "" : "s"}.
+              </p>
+            ) : null}
             {hasIncompleteGuestEmails ? (
               <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
                 Enter a valid email for each extra ticket before checkout.
@@ -449,6 +502,16 @@ export function LeagueCartBuilder({
                 Choose a matching-tier character or select TBD for each league game.
               </p>
             ) : null}
+            {hasMixedTidingsAndUsdSelections ? (
+              <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
+                Grim Tidings games must be checked out separately from paid league games and memberships.
+              </p>
+            ) : null}
+            {isPlayerSignedIn && hasInsufficientTidings ? (
+              <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
+                You need {selectedTidingsRequired - availableTidings} more Tiding{selectedTidingsRequired - availableTidings === 1 ? "" : "s"} to complete this Grim Tidings checkout.
+              </p>
+            ) : null}
 
             <PayPalCheckoutButton
               clientId={paypalClientId}
@@ -456,11 +519,26 @@ export function LeagueCartBuilder({
                 !hasSelections ||
                 hasIncompleteGuestEmails ||
                 hasInvalidSelectedCharacters ||
-                hasMembershipSignInIssue
+                hasMembershipSignInIssue ||
+                hasMixedTidingsAndUsdSelections ||
+                hasInsufficientTidings
               }
               disabledText="Continue to PayPal"
               payableAmountUsd={payableAmountUsd}
               payload={checkoutPayload}
+              zeroAmountButtonLabel={
+                selectedTidingsRequired > 0
+                  ? `Spend ${selectedTidingsRequired} Tiding${selectedTidingsRequired === 1 ? "" : "s"}`
+                  : undefined
+              }
+              zeroAmountPendingText={
+                selectedTidingsRequired > 0 ? "Finalizing your Grim Tidings checkout..." : undefined
+              }
+              zeroAmountSuccessMessage={
+                selectedTidingsRequired > 0
+                  ? "Grim Tidings checkout completed and your seat has been claimed."
+                  : undefined
+              }
             />
 
             <div className="inline-actions" style={{ flexWrap: "wrap" }}>
@@ -520,7 +598,7 @@ export function LeagueCartBuilder({
           </div>
 
           <div className="section-heading">
-            <h2 style={{ margin: 0 }}>Priced league games</h2>
+            <h2 style={{ margin: 0 }}>League games available for checkout</h2>
           </div>
           <div className="ggcon-ticket-grid league-ticket-grid">
             {games.map((game) => {
@@ -544,19 +622,31 @@ export function LeagueCartBuilder({
                       <LocalizedEventTime isoString={game.datePlayed} /> · {formatTier(game.tier)}
                     </span>
                     <span className="muted ggcon-meta-note">Open seats: {openSeats}</span>
+                    {game.isGrimTidings ? (
+                      <span className="muted ggcon-meta-note">
+                        Grim Tidings game · {game.grimTidingCost} Tiding{game.grimTidingCost === 1 ? "" : "s"} · single-seat checkout only
+                      </span>
+                    ) : null}
                     <label className="stack ggcon-ticket-quantity" style={{ gap: "0.35rem" }}>
-                      <span className="muted">Tickets</span>
+                      <span className="muted">{game.isGrimTidings ? "Seat" : "Tickets"}</span>
                       <select
                         value={selectedQuantity}
                         onChange={(event) =>
                           updateSelectedQuantity(game.id, Number(event.target.value))
                         }
                       >
-                        {Array.from({ length: openSeats + 1 }, (_, index) => (
-                          <option key={index} value={index}>
-                            {index === 0 ? "No tickets" : `${index} ticket${index === 1 ? "" : "s"}`}
-                          </option>
-                        ))}
+                        {game.isGrimTidings ? (
+                          <>
+                            <option value={0}>No seat</option>
+                            <option value={1}>1 seat</option>
+                          </>
+                        ) : (
+                          Array.from({ length: openSeats + 1 }, (_, index) => (
+                            <option key={index} value={index}>
+                              {index === 0 ? "No tickets" : `${index} ticket${index === 1 ? "" : "s"}`}
+                            </option>
+                          ))
+                        )}
                       </select>
                     </label>
                     <label className="stack ggcon-ticket-quantity" style={{ gap: "0.35rem" }}>
@@ -584,7 +674,7 @@ export function LeagueCartBuilder({
                         ))}
                       </select>
                     </label>
-                    {selectedQuantity > 1 ? (
+                    {selectedQuantity > 1 && !game.isGrimTidings ? (
                       <div className="stack league-cart-guest-email-group" style={{ gap: "0.5rem" }}>
                         <span className="muted ggcon-meta-note">
                           OPTIONAL. Enter the email for each additional player ticket.
@@ -608,7 +698,7 @@ export function LeagueCartBuilder({
                         ))}
                       </div>
                     ) : null}
-                    {game.hasTicketAccessCode ? (
+                    {game.hasTicketAccessCode && !game.isGrimTidings ? (
                       <div className="stack league-cart-guest-email-group" style={{ gap: "0.5rem" }}>
                         <span className="muted ggcon-meta-note">
                           Have a DM access code? Redeem one player seat here without buying a
@@ -652,7 +742,11 @@ export function LeagueCartBuilder({
                       </div>
                     ) : null}
                   </div>
-                  <span className="pill">{game.ticketPrice}</span>
+                  <span className="pill">
+                    {game.isGrimTidings
+                      ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                      : game.ticketPrice}
+                  </span>
                 </div>
               );
             })}

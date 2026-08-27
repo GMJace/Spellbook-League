@@ -9,7 +9,8 @@ import {
 } from "@/lib/character";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
+import { getUserTidingSummary } from "@/lib/tidings";
+import { formatDateTime, formatTier, formatUsd, isPaidTicketPrice } from "@/lib/utils";
 
 export default async function PlayerDashboardPage({
   searchParams,
@@ -20,7 +21,7 @@ export default async function PlayerDashboardPage({
   const playerName = user.name ?? user.email ?? "Player";
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
-  const [characters, openLeagueGames] = await Promise.all([
+  const [characters, openLeagueGames, tidingSummary] = await Promise.all([
     prisma.character.findMany({
       where: { userId: user.id },
       include: {
@@ -59,6 +60,7 @@ export default async function PlayerDashboardPage({
       },
       orderBy: [{ datePlayed: "asc" }, { title: "asc" }],
     }),
+    getUserTidingSummary(user.id),
   ]);
 
   const gamesPlayedCount = new Set(
@@ -74,6 +76,7 @@ export default async function PlayerDashboardPage({
   ).size;
   const characterLimit = getCharacterLimitForRoles(user.roles);
   const canCreateCharacter = characters.length < characterLimit;
+  const availableStoreCreditUsd = Math.max(user.storeCreditUsd - user.storeCreditHeldUsd, 0);
 
   return (
     <main className="stack">
@@ -144,8 +147,34 @@ export default async function PlayerDashboardPage({
             <strong>{user.discordHandle || "Not provided"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Games played</span>
-            <strong>{gamesPlayedCount}</strong>
+            <span className="muted">Gameplay</span>
+            <strong>{gamesPlayedCount} games played</strong>
+          </div>
+          {availableStoreCreditUsd > 0 ? (
+            <div className="list-card stack" style={{ gap: "0.35rem" }}>
+              <span className="muted">Account credit</span>
+              <strong>{formatUsd(availableStoreCreditUsd)}</strong>
+            </div>
+          ) : null}
+          <div className="list-card stack" style={{ gap: "0.5rem" }}>
+            <span className="muted">Tidings</span>
+            <div
+              style={{
+                display: "flex",
+                gap: "1rem",
+                flexWrap: "wrap",
+              }}
+            >
+              <span>
+                <strong>Earned:</strong> {tidingSummary.earnedCount}
+              </span>
+              <span>
+                <strong>Spent:</strong> {tidingSummary.spentCount}
+              </span>
+              <span>
+                <strong>Available:</strong> {tidingSummary.availableCount}
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -305,7 +334,11 @@ export default async function PlayerDashboardPage({
                         </td>
                         <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
                         <td>{formatTier(game.tier)}</td>
-                        <td>{game.ticketPrice}</td>
+                        <td>
+                          {game.isGrimTidings
+                            ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                            : game.ticketPrice}
+                        </td>
                         <td>{signedUpCount}/{game.seatCapacity}</td>
                         <td>
                           <TableActionMenu>

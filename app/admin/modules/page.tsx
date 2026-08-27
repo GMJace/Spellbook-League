@@ -126,6 +126,7 @@ export default async function AdminModulesPage({
     skip: (clampedCurrentPage - 1) * MODULES_PER_PAGE,
     take: MODULES_PER_PAGE,
   });
+  const emptyLiveModuleRows = Math.max(0, 10 - Math.max(modules.length, 1));
   const visibleRangeStart = totalLiveModules ? (clampedCurrentPage - 1) * MODULES_PER_PAGE + 1 : 0;
   const visibleRangeEnd = totalLiveModules
     ? Math.min(clampedCurrentPage * MODULES_PER_PAGE, totalLiveModules)
@@ -212,7 +213,10 @@ export default async function AdminModulesPage({
           <div
             className="table-wrap"
             style={{
-              overflow: "hidden",
+              overflowX: "auto",
+              overflowY: "auto",
+              minHeight: "calc(11 * 4rem)",
+              maxHeight: "calc(11 * 4rem)",
               border: "1px solid rgba(255, 255, 255, 0.08)",
               borderRadius: "20px",
               background: "rgba(8, 11, 16, 0.76)",
@@ -531,6 +535,17 @@ export default async function AdminModulesPage({
                     </td>
                   </tr>
                 )}
+                {Array.from({ length: emptyLiveModuleRows }).map((_, index) => (
+                  <tr key={`live-module-empty-${index}`} aria-hidden="true">
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

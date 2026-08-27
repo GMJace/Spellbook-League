@@ -74,6 +74,12 @@ export default async function EditPlayerGameLogPage({
     datePlayed: formatDateInput(participant.game.datePlayed),
     tier: participant.game.tier,
     dmName: participant.game.dmName ?? "",
+    downtimeDaysAwarded: String(
+      participant.logDowntimeDaysAwarded ??
+        (participant.game.downtimeDaysAwarded > 0
+          ? participant.game.downtimeDaysAwarded
+          : 10)
+    ),
     rewardsSummary:
       participant.logRewardsSummary ?? participant.game.rewardsSummary,
     magicItemsAwarded:

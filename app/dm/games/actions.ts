@@ -16,6 +16,7 @@ import {
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { syncPendingAdventureModuleFromPlayerLog } from "@/lib/pending-adventure-modules";
 import { prisma } from "@/lib/prisma";
+import { rebuildTidingAwards } from "@/lib/tidings";
 import { sendNewGameSignupAlertEmail } from "@/lib/transactional-email";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
 import { formatTier, isPaidTicketPrice } from "@/lib/utils";
@@ -59,6 +60,8 @@ const GAME_FIELD_LABELS: Record<string, string> = {
   source: "Source",
   gameSummary: "Game summary",
   ticketPrice: "Price",
+  isGrimTidings: "Grim Tidings game",
+  grimTidingCost: "Tiding cost",
   ticketAccessCode: "Ticket access code",
   datePlayed: "Date and time",
   duration: "Duration",
@@ -76,6 +79,8 @@ type GameFieldName =
   | "source"
   | "gameSummary"
   | "ticketPrice"
+  | "isGrimTidings"
+  | "grimTidingCost"
   | "ticketAccessCode"
   | "datePlayed"
   | "duration"
@@ -103,6 +108,8 @@ const GAME_FIELD_ERROR_MESSAGES: Record<GameFieldName, string> = {
   source: "Source must be 160 characters or fewer.",
   gameSummary: "Game summary must be 1500 characters or fewer.",
   ticketPrice: 'Enter a price such as "Free" or "$15 USD".',
+  isGrimTidings: "Choose whether this is a Grim Tidings game.",
+  grimTidingCost: "Tiding cost must be between 1 and 99.",
   ticketAccessCode: "Ticket access code must be at least 4 characters and 100 characters or fewer.",
   datePlayed: "Choose a valid game date and time.",
   duration: "Duration must be 80 characters or fewer.",
@@ -332,6 +339,8 @@ async function parseGameForm(formData: FormData) {
     source: String(formData.get("source") ?? ""),
     gameSummary: String(formData.get("gameSummary") ?? ""),
     ticketPrice: String(formData.get("ticketPrice") ?? "Free"),
+    isGrimTidings: formData.get("isGrimTidings") === "on",
+    grimTidingCost: String(formData.get("grimTidingCost") ?? "1"),
     ticketAccessCode: String(formData.get("ticketAccessCode") ?? ""),
     datePlayed: String(formData.get("datePlayed") ?? ""),
     duration: String(formData.get("duration") ?? ""),
@@ -350,6 +359,16 @@ async function parseGameForm(formData: FormData) {
 
   if (!parsed.success) {
     return buildGameValidationErrorResult(parsed.error.issues) as const;
+  }
+
+  if (parsed.data.isGrimTidings && isPaidTicketPrice(parsed.data.ticketPrice)) {
+    return {
+      error: "Grim Tidings games must use free signup so players can spend Tidings instead of checking out.",
+      fieldErrors: {
+        ticketPrice: "Grim Tidings games must use the Free price option.",
+        isGrimTidings: GAME_FIELD_ERROR_MESSAGES.isGrimTidings,
+      },
+    } as const;
   }
 
   const seenCharacterIds = new Set<string>();
@@ -431,6 +450,8 @@ async function requireOwnedGame(gameId: string) {
       id: true,
       dmId: true,
       adventureImagePath: true,
+      grimTidingCost: true,
+      isGrimTidings: true,
       ticketAccessCodeHash: true,
     },
   });
@@ -522,6 +543,8 @@ export async function createGame(formData: FormData) {
         source: parsed.data.source,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
+        isGrimTidings: parsed.data.isGrimTidings,
+        grimTidingCost: parsed.data.grimTidingCost,
         ticketAccessCodeHash,
         adventureImagePath,
         datePlayed: new Date(parsed.data.datePlayed),
@@ -686,6 +709,8 @@ export async function createGame(formData: FormData) {
     reportedByUserId: user.id,
   });
 
+  await rebuildTidingAwards();
+
   redirect(`/dm/games/${game.createdGame.id}`);
 }
 
@@ -757,7 +782,25 @@ export async function updateGame(formData: FormData) {
   const removedParticipantSummaries = previousParticipantSummaries.filter(
     (participant) => !currentParticipantUserIds.has(participant.userId)
   );
+  const removedParticipantUserIds = Array.from(
+    new Set(removedParticipantSummaries.map((participant) => participant.userId))
+  );
   const formattedDate = formatNotificationDate(parsed.data.datePlayed);
+
+  if (
+    parsed.data.isGrimTidings &&
+    previousParticipants.length > 0 &&
+    (!game.isGrimTidings || game.grimTidingCost !== parsed.data.grimTidingCost)
+  ) {
+    return {
+      error:
+        "Remove current participants before converting this game to Grim Tidings or changing its Tiding cost.",
+      fieldErrors: {
+        grimTidingCost: "Clear existing signups before changing the Tiding cost.",
+        isGrimTidings: "Clear existing signups before converting this game to Grim Tidings.",
+      },
+    };
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.game.update({
@@ -770,6 +813,8 @@ export async function updateGame(formData: FormData) {
         source: parsed.data.source,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
+        isGrimTidings: parsed.data.isGrimTidings,
+        grimTidingCost: parsed.data.grimTidingCost,
         ticketAccessCodeHash,
         adventureImagePath,
         datePlayed: new Date(parsed.data.datePlayed),
@@ -801,6 +846,31 @@ export async function updateGame(formData: FormData) {
           userId: participant.userId,
           ...participantLogData,
         })),
+      });
+    }
+
+    if (!parsed.data.isGrimTidings) {
+      await tx.tidingSpend.updateMany({
+        where: {
+          gameId: game.id,
+          refundedAt: null,
+        },
+        data: {
+          refundedAt: new Date(),
+        },
+      });
+    } else if (removedParticipantUserIds.length) {
+      await tx.tidingSpend.updateMany({
+        where: {
+          gameId: game.id,
+          refundedAt: null,
+          userId: {
+            in: removedParticipantUserIds,
+          },
+        },
+        data: {
+          refundedAt: new Date(),
+        },
       });
     }
 
@@ -860,6 +930,8 @@ export async function updateGame(formData: FormData) {
     ]);
   });
 
+  await rebuildTidingAwards();
+
   await syncPendingAdventureModuleFromPlayerLog({
     adventureCode: parsed.data.adventureCode,
     title: parsed.data.title,
@@ -917,6 +989,15 @@ export async function deleteGame(formData: FormData) {
     : "";
 
   await prisma.$transaction([
+    prisma.tidingSpend.updateMany({
+      where: {
+        gameId,
+        refundedAt: null,
+      },
+      data: {
+        refundedAt: new Date(),
+      },
+    }),
     prisma.notification.createMany({
       data: [
         {
@@ -981,6 +1062,8 @@ export async function deleteGame(formData: FormData) {
       },
     }),
   ]);
+
+  await rebuildTidingAwards();
 
   redirect("/dm");
 }

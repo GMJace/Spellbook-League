@@ -259,6 +259,34 @@ button.button-small {
   justify-content: flex-end;
 }
 
+.site-role-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 8.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f5;
+  text-decoration: none;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.site-role-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.site-role-link-active {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
 .site-actions {
   flex: 0 0 auto;
   flex-wrap: nowrap;
@@ -1564,6 +1592,40 @@ th {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.character-build-card {
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(60, 60, 60, 0.62);
+  align-content: start;
+}
+
+.character-vision-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.character-vision-card {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.character-vision-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.character-vision-distance {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .character-build-display {
   display: grid;
   gap: 0.55rem;
@@ -1579,6 +1641,14 @@ th {
 .character-build-display-logsheet {
   justify-items: start;
   text-align: left;
+}
+
+.character-magic-item-card {
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(60, 60, 60, 0.62);
+  align-content: start;
 }
 
 .character-build-entry {
@@ -2562,6 +2632,10 @@ textarea {
 
 @media (max-width: 720px) {
   .trading-post-active-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .character-vision-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

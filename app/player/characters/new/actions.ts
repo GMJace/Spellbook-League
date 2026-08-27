@@ -351,6 +351,10 @@ function validateAndBuildCharacterCreateData({
   return {
     isPubliclyViewable,
     characterSheetLink: parsed.data.characterSheetLink || null,
+    blindsightFt: parsed.data.blindsightFt ?? null,
+    darkvisionFt: parsed.data.darkvisionFt ?? null,
+    tremorsenseFt: parsed.data.tremorsenseFt ?? null,
+    truesightFt: parsed.data.truesightFt ?? null,
     hitPoints: parsed.data.hitPoints ?? null,
     armorClass: parsed.data.armorClass ?? null,
     passivePerception: parsed.data.passivePerception ?? null,
@@ -435,6 +439,10 @@ export async function createCharacter(
   const characterInput = {
     name: formData.get("name"),
     characterSheetLink: formData.get("characterSheetLink"),
+    blindsightFt: formData.get("blindsightFt"),
+    darkvisionFt: formData.get("darkvisionFt"),
+    tremorsenseFt: formData.get("tremorsenseFt"),
+    truesightFt: formData.get("truesightFt"),
     hitPoints: formData.get("hitPoints"),
     armorClass: formData.get("armorClass"),
     passivePerception: formData.get("passivePerception"),
@@ -515,7 +523,7 @@ export async function createCharacter(
   revalidatePath("/dm/players");
   revalidatePath("/dm/achievements");
 
-  redirect(`/player/characters/${character.id}/edit?created=1`);
+  redirect(`/player/characters/${character.id}?created=1`);
 }
 
 export async function importCharacterLogsheet(formData: FormData) {
@@ -624,7 +632,7 @@ export async function importCharacterLogsheet(formData: FormData) {
   revalidatePath("/dm/achievements");
 
   if (createdCharacters.length === 1) {
-    redirect(`/player/characters/${createdCharacters[0].id}/edit?created=1&message=Character%20imported.`);
+    redirect(`/player/characters/${createdCharacters[0].id}?created=1&importedCharacter=1`);
   }
 
   redirect(`/player?charactersImported=${createdCharacters.length}`);

@@ -80,6 +80,9 @@ export default async function DmProfilePage({ params }: PageProps) {
       participants: number;
     };
   }>;
+  const upcomingGames = [...games]
+    .filter((game) => game.status === "SCHEDULED" && game.datePlayed.getTime() >= Date.now())
+    .sort((a, b) => a.datePlayed.getTime() - b.datePlayed.getTime());
   const totalPlayersHosted = games.reduce((sum, game) => sum + game._count.participants, 0);
   const totalServiceHours = games.reduce((sum, game) => sum + (game.serviceHours ?? 0), 0);
   const specialties = splitSpecialties(publicProfile?.specialties ?? null);
@@ -212,6 +215,51 @@ export default async function DmProfilePage({ params }: PageProps) {
               Specialties have not been listed yet.
             </p>
           )}
+        </div>
+
+        <div className="list-card stack">
+          <div className="section-heading" id="upcoming-schedule">
+            <h2 style={{ margin: 0 }}>Upcoming schedule</h2>
+          </div>
+
+          <div className="table-wrap">
+            <table className="ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Code</th>
+                  <th>Title</th>
+                  <th>Tier</th>
+                  <th>Players</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcomingGames.length ? (
+                  upcomingGames.map((game) => (
+                    <tr key={game.id}>
+                      <td>{formatDate(game.datePlayed)}</td>
+                      <td>{game.adventureCode}</td>
+                      <td>{game.title}</td>
+                      <td>{formatTier(game.tier)}</td>
+                      <td>{game._count.participants}</td>
+                      <td>
+                        <Link className="button button-secondary button-small" href={`/league/games/${game.id}`}>
+                          View game
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="muted" colSpan={6}>
+                      No upcoming scheduled games are posted right now.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="list-card stack">

@@ -289,7 +289,7 @@ export function HomepageDmActivityCard({
               <tr>
                 <th>Dungeon Master</th>
                 <th>Games Logged</th>
-                <th>Record</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -300,6 +300,12 @@ export function HomepageDmActivityCard({
                     <td>{row.gamesLogged}</td>
                     <td>
                       <TableActionMenu>
+                        <Link
+                          className="button button-secondary button-small"
+                          href={`/dm/${row.id}#upcoming-schedule`}
+                        >
+                          Schedule
+                        </Link>
                         <Link
                           className="button button-secondary button-small"
                           href={`/dm/${row.id}`}

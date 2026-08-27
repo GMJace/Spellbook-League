@@ -11,6 +11,7 @@ import {
 } from "@/lib/grimoire-guild-membership";
 import { getPayPalClientId } from "@/lib/paypal";
 import { prisma } from "@/lib/prisma";
+import { getUserTidingSummary } from "@/lib/tidings";
 import { isPaidTicketPrice, parseTicketPriceUsd } from "@/lib/utils";
 
 type PageProps = {
@@ -67,6 +68,7 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
         },
       })
     : null;
+  const tidingSummary = player?.id ? await getUserTidingSummary(player.id) : null;
   const [pricedLeagueGames, membershipSettings, ticketSalesSettings] = await Promise.all([
     prisma.game.findMany({
       where: {
@@ -111,13 +113,15 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
 
   const cartGames = pricedLeagueGames
     .filter((game) => !(game.participants?.length ?? 0))
-    .filter((game) => isPaidTicketPrice(game.ticketPrice))
+    .filter((game) => game.isGrimTidings || isPaidTicketPrice(game.ticketPrice))
     .map((game) => ({
       id: game.id,
       title: game.title,
       adventureCode: game.adventureCode,
       datePlayed: game.datePlayed.toISOString(),
       dmName: game.dm?.name ?? game.dmName ?? "SPELLBOOK DM",
+      grimTidingCost: Math.max(game.grimTidingCost ?? 1, 1),
+      isGrimTidings: game.isGrimTidings,
       tier: game.tier,
       ticketPrice: game.ticketPrice,
       ticketPriceUsd: parseTicketPriceUsd(game.ticketPrice),
@@ -141,6 +145,7 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
         {cartGames.length || membershipSettings.isActive ? (
           <LeagueCartBuilder
             games={cartGames}
+            availableTidings={tidingSummary?.availableCount ?? 0}
             initialSelectedGameIds={parseSelectedGames(resolvedSearchParams.games)}
             initialMembershipQuantity={parseMembershipQuantity(resolvedSearchParams.membership)}
             availableStoreCreditUsd={
@@ -167,7 +172,7 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
             salesTaxRatePct={salesTaxRatePct}
           />
         ) : (
-          <div className="empty">No priced league games are available for checkout yet.</div>
+          <div className="empty">No league games are available for checkout yet.</div>
         )}
       </section>
     </main>

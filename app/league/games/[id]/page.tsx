@@ -11,6 +11,7 @@ import {
 } from "@/lib/game-participants";
 import { parseStoredGameSummary } from "@/lib/game-summary";
 import { prisma } from "@/lib/prisma";
+import { getUserTidingSummary } from "@/lib/tidings";
 import { formatStatus, formatTier, isPaidTicketPrice } from "@/lib/utils";
 import {
   leaveLeagueGame,
@@ -42,6 +43,8 @@ function renderSignupMessage(signupState: string | undefined) {
       return "This game is no longer open for signup.";
     case "paid":
       return "This game requires checkout through the cart.";
+    case "grim-tidings-cart":
+      return "This Grim Tidings game must be claimed from the league cart.";
     case "choose-character":
       return "Please choose one of your characters or select TBD to sign up.";
     case "invalid-character":
@@ -50,6 +53,8 @@ function renderSignupMessage(signupState: string | undefined) {
       return "That character is already assigned to this game.";
     case "wrong-tier":
       return "Choose a character whose tier matches this game.";
+    case "not-enough-tidings":
+      return "You do not have enough Tidings for this game yet.";
     case "updated":
       return "Your signup has been updated.";
     case "not-signed-up":
@@ -82,7 +87,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
   const session = await auth();
   const supportEmail = process.env.LEAGUE_SUPPORT_EMAIL?.trim() || "trevor@spellbookrpg.games";
 
-  const [game, player] = await Promise.all([
+  const [game, player, tidingSummary] = await Promise.all([
     prisma.game.findUnique({
       where: { id },
       include: {
@@ -118,6 +123,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
           },
         })
       : Promise.resolve(null),
+    session?.user?.id ? getUserTidingSummary(session.user.id) : Promise.resolve(null),
   ]);
 
   if (!game) {
@@ -131,10 +137,14 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
     : null;
   const canAddToCart =
     isSignupOpen &&
-    isPaidTicketPrice(game.ticketPrice) &&
+    (isPaidTicketPrice(game.ticketPrice) || game.isGrimTidings) &&
     availableSpots > 0 &&
     !playerSignup;
-  const canJoinForFree = isSignupOpen && !isPaidTicketPrice(game.ticketPrice) && availableSpots > 0;
+  const canJoinForFree =
+    isSignupOpen &&
+    !isPaidTicketPrice(game.ticketPrice) &&
+    !game.isGrimTidings &&
+    availableSpots > 0;
   const isPlayer = Boolean(player?.roles.some((role) => role.role === "PLAYER"));
   const eligibleCharacters =
     player?.characters.filter(
@@ -167,7 +177,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
             </Link>
             {canAddToCart ? (
               <Link className="button" href={`/league/cart?games=${encodeURIComponent(game.id)}`}>
-                Add ticket to cart
+                {game.isGrimTidings ? "Add to league cart" : "Add ticket to cart"}
               </Link>
             ) : null}
           </div>
@@ -256,9 +266,18 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   <strong>{formatTier(game.tier)}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
-                  <span className="muted">Price</span>
-                  <strong>{game.ticketPrice}</strong>
-                  {game.ticketAccessCodeHash ? (
+                  <span className="muted">{game.isGrimTidings ? "Access" : "Price"}</span>
+                  <strong>
+                    {game.isGrimTidings
+                      ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                      : game.ticketPrice}
+                  </strong>
+                  {game.isGrimTidings ? (
+                    <span className="muted ggcon-meta-note">
+                      Claim this seat from the league cart by spending Tidings from your player
+                      account.
+                    </span>
+                  ) : game.ticketAccessCodeHash ? (
                     <span className="muted ggcon-meta-note">
                       Have an access code? Redeem it from the league cart.
                     </span>
@@ -287,6 +306,38 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   </strong>
                 </div>
               </div>
+
+              {game.isGrimTidings ? (
+                <div className="list-card stack" style={{ gap: "0.5rem" }}>
+                  <strong>Grim Tidings access</strong>
+                  <p className="muted" style={{ margin: 0 }}>
+                    This limited-access league game costs{" "}
+                    <strong>
+                      {game.grimTidingCost} Tiding{game.grimTidingCost === 1 ? "" : "s"}
+                    </strong>{" "}
+                    to join through the league cart.
+                  </p>
+                  {tidingSummary ? (
+                    <p style={{ margin: 0 }}>
+                      You currently have <strong>{tidingSummary.availableCount}</strong>{" "}
+                      Tiding{tidingSummary.availableCount === 1 ? "" : "s"} available.
+                    </p>
+                  ) : (
+                    <p className="muted" style={{ margin: 0 }}>
+                      Sign in with a player account to spend Tidings on this game.
+                    </p>
+                  )}
+                  {tidingSummary &&
+                  tidingSummary.availableCount < game.grimTidingCost ? (
+                    <p className="muted" style={{ margin: 0 }}>
+                      You need {game.grimTidingCost - tidingSummary.availableCount} more
+                      {" "}Tiding{game.grimTidingCost - tidingSummary.availableCount === 1 ? "" : "s"} to join.
+                    </p>
+                  ) : (
+                    null
+                  )}
+                </div>
+              ) : null}
 
               {playerSignup && isPlayer ? (
                 <div className="list-card stack" style={{ gap: "0.75rem" }}>
@@ -335,7 +386,9 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                       </form>
 
                       <p className="muted" style={{ margin: 0 }}>
-                        {isPaidTicketPrice(game.ticketPrice)
+                        {game.isGrimTidings
+                          ? "Leaving this game will refund the Tidings spent for this seat."
+                          : isPaidTicketPrice(game.ticketPrice)
                           ? "Leaving this game will remove your seat and email SPELLBOOK staff to begin refund review for any paid ticket tied to this signup."
                           : "Leaving this game will remove your seat immediately."}
                       </p>
@@ -366,7 +419,54 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 </div>
               ) : null}
 
-              {!isPaidTicketPrice(game.ticketPrice) && !playerSignup ? (
+              {game.isGrimTidings && !playerSignup ? (
+                <div className="list-card stack" style={{ gap: "0.75rem" }}>
+                  <div className="stack" style={{ gap: "0.35rem" }}>
+                    <strong>Grim Tidings signup</strong>
+                    <p className="muted" style={{ margin: 0 }}>
+                      This seat costs {game.grimTidingCost} Tiding
+                      {game.grimTidingCost === 1 ? "" : "s"} and must be claimed from the league
+                      cart.
+                    </p>
+                  </div>
+
+                  {signupMessage ? <p style={{ margin: 0 }}>{signupMessage}</p> : null}
+                  {leaveMessage ? <p style={{ margin: 0 }}>{leaveMessage}</p> : null}
+
+                  {canAddToCart ? (
+                    <div>
+                      <Link className="button" href={`/league/cart?games=${encodeURIComponent(game.id)}`}>
+                        Add to league cart
+                      </Link>
+                    </div>
+                  ) : session?.user?.id && !isPlayer ? (
+                    <p style={{ margin: 0 }}>
+                      Only player accounts can spend Tidings on Grim Tidings games.
+                    </p>
+                  ) : !session?.user?.id ? (
+                    <div className="stack" style={{ gap: "0.6rem" }}>
+                      <p style={{ margin: 0 }}>
+                        Sign in with a player account to spend Tidings on this game.
+                      </p>
+                      <div>
+                        <Link className="button" href="/login">
+                          Sign in
+                        </Link>
+                      </div>
+                    </div>
+                  ) : availableSpots <= 0 ? (
+                    <p style={{ margin: 0 }}>
+                      Grim Tidings signup is unavailable because this game has no open spots.
+                    </p>
+                  ) : (
+                    <p style={{ margin: 0 }}>
+                      You are already signed up for this game or cannot claim this seat right now.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+
+              {!game.isGrimTidings && !isPaidTicketPrice(game.ticketPrice) && !playerSignup ? (
                 <div className="list-card stack" style={{ gap: "0.75rem" }}>
                   <div className="stack" style={{ gap: "0.35rem" }}>
                     <strong>Free game signup</strong>

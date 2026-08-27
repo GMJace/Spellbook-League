@@ -51,6 +51,10 @@ type FormState = {
 type CharacterFormValues = {
   name: string;
   characterSheetLink: string | null;
+  blindsightFt: number | null;
+  darkvisionFt: number | null;
+  tremorsenseFt: number | null;
+  truesightFt: number | null;
   hitPoints: number | null;
   armorClass: number | null;
   isPubliclyViewable: boolean;
@@ -85,6 +89,15 @@ type CharacterFormValues = {
   charms: string;
 };
 
+const VISION_FIELDS = [
+  { key: "blindsightFt", label: "Blindsight" },
+  { key: "darkvisionFt", label: "Darkvision" },
+  { key: "tremorsenseFt", label: "Tremorsense" },
+  { key: "truesightFt", label: "Truesight" },
+] as const;
+
+type VisionFieldName = (typeof VISION_FIELDS)[number]["key"];
+
 function ensureItemSlots(items: string[], count: number) {
   return Array.from({ length: count }, (_, index) => items[index] ?? "");
 }
@@ -96,6 +109,24 @@ function ensureSelectableItemSlots(items: string[], count: number, options: stri
     const item = items[index] ?? "";
     return optionSet.has(item) ? item : "";
   });
+}
+
+function getFilteredOptions(options: string[], keyword: string, selectedValue: string) {
+  const normalizedKeyword = keyword.trim().toLowerCase();
+
+  const filteredOptions = normalizedKeyword
+    ? options.filter((option) => option.toLowerCase().includes(normalizedKeyword))
+    : options;
+
+  if (
+    selectedValue &&
+    options.includes(selectedValue) &&
+    !filteredOptions.includes(selectedValue)
+  ) {
+    return [selectedValue, ...filteredOptions];
+  }
+
+  return filteredOptions;
 }
 
 function clampLevel(value: number, min: number, max: number) {
@@ -248,6 +279,9 @@ export function CharacterForm({
       1
     )
   );
+  const [magicItemFilters, setMagicItemFilters] = useState(() =>
+    ensureItemSlots(parseMagicItems(initialValues?.magicItems ?? ""), 1)
+  );
   const [commonMagicItems, setCommonMagicItems] = useState(() =>
     ensureSelectableItemSlots(
       parseMagicItems(initialValues?.commonMagicItems ?? ""),
@@ -275,6 +309,12 @@ export function CharacterForm({
       parseMagicItemFlavorDetails(initialValues?.commonMagicItemFlavors ?? "").map(
         (detail) => detail.notes
       ),
+      COMMON_MAGIC_ITEM_SLOT_COUNT
+    )
+  );
+  const [commonMagicItemFilters, setCommonMagicItemFilters] = useState(() =>
+    ensureItemSlots(
+      parseMagicItems(initialValues?.commonMagicItems ?? ""),
       COMMON_MAGIC_ITEM_SLOT_COUNT
     )
   );
@@ -312,6 +352,21 @@ export function CharacterForm({
         )
       : ensureItemSlots(parseMagicItems(initialValues?.charms ?? ""), 2)
   );
+  const [visionEnabled, setVisionEnabled] = useState<Record<VisionFieldName, boolean>>({
+    blindsightFt: initialValues?.blindsightFt != null,
+    darkvisionFt: initialValues?.darkvisionFt != null,
+    tremorsenseFt: initialValues?.tremorsenseFt != null,
+    truesightFt: initialValues?.truesightFt != null,
+  });
+  const [visionValues, setVisionValues] = useState<Record<VisionFieldName, string>>({
+    blindsightFt:
+      initialValues?.blindsightFt != null ? String(initialValues.blindsightFt) : "",
+    darkvisionFt:
+      initialValues?.darkvisionFt != null ? String(initialValues.darkvisionFt) : "",
+    tremorsenseFt:
+      initialValues?.tremorsenseFt != null ? String(initialValues.tremorsenseFt) : "",
+    truesightFt: initialValues?.truesightFt != null ? String(initialValues.truesightFt) : "",
+  });
   const notesRef = useRef<HTMLTextAreaElement | null>(null);
   const backstoryRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -434,6 +489,12 @@ export function CharacterForm({
         nextMagicItemLimit
       )
     );
+    setMagicItemFilters(
+      ensureItemSlots(
+        parseMagicItems(initialValues?.magicItems ?? ""),
+        nextMagicItemLimit
+      )
+    );
     setCommonMagicItems(
       ensureSelectableItemSlots(
         parseMagicItems(initialValues?.commonMagicItems ?? ""),
@@ -461,6 +522,12 @@ export function CharacterForm({
         parseMagicItemFlavorDetails(initialValues?.commonMagicItemFlavors ?? "").map(
           (detail) => detail.notes
         ),
+        COMMON_MAGIC_ITEM_SLOT_COUNT
+      )
+    );
+    setCommonMagicItemFilters(
+      ensureItemSlots(
+        parseMagicItems(initialValues?.commonMagicItems ?? ""),
         COMMON_MAGIC_ITEM_SLOT_COUNT
       )
     );
@@ -493,6 +560,22 @@ export function CharacterForm({
           )
         : ensureItemSlots(parseMagicItems(initialValues?.charms ?? ""), nextCharmSlotCount)
     );
+    setVisionEnabled({
+      blindsightFt: initialValues?.blindsightFt != null,
+      darkvisionFt: initialValues?.darkvisionFt != null,
+      tremorsenseFt: initialValues?.tremorsenseFt != null,
+      truesightFt: initialValues?.truesightFt != null,
+    });
+    setVisionValues({
+      blindsightFt:
+        initialValues?.blindsightFt != null ? String(initialValues.blindsightFt) : "",
+      darkvisionFt:
+        initialValues?.darkvisionFt != null ? String(initialValues.darkvisionFt) : "",
+      tremorsenseFt:
+        initialValues?.tremorsenseFt != null ? String(initialValues.tremorsenseFt) : "",
+      truesightFt:
+        initialValues?.truesightFt != null ? String(initialValues.truesightFt) : "",
+    });
   }, [
     initialValues,
     initialValues?.magicItems,
@@ -522,6 +605,16 @@ export function CharacterForm({
       ensureSelectableItemSlots(current, magicItemLimit, legalBuildMagicItemOptions)
     );
   }, [legalBuildMagicItemOptions, magicItemLimit]);
+
+  useEffect(() => {
+    setMagicItemFilters((current) => ensureItemSlots(current, magicItemLimit));
+  }, [magicItemLimit]);
+
+  useEffect(() => {
+    setCommonMagicItemFilters((current) =>
+      ensureItemSlots(current, COMMON_MAGIC_ITEM_SLOT_COUNT)
+    );
+  }, []);
 
   useEffect(() => {
     setMagicItemNames((current) =>
@@ -677,6 +770,27 @@ export function CharacterForm({
       field.style.height = `${maxHeight}px`;
     }
   }, [notes, backstory]);
+
+  function toggleVisionField(field: VisionFieldName, checked: boolean) {
+    setVisionEnabled((current) => ({
+      ...current,
+      [field]: checked,
+    }));
+
+    if (!checked) {
+      setVisionValues((current) => ({
+        ...current,
+        [field]: "",
+      }));
+    }
+  }
+
+  function updateVisionValue(field: VisionFieldName, value: string) {
+    setVisionValues((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
 
   function updateSkillSelection(
     skillName: (typeof DND_SKILLS)[number]["name"],
@@ -839,6 +953,43 @@ export function CharacterForm({
         <span>Make publicly viewable (Note: admin will still have access)</span>
       </label>
 
+      <div className="form-span-full stack" style={{ gap: "0.65rem" }}>
+        <div className="stack" style={{ gap: "0.2rem" }}>
+          <h3 style={{ margin: 0 }}>Vision</h3>
+        </div>
+        <div className="character-vision-grid">
+          {VISION_FIELDS.map(({ key, label }) => (
+            <div className="character-vision-card" key={key}>
+              <div className="character-vision-row">
+                <label className="checkbox-row compact-checkbox-row" style={{ margin: 0 }}>
+                  <input
+                    checked={visionEnabled[key]}
+                    onChange={(event) => toggleVisionField(key, event.currentTarget.checked)}
+                    type="checkbox"
+                  />
+                  <span>{label}</span>
+                </label>
+                <label className="character-vision-distance">
+                  <span className="muted" style={{ fontSize: "0.8rem" }}>
+                    Ft
+                  </span>
+                  <input
+                    disabled={!visionEnabled[key]}
+                    name={key}
+                    max="999"
+                    min="0"
+                    onChange={(event) => updateVisionValue(key, event.currentTarget.value)}
+                    style={{ width: "5.5rem" }}
+                    type="number"
+                    value={visionValues[key]}
+                  />
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="form-grid">
         <label>
           Character HP
@@ -932,146 +1083,152 @@ export function CharacterForm({
       </div>
 
       <div className="form-grid character-build-grid">
-        <label>
-          Class 1
-          <select
-            required
-            value={class1Name}
-            onChange={(event) => setClass1Name(event.target.value)}
-          >
-            <option value="" disabled>
-              Select a class
-            </option>
-            {DND_CLASSES.map((className) => (
-              <option key={className} value={className}>
-                {className}
+        <div className="character-build-card stack" style={{ gap: "0.75rem" }}>
+          <label>
+            Class 1
+            <select
+              required
+              value={class1Name}
+              onChange={(event) => setClass1Name(event.target.value)}
+            >
+              <option value="" disabled>
+                Select a class
               </option>
-            ))}
-          </select>
-        </label>
+              {DND_CLASSES.map((className) => (
+                <option key={className} value={className}>
+                  {className}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Class 2
-          <select
-            value={class2Name}
-            onChange={(event) => setClass2Name(event.target.value)}
-          >
-            <option value="">No second class</option>
-            {DND_CLASSES.map((className) => (
-              <option key={className} value={className}>
-                {className}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            Class 1 subclass
+            <select
+              value={class1Subclass}
+              onChange={(event) => setClass1Subclass(event.target.value)}
+            >
+              <option value="">No subclass selected</option>
+              {class1SubclassOptions.map((subclassName) => (
+                <option key={subclassName} value={subclassName}>
+                  {subclassName}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Class 3
-          <select
-            value={class3Name}
-            onChange={(event) => setClass3Name(event.target.value)}
-          >
-            <option value="">No third class</option>
-            {DND_CLASSES.map((className) => (
-              <option key={className} value={className}>
-                {className}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            Class 1 level
+            <input
+              type="number"
+              min="1"
+              max={class1Max}
+              required
+              value={String(class1Level)}
+              onChange={(event) =>
+                setClass1Level(
+                  clampLevel(Number(event.target.value || 1), 1, class1Max)
+                )
+              }
+            />
+          </label>
+        </div>
 
-        <label>
-          Class 1 subclass
-          <select
-            value={class1Subclass}
-            onChange={(event) => setClass1Subclass(event.target.value)}
-          >
-            <option value="">No subclass selected</option>
-            {class1SubclassOptions.map((subclassName) => (
-              <option key={subclassName} value={subclassName}>
-                {subclassName}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="character-build-card stack" style={{ gap: "0.75rem" }}>
+          <label>
+            Class 2
+            <select
+              value={class2Name}
+              onChange={(event) => setClass2Name(event.target.value)}
+            >
+              <option value="">No second class</option>
+              {DND_CLASSES.map((className) => (
+                <option key={className} value={className}>
+                  {className}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Class 2 subclass
-          <select
-            disabled={!class2Name}
-            value={class2Subclass}
-            onChange={(event) => setClass2Subclass(event.target.value)}
-          >
-            <option value="">No subclass selected</option>
-            {class2SubclassOptions.map((subclassName) => (
-              <option key={subclassName} value={subclassName}>
-                {subclassName}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            Class 2 subclass
+            <select
+              disabled={!class2Name}
+              value={class2Subclass}
+              onChange={(event) => setClass2Subclass(event.target.value)}
+            >
+              <option value="">No subclass selected</option>
+              {class2SubclassOptions.map((subclassName) => (
+                <option key={subclassName} value={subclassName}>
+                  {subclassName}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Class 3 subclass
-          <select
-            disabled={!class3Name}
-            value={class3Subclass}
-            onChange={(event) => setClass3Subclass(event.target.value)}
-          >
-            <option value="">No subclass selected</option>
-            {class3SubclassOptions.map((subclassName) => (
-              <option key={subclassName} value={subclassName}>
-                {subclassName}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            Class 2 level
+            <input
+              type="number"
+              min="0"
+              max={class2Max}
+              value={String(class2Level)}
+              onChange={(event) =>
+                setClass2Level(
+                  clampLevel(Number(event.target.value || 0), 0, class2Max)
+                )
+              }
+            />
+          </label>
+        </div>
 
-        <label>
-          Class 1 level
-          <input
-            type="number"
-            min="1"
-            max={class1Max}
-            required
-            value={String(class1Level)}
-            onChange={(event) =>
-              setClass1Level(
-                clampLevel(Number(event.target.value || 1), 1, class1Max)
-              )
-            }
-          />
-        </label>
+        <div className="character-build-card stack" style={{ gap: "0.75rem" }}>
+          <label>
+            Class 3
+            <select
+              value={class3Name}
+              onChange={(event) => setClass3Name(event.target.value)}
+            >
+              <option value="">No third class</option>
+              {DND_CLASSES.map((className) => (
+                <option key={className} value={className}>
+                  {className}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Class 2 level
-          <input
-            type="number"
-            min="0"
-            max={class2Max}
-            value={String(class2Level)}
-            onChange={(event) =>
-              setClass2Level(
-                clampLevel(Number(event.target.value || 0), 0, class2Max)
-              )
-            }
-          />
-        </label>
+          <label>
+            Class 3 subclass
+            <select
+              disabled={!class3Name}
+              value={class3Subclass}
+              onChange={(event) => setClass3Subclass(event.target.value)}
+            >
+              <option value="">No subclass selected</option>
+              {class3SubclassOptions.map((subclassName) => (
+                <option key={subclassName} value={subclassName}>
+                  {subclassName}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Class 3 level
-          <input
-            type="number"
-            min="0"
-            max={class3Max}
-            value={String(class3Level)}
-            onChange={(event) =>
-              setClass3Level(
-                clampLevel(Number(event.target.value || 0), 0, class3Max)
-              )
-            }
-          />
-        </label>
+          <label>
+            Class 3 level
+            <input
+              type="number"
+              min="0"
+              max={class3Max}
+              value={String(class3Level)}
+              onChange={(event) =>
+                setClass3Level(
+                  clampLevel(Number(event.target.value || 0), 0, class3Max)
+                )
+              }
+            />
+          </label>
+        </div>
       </div>
 
       <div className="form-grid">
@@ -1101,55 +1258,72 @@ export function CharacterForm({
         <div aria-hidden="true" style={whiteDividerStyle} />
         <strong>Current build magic items (Uncommon+)</strong>
         <div className="form-grid">
-          {magicItems.map((item, index) => (
-            <div className="stack" key={index} style={{ gap: "0.45rem" }}>
+          {magicItems.map((item, index) => {
+            const filteredMagicItemOptions = getFilteredOptions(
+              legalBuildMagicItemOptions,
+              magicItemFilters[index] ?? "",
+              item
+            );
+            const magicItemListId = `character-magic-item-options-${index}`;
+
+            return (
+            <div className="stack character-magic-item-card" key={index} style={{ gap: "0.45rem" }}>
               <label>
                 Slot {index + 1}
                 {index < 3 ? " (attunement)" : ""} · Item (counts as)
-                <select
-                  name="magicItems"
-                  value={item}
+                <input
+                  autoComplete="off"
+                  list={magicItemListId}
+                  placeholder="Type a keyword and choose a legal item"
+                  type="text"
+                  value={magicItemFilters[index] ?? ""}
                   onChange={(event) => {
-                    const nextItem = event.target.value;
-                    const next = [...magicItems];
-                    next[index] = nextItem;
-                    setMagicItems(next);
-                    setMagicItemNames((current) => {
-                      const nextNames = [...current];
+                    const nextKeyword = event.target.value;
+                    const next = [...magicItemFilters];
+                    next[index] = nextKeyword;
+                    setMagicItemFilters(next);
 
-                      if (!nextItem) {
+                    if (!nextKeyword) {
+                      setMagicItems((current) => {
+                        const nextItems = [...current];
+                        nextItems[index] = "";
+                        return nextItems;
+                      });
+                      setMagicItemNames((current) => {
+                        const nextNames = [...current];
                         nextNames[index] = "";
-                      }
-
-                      return nextNames;
-                    });
-                    setMagicItemMinorProperties((current) => {
-                      const nextProperties = [...current];
-
-                      if (!nextItem) {
+                        return nextNames;
+                      });
+                      setMagicItemMinorProperties((current) => {
+                        const nextProperties = [...current];
                         nextProperties[index] = "";
-                      }
-
-                      return nextProperties;
-                    });
-                    setMagicItemFlavors((current) => {
-                      const nextFlavors = [...current];
-
-                      if (!nextItem) {
+                        return nextProperties;
+                      });
+                      setMagicItemFlavors((current) => {
+                        const nextFlavors = [...current];
                         nextFlavors[index] = "";
-                      }
+                        return nextFlavors;
+                      });
+                      return;
+                    }
 
-                      return nextFlavors;
-                    });
+                    if (legalBuildMagicItemOptions.includes(nextKeyword)) {
+                      setMagicItems((current) => {
+                        const nextItems = [...current];
+                        nextItems[index] = nextKeyword;
+                        return nextItems;
+                      });
+                    }
                   }}
-                >
-                  <option value="">Select an Uncommon+ magic item</option>
-                  {legalBuildMagicItemOptions.map((option) => (
+                />
+                <datalist id={magicItemListId}>
+                  {filteredMagicItemOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
                   ))}
-                </select>
+                </datalist>
+                <input name="magicItems" type="hidden" value={item} />
               </label>
               {item && legalBuildMagicItemSet.has(item) ? (
                 <label>
@@ -1212,60 +1386,82 @@ export function CharacterForm({
               ) : null}
               {!item ? <input name="magicItemFlavors" type="hidden" value="" /> : null}
             </div>
-          ))}
+          );
+          })}
         </div>
 
         <div aria-hidden="true" style={whiteDividerStyle} />
         <strong>Common magic items</strong>
         <div className="form-grid">
-          {commonMagicItems.map((item, index) => (
-            <div className="stack" key={`common-${index}`} style={{ gap: "0.45rem" }}>
+          {commonMagicItems.map((item, index) => {
+            const filteredCommonMagicItemOptions = getFilteredOptions(
+              legalCommonMagicItemOptions,
+              commonMagicItemFilters[index] ?? "",
+              item
+            );
+            const commonMagicItemListId = `character-common-magic-item-options-${index}`;
+
+            return (
+            <div
+              className="stack character-magic-item-card"
+              key={`common-${index}`}
+              style={{ gap: "0.45rem" }}
+            >
               <label>
                 Slot {index + 1} · Item (counts as)
-                <select
-                  name="commonMagicItems"
-                  value={item}
+                <input
+                  autoComplete="off"
+                  list={commonMagicItemListId}
+                  placeholder="Type a keyword and choose a legal item"
+                  type="text"
+                  value={commonMagicItemFilters[index] ?? ""}
                   onChange={(event) => {
-                    const nextItem = event.target.value;
-                    const next = [...commonMagicItems];
-                    next[index] = nextItem;
-                    setCommonMagicItems(next);
-                    setCommonMagicItemNames((current) => {
-                      const nextNames = [...current];
+                    const nextKeyword = event.target.value;
+                    const next = [...commonMagicItemFilters];
+                    next[index] = nextKeyword;
+                    setCommonMagicItemFilters(next);
 
-                      if (!nextItem) {
+                    if (!nextKeyword) {
+                      setCommonMagicItems((current) => {
+                        const nextItems = [...current];
+                        nextItems[index] = "";
+                        return nextItems;
+                      });
+                      setCommonMagicItemNames((current) => {
+                        const nextNames = [...current];
                         nextNames[index] = "";
-                      }
-
-                      return nextNames;
-                    });
-                    setCommonMagicItemMinorProperties((current) => {
-                      const nextProperties = [...current];
-
-                      if (!nextItem) {
+                        return nextNames;
+                      });
+                      setCommonMagicItemMinorProperties((current) => {
+                        const nextProperties = [...current];
                         nextProperties[index] = "";
-                      }
-
-                      return nextProperties;
-                    });
-                    setCommonMagicItemFlavors((current) => {
-                      const nextFlavors = [...current];
-
-                      if (!nextItem) {
+                        return nextProperties;
+                      });
+                      setCommonMagicItemFlavors((current) => {
+                        const nextFlavors = [...current];
                         nextFlavors[index] = "";
-                      }
+                        return nextFlavors;
+                      });
+                      return;
+                    }
 
-                      return nextFlavors;
-                    });
+                    if (legalCommonMagicItemOptions.includes(nextKeyword)) {
+                      setCommonMagicItems((current) => {
+                        const nextItems = [...current];
+                        nextItems[index] = nextKeyword;
+                        return nextItems;
+                      });
+                    }
                   }}
-                >
-                  <option value="">Select a common magic item</option>
-                  {legalCommonMagicItemOptions.map((option) => (
+                />
+                <datalist id={commonMagicItemListId}>
+                  {filteredCommonMagicItemOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
                   ))}
-                </select>
+                </datalist>
+                <input name="commonMagicItems" type="hidden" value={item} />
               </label>
               {item ? (
                 <label>
@@ -1328,7 +1524,8 @@ export function CharacterForm({
               ) : null}
               {!item ? <input name="commonMagicItemFlavors" type="hidden" value="" /> : null}
             </div>
-          ))}
+          );
+          })}
         </div>
 
         <div aria-hidden="true" style={whiteDividerStyle} />
@@ -1620,6 +1817,9 @@ export function CharacterForm({
             style={{ overflow: "hidden", resize: "none" }}
             value={backstory}
           />
+          <span className="muted" style={{ fontSize: "0.85rem" }}>
+            4000 character limit
+          </span>
         </label>
         <label className="form-span-full">
           <div aria-hidden="true" style={whiteDividerStyle} />
@@ -1632,6 +1832,9 @@ export function CharacterForm({
             style={{ overflow: "hidden", resize: "none" }}
             value={notes}
           />
+          <span className="muted" style={{ fontSize: "0.85rem" }}>
+            4000 character limit
+          </span>
         </label>
       </div>
 

@@ -11,6 +11,7 @@ import {
 } from "@/lib/game-participants";
 import type { SerializedLeagueCheckoutData } from "@/lib/paypal-checkout-types";
 import { prisma } from "@/lib/prisma";
+import { refundTidingsForGame } from "@/lib/tidings";
 import {
   sendLeagueRefundRequestConfirmationEmail,
   sendLeagueRefundRequestEmail,
@@ -114,6 +115,10 @@ export async function signupForFreeLeagueGame(formData: FormData) {
 
     if (isPaidTicketPrice(game.ticketPrice)) {
       return "paid";
+    }
+
+    if (game.isGrimTidings) {
+      return "grim-tidings-cart";
     }
 
     if (game.participants.some((participant) => participant.userId === user.id)) {
@@ -354,6 +359,8 @@ export async function leaveLeagueGame(formData: FormData) {
             id: true,
             adventureCode: true,
             datePlayed: true,
+            grimTidingCost: true,
+            isGrimTidings: true,
             status: true,
             ticketPrice: true,
             tier: true,
@@ -449,6 +456,13 @@ export async function leaveLeagueGame(formData: FormData) {
         id: participant.id,
       },
     });
+
+    if (participant.game.isGrimTidings) {
+      await refundTidingsForGame(tx, {
+        gameId: participant.game.id,
+        userId: user.id,
+      });
+    }
 
     return {
       characterId: participant.character?.id ?? null,

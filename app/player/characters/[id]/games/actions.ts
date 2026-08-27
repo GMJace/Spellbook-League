@@ -24,6 +24,7 @@ import {
 import { syncPendingAdventureModuleFromPlayerLog } from "@/lib/pending-adventure-modules";
 import { prisma } from "@/lib/prisma";
 import { parseUploadedTabularFile } from "@/lib/tabular-import";
+import { rebuildTidingAwards } from "@/lib/tidings";
 import { z } from "zod";
 
 const MAX_LOGSHEET_IMPORT_SIZE = 2 * 1024 * 1024;
@@ -35,6 +36,7 @@ const playerGameLogSchema = z.object({
   datePlayed: z.string().min(1),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   dmName: z.string().trim().min(2).max(80),
+  downtimeDaysAwarded: z.coerce.number().int().min(0).max(999),
   rewardsSummary: z.string().trim(),
   magicItemsAwarded: z.string().trim().max(1500).default(""),
   consumablesAwarded: z.string().trim().max(500).default(""),
@@ -109,6 +111,7 @@ function getApprovedParticipantUpdate(status: "SCHEDULED" | "COMPLETED" | "CANCE
   return {
     logStatus: "APPROVED" as const,
     approvedAt: status === "COMPLETED" ? new Date() : null,
+    logDowntimeDaysAwarded: null,
     logRewardsSummary: null,
     logMagicItemsAwarded: null,
     logConsumablesAwarded: null,
@@ -204,6 +207,7 @@ async function createApprovedPlayerManagedGameLog({
       datePlayed: new Date(data.datePlayed),
       tier: data.tier,
       serviceHours: 0,
+      downtimeDaysAwarded: data.downtimeDaysAwarded,
       rewardsSummary: data.rewardsSummary,
       magicItemsAwarded: data.magicItemsAwarded,
       consumablesAwarded: data.consumablesAwarded,
@@ -220,6 +224,7 @@ async function createApprovedPlayerManagedGameLog({
       characterId: character.id,
       userId: user.id,
       ...participantDefaults,
+      logDowntimeDaysAwarded: data.downtimeDaysAwarded,
     },
   });
 
@@ -243,6 +248,7 @@ export async function createPlayerGameLog(formData: FormData) {
     datePlayed: formData.get("datePlayed"),
     tier: formData.get("tier"),
     dmName: formData.get("dmName"),
+    downtimeDaysAwarded: formData.get("downtimeDaysAwarded"),
     rewardsSummary: formData.get("rewardsSummary"),
     magicItemsAwarded: rewardStrings.magicItemsAwarded,
     consumablesAwarded: rewardStrings.consumablesAwarded,
@@ -283,6 +289,8 @@ export async function createPlayerGameLog(formData: FormData) {
 
     return createdGame;
   });
+
+  await rebuildTidingAwards();
 
   await syncPendingAdventureModuleFromPlayerLog({
     adventureCode: parsed.data.adventureCode,
@@ -381,6 +389,7 @@ export async function importPlayerGameLogsheet(formData: FormData) {
       datePlayed: normalizedDate,
       tier: normalizedTier,
       dmName: record.dmName,
+      downtimeDaysAwarded: 10,
       rewardsSummary: record.rewardsSummary,
       magicItemsAwarded: importedRewardStrings.magicItemsAwarded || record.magicItemsAwarded,
       consumablesAwarded: importedRewardStrings.consumablesAwarded || record.consumablesAwarded,
@@ -440,6 +449,8 @@ export async function importPlayerGameLogsheet(formData: FormData) {
     });
   });
 
+  await rebuildTidingAwards();
+
   for (const row of parsedRows) {
     await syncPendingAdventureModuleFromPlayerLog({
       adventureCode: row.adventureCode,
@@ -484,6 +495,7 @@ export async function updatePlayerGameLog(
     datePlayed: formData.get("datePlayed"),
     tier: formData.get("tier"),
     dmName: formData.get("dmName"),
+    downtimeDaysAwarded: formData.get("downtimeDaysAwarded"),
     rewardsSummary: formData.get("rewardsSummary"),
     magicItemsAwarded: rewardStrings.magicItemsAwarded,
     consumablesAwarded: rewardStrings.consumablesAwarded,
@@ -516,6 +528,7 @@ export async function updatePlayerGameLog(
           source: parsed.data.source,
           datePlayed: new Date(parsed.data.datePlayed),
           tier: parsed.data.tier,
+          downtimeDaysAwarded: parsed.data.downtimeDaysAwarded,
           rewardsSummary: parsed.data.rewardsSummary,
           magicItemsAwarded: parsed.data.magicItemsAwarded,
           consumablesAwarded: parsed.data.consumablesAwarded,
@@ -529,7 +542,10 @@ export async function updatePlayerGameLog(
         where: {
           id: participant.id,
         },
-        data: participantDefaults,
+        data: {
+          ...participantDefaults,
+          logDowntimeDaysAwarded: parsed.data.downtimeDaysAwarded,
+        },
       });
     } else {
       await tx.gameParticipant.update({
@@ -539,6 +555,7 @@ export async function updatePlayerGameLog(
         data: {
           logStatus: "APPROVED",
           approvedAt: participant.approvedAt ?? new Date(),
+          logDowntimeDaysAwarded: parsed.data.downtimeDaysAwarded,
           logRewardsSummary: parsed.data.rewardsSummary,
           logMagicItemsAwarded: parsed.data.magicItemsAwarded,
           logConsumablesAwarded: parsed.data.consumablesAwarded,
@@ -564,6 +581,8 @@ export async function updatePlayerGameLog(
       actionHref: `/player/characters/${characterId}`,
     });
   });
+
+  await rebuildTidingAwards();
 
   await syncPendingAdventureModuleFromPlayerLog({
     adventureCode: parsed.data.adventureCode,
@@ -634,6 +653,8 @@ export async function deletePlayerGameLog(characterId: string, gameId: string) {
       actionHref: `/player/characters/${character.id}`,
     });
   });
+
+  await rebuildTidingAwards();
 
   revalidatePath("/player");
   revalidatePath(`/player/characters/${character.id}`);

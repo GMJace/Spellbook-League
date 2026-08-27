@@ -119,6 +119,10 @@ export const characterSchema = z
   .object({
     name: z.string().min(2).max(60),
     characterSheetLink: z.string().trim().url().max(500).optional().or(z.literal("")),
+    blindsightFt: optionalHitPointField,
+    darkvisionFt: optionalHitPointField,
+    tremorsenseFt: optionalHitPointField,
+    truesightFt: optionalHitPointField,
     hitPoints: optionalHitPointField,
     armorClass: optionalIntegerField,
     passivePerception: optionalIntegerField,
@@ -179,6 +183,10 @@ type CharacterFormData = z.infer<typeof characterSchema>;
 const characterFieldErrorMessages: Partial<Record<keyof CharacterFormData, string>> = {
   name: "Character name must be between 2 and 60 characters.",
   characterSheetLink: "Character sheet link must be a valid URL.",
+  blindsightFt: "Blindsight must be a whole number between 0 and 999.",
+  darkvisionFt: "Darkvision must be a whole number between 0 and 999.",
+  tremorsenseFt: "Tremorsense must be a whole number between 0 and 999.",
+  truesightFt: "Truesight must be a whole number between 0 and 999.",
   hitPoints: "Character HP must be a whole number between 0 and 999.",
   armorClass: "Character AC must be a whole number between 0 and 99.",
   passivePerception: "Passive Perception must be a whole number between 0 and 99.",
@@ -362,6 +370,18 @@ export const gameSchema = z.object({
   source: z.string().trim().max(160).default(""),
   gameSummary: z.string().trim().max(1500).default(""),
   ticketPrice: z.string().trim().min(1).max(40),
+  isGrimTidings: z.boolean().default(false),
+  grimTidingCost: z.preprocess(
+    (value) => {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed === "" ? 1 : Number(trimmed);
+      }
+
+      return value;
+    },
+    z.number().int().min(1).max(99)
+  ),
   ticketAccessCode: z
     .string()
     .trim()

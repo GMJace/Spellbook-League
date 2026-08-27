@@ -71,6 +71,9 @@ type PayPalCheckoutButtonProps = {
   disabledText: string;
   payableAmountUsd: number;
   payload: PayPalCheckoutPayload;
+  zeroAmountButtonLabel?: string;
+  zeroAmountPendingText?: string;
+  zeroAmountSuccessMessage?: string;
 };
 
 async function parseResponseError(response: Response) {
@@ -88,6 +91,9 @@ export function PayPalCheckoutButton({
   disabledText,
   payableAmountUsd,
   payload,
+  zeroAmountButtonLabel,
+  zeroAmountPendingText,
+  zeroAmountSuccessMessage,
 }: PayPalCheckoutButtonProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [sdkReady, setSdkReady] = useState(false);
@@ -146,9 +152,10 @@ export function PayPalCheckoutButton({
 
     if ("completed" in data && data.completed) {
       setSuccessMessage(
-        data.payerEmail
-          ? `Purchase completed with account credit. A receipt was sent to ${data.payerEmail}.`
-          : "Purchase completed with account credit.",
+        zeroAmountSuccessMessage ??
+          (data.payerEmail
+            ? `Purchase completed with account credit. A receipt was sent to ${data.payerEmail}.`
+            : "Purchase completed with account credit."),
       );
       setLastCreatedOrderId(null);
       return null;
@@ -318,7 +325,11 @@ export function PayPalCheckoutButton({
               });
           }}
         >
-          {isCreatingOrder ? "Applying account credit..." : "Complete with account credit"}
+          {zeroAmountButtonLabel
+            ? (isCreatingOrder ? zeroAmountPendingText ?? zeroAmountButtonLabel : zeroAmountButtonLabel)
+            : isCreatingOrder
+              ? "Applying account credit..."
+              : "Complete with account credit"}
         </button>
       ) : null}
 
@@ -346,7 +357,7 @@ export function PayPalCheckoutButton({
       ) : null}
       {isCreatingOrder ? (
         <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-          Finalizing your account credit purchase...
+          {zeroAmountPendingText ?? "Finalizing your account credit purchase..."}
         </p>
       ) : null}
 

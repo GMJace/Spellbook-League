@@ -9,6 +9,8 @@ import {
 } from "@/lib/game-reward-selections";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { prisma } from "@/lib/prisma";
+import { rebuildTidingAwards } from "@/lib/tidings";
+import { isPaidTicketPrice } from "@/lib/utils";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
 
 const MAX_ADVENTURE_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -53,6 +55,8 @@ async function parseGameForm(formData: FormData) {
     source: String(formData.get("source") ?? ""),
     gameSummary: String(formData.get("gameSummary") ?? ""),
     ticketPrice: String(formData.get("ticketPrice") ?? "Free"),
+    isGrimTidings: formData.get("isGrimTidings") === "on",
+    grimTidingCost: String(formData.get("grimTidingCost") ?? "1"),
     datePlayed: String(formData.get("datePlayed") ?? ""),
     duration: String(formData.get("duration") ?? ""),
     tier: String(formData.get("tier") ?? "TIER_1"),
@@ -70,6 +74,12 @@ async function parseGameForm(formData: FormData) {
 
   if (!parsed.success) {
     return { error: "Please complete all required game fields." } as const;
+  }
+
+  if (parsed.data.isGrimTidings && isPaidTicketPrice(parsed.data.ticketPrice)) {
+    return {
+      error: "Grim Tidings games must use the Free price option.",
+    } as const;
   }
 
   const seenCharacterIds = new Set<string>();
@@ -120,6 +130,8 @@ async function requireAdminGame(gameId: string) {
       id: true,
       title: true,
       adventureImagePath: true,
+      grimTidingCost: true,
+      isGrimTidings: true,
     },
   });
 
@@ -157,7 +169,34 @@ export async function adminUpdateLeagueGame(formData: FormData) {
     adventureImagePath = uploadResult.path;
   }
 
-  await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
+    const previousParticipants = await tx.gameParticipant.findMany({
+      where: {
+        gameId: game.id,
+      },
+      select: {
+        userId: true,
+      },
+    });
+    const nextParticipantUserIds = new Set(
+      parsed.data.participants.map((participant) => participant.userId),
+    );
+    const removedParticipantUserIds = Array.from(
+      new Set(
+        previousParticipants
+          .map((participant) => participant.userId)
+          .filter((userId) => !nextParticipantUserIds.has(userId)),
+      ),
+    );
+
+    if (
+      parsed.data.isGrimTidings &&
+      previousParticipants.length > 0 &&
+      (!game.isGrimTidings || game.grimTidingCost !== parsed.data.grimTidingCost)
+    ) {
+      throw new Error("GRIM_TIDINGS_PARTICIPANTS_PRESENT");
+    }
+
     await tx.game.update({
       where: { id: game.id },
       data: {
@@ -166,6 +205,8 @@ export async function adminUpdateLeagueGame(formData: FormData) {
         source: parsed.data.source,
         gameSummary: parsed.data.gameSummary,
         ticketPrice: parsed.data.ticketPrice,
+        isGrimTidings: parsed.data.isGrimTidings,
+        grimTidingCost: parsed.data.grimTidingCost,
         adventureImagePath,
         datePlayed: new Date(parsed.data.datePlayed),
         duration: parsed.data.duration,
@@ -197,7 +238,47 @@ export async function adminUpdateLeagueGame(formData: FormData) {
         })),
       });
     }
+
+    if (!parsed.data.isGrimTidings) {
+      await tx.tidingSpend.updateMany({
+        where: {
+          gameId: game.id,
+          refundedAt: null,
+        },
+        data: {
+          refundedAt: new Date(),
+        },
+      });
+    } else if (removedParticipantUserIds.length) {
+      await tx.tidingSpend.updateMany({
+        where: {
+          gameId: game.id,
+          refundedAt: null,
+          userId: {
+            in: removedParticipantUserIds,
+          },
+        },
+        data: {
+          refundedAt: new Date(),
+        },
+      });
+    }
+  }).catch((error) => {
+    if (error instanceof Error && error.message === "GRIM_TIDINGS_PARTICIPANTS_PRESENT") {
+      return "grim-tidings-participants-present" as const;
+    }
+
+    throw error;
   });
+
+  if (result === "grim-tidings-participants-present") {
+    return {
+      error:
+        "Remove current participants before converting this game to Grim Tidings or changing its Tiding cost.",
+    };
+  }
+
+  await rebuildTidingAwards();
 
   redirect("/admin/league-games?game=updated");
 }
@@ -212,6 +293,15 @@ export async function adminDeleteLeagueGame(formData: FormData) {
   await requireAdminGame(gameId);
 
   await prisma.$transaction([
+    prisma.tidingSpend.updateMany({
+      where: {
+        gameId,
+        refundedAt: null,
+      },
+      data: {
+        refundedAt: new Date(),
+      },
+    }),
     prisma.gameParticipant.deleteMany({
       where: {
         gameId,
@@ -223,6 +313,8 @@ export async function adminDeleteLeagueGame(formData: FormData) {
       },
     }),
   ]);
+
+  await rebuildTidingAwards();
 
   redirect("/admin/league-games?game=deleted");
 }

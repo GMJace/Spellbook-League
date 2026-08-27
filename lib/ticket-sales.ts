@@ -50,6 +50,8 @@ type LeagueCheckoutGameRow = {
   characterName: string | null;
   gameId: string;
   guestEmails: string[];
+  grimTidingCost: number;
+  isGrimTidings: boolean;
   quantity: number;
   ticketPrice: string;
   title: string;
@@ -217,6 +219,11 @@ function normalizeLegacyLeagueItem(
     guestEmails: Array.isArray(value.guestEmails)
       ? value.guestEmails.filter((entry): entry is string => typeof entry === "string")
       : [],
+    grimTidingCost:
+      typeof value.grimTidingCost === "number" && value.grimTidingCost > 0
+        ? value.grimTidingCost
+        : 0,
+    isGrimTidings: value.isGrimTidings === true,
     quantity: typeof value.quantity === "number" && value.quantity > 0 ? value.quantity : 0,
     ticketPrice: value.ticketPrice ?? "Unknown",
     title: value.title,
@@ -334,6 +341,10 @@ export function buildLeagueTicketSaleRows(
       const game = gameMap.get(gameRow.gameId);
       const unitPriceUsd = parseTicketPriceUsd(gameRow.ticketPrice || game?.ticketPrice || "");
       const totalUsd = unitPriceUsd * gameRow.quantity;
+
+      if (totalUsd <= 0) {
+        continue;
+      }
 
       rows.push({
         capturedAt: order.capturedAt,

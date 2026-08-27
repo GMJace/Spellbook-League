@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { NotificationBell } from "@/components/notification-bell";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { SiteRoleLinks } from "@/components/site-role-links";
 import { SettingsMenu } from "@/components/settings-menu";
 import { isAdminEmail } from "@/lib/admin-access";
 import { getUnreadNotificationCount, getUserNotifications } from "@/lib/notifications";
@@ -100,10 +101,10 @@ export default async function RootLayout({
                   Welcome {user.name ?? user.email}
                 </span>
               ) : null}
-              <div className="site-role-links">
-                {user?.roles.includes("PLAYER") ? <Link href="/player">PLAYER</Link> : null}
-                {user?.roles.includes("DM") ? <Link href="/dm">DM</Link> : null}
-              </div>
+              <SiteRoleLinks
+                hasDmRole={Boolean(user?.roles.includes("DM"))}
+                hasPlayerRole={Boolean(user?.roles.includes("PLAYER"))}
+              />
             </div>
             <div className="site-actions">
               {user ? (

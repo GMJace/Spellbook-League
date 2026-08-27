@@ -96,6 +96,8 @@ export default async function NewGamePage({ searchParams }: PageProps) {
           source: duplicatedGame.source,
           gameSummary: duplicatedGame.gameSummary,
           ticketPrice: duplicatedGame.ticketPrice,
+          isGrimTidings: duplicatedGame.isGrimTidings,
+          grimTidingCost: String(duplicatedGame.grimTidingCost ?? 1),
           hasTicketAccessCode: false,
         datePlayed: "",
         duration: duplicatedGame.duration,

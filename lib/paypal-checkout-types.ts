@@ -21,6 +21,8 @@ export type SerializedLeagueCheckoutItem = {
   characterName?: string | null;
   gameId?: string;
   guestEmails?: string[];
+  grimTidingCost?: number;
+  isGrimTidings?: boolean;
   quantity?: number;
   ticketPrice?: string;
   title?: string;

@@ -99,7 +99,11 @@ export default async function AdminLeagueGamesPage({
                         </td>
                         <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
                         <td>{formatTier(game.tier)}</td>
-                        <td>{game.ticketPrice}</td>
+                        <td>
+                          {game.isGrimTidings
+                            ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                            : game.ticketPrice}
+                        </td>
                         <td>{signedUpCount}</td>
                         <td>
                           {availableSpots} of {game.seatCapacity}

@@ -19,6 +19,7 @@ export type PlayerGameLogInitialValues = {
   datePlayed: string;
   tier: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
   dmName: string;
+  downtimeDaysAwarded: string;
   rewardsSummary: string;
   magicItemsAwarded: string;
   consumablesAwarded: string;
@@ -93,6 +94,9 @@ export function PlayerGameLogForm({
   );
   const [autofillMessage, setAutofillMessage] = useState("");
   const [dmNameValue, setDmNameValue] = useState(initialValues?.dmName ?? "");
+  const [downtimeDaysAwardedValue, setDowntimeDaysAwardedValue] = useState(
+    initialValues?.downtimeDaysAwarded ?? "10"
+  );
   const resolvedTier = tierValue;
 
   async function autofillAdventureDetails() {
@@ -116,6 +120,7 @@ export function PlayerGameLogForm({
       setAdventureCodeValue(match.adventureCode);
       setSourceValue(match.source);
       setTierValue(match.tier);
+      setDowntimeDaysAwardedValue(match.downtimeDaysAwarded || "10");
       setRewardsSummaryValue(match.rewardsSummary);
       setMagicItemsAwardedValue(match.magicItemsAwarded);
       setConsumablesAwardedValue(match.consumablesAwarded);
@@ -256,6 +261,20 @@ export function PlayerGameLogForm({
       {autofillMessage ? <p className="muted" style={{ margin: 0 }}>{autofillMessage}</p> : null}
 
       <div className="form-grid">
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
+            Downtime days awarded
+            <input
+              min="0"
+              name="downtimeDaysAwarded"
+              onChange={(event) => {
+                setDowntimeDaysAwardedValue(event.target.value);
+              }}
+              type="number"
+              value={downtimeDaysAwardedValue}
+            />
+          </label>
+        </div>
         <div className="stack" style={fieldBlockStyle}>
           <label>
             Awarded Gold (Total in GP)
