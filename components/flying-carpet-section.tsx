@@ -15,7 +15,7 @@ export function FlyingCarpetSection() {
         <div className="stack" style={{ gap: "0.45rem" }}>
           <p className="eyebrow" style={{ margin: 0 }}>Limited Badge</p>
           <h2 className="ggcon-flying-carpet-title" style={{ margin: 0 }}>
-            Flying Carpet Badge
+            Tome Key Badge
           </h2>
         </div>
 
@@ -23,7 +23,7 @@ export function FlyingCarpetSection() {
           <div className="stack ggcon-flying-carpet-copy">
             <p className="ggcon-flying-carpet-body" style={{ margin: 0 }}>
               Upgrade your <GrimoireGatheringText /> weekend with the limited
-              Flying Carpet Badge and get the jump on the event before the
+              Tome Key Badge and get the jump on the event before the
               public rush begins.
             </p>
 
@@ -35,7 +35,7 @@ export function FlyingCarpetSection() {
           <div className="ggcon-flying-carpet-aside">
             <div className="ggcon-flying-carpet-benefits">
               <div className="ggcon-flying-carpet-benefit">
-                <span className="pill ggcon-flying-carpet-pill">Flying Carpet Access</span>
+                <span className="pill ggcon-flying-carpet-pill">Total Tome</span>
                 <p style={{ margin: 0 }}>
                   Reserve tickets for event games two weeks before registration opens to
                   the general public, giving you the best chance to play the adventures
@@ -50,9 +50,9 @@ export function FlyingCarpetSection() {
                 </p>
               </div>
               <div className="ggcon-flying-carpet-benefit">
-                <span className="pill ggcon-flying-carpet-pill">Game Genie Channel</span>
+                <span className="pill ggcon-flying-carpet-pill">Libram Arcanum Channel</span>
                 <p style={{ margin: 0 }}>
-                  Gain access to the event&apos;s exclusive Game Genie channel, where
+                  Gain access to the event&apos;s exclusive Libram Arcanum Channel, where
                   players can coordinate their parties, prepare their characters, and
                   plan ahead for select adventures.
                 </p>

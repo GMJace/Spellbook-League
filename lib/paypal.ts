@@ -69,6 +69,7 @@ async function generatePayPalAccessToken() {
 
 type PayPalRequestOptions = {
   body?: unknown;
+  headers?: Record<string, string>;
   method?: "GET" | "POST";
 };
 
@@ -82,6 +83,7 @@ export async function paypalRequest<TResponse>(
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      ...(options.headers ?? {}),
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
     cache: "no-store",

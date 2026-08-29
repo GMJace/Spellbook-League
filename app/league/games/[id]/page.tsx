@@ -11,10 +11,16 @@ import {
 } from "@/lib/game-participants";
 import { parseStoredGameSummary } from "@/lib/game-summary";
 import { prisma } from "@/lib/prisma";
+import {
+  PAID_GAME_REFUND_WINDOW_HOURS,
+  getPaidGameRefundCutoff,
+  isPaidGameRefundRequestOpen,
+} from "@/lib/refund-policy";
 import { getUserTidingSummary } from "@/lib/tidings";
 import { formatStatus, formatTier, isPaidTicketPrice } from "@/lib/utils";
 import {
   leaveLeagueGame,
+  requestLeagueGameRefund,
   signupForFreeLeagueGame,
   updateLeagueGameCharacterSelection,
 } from "./actions";
@@ -27,6 +33,7 @@ type PageProps = {
   }>;
   searchParams: Promise<{
     leave?: string;
+    refund?: string;
     signup?: string;
   }>;
 };
@@ -68,14 +75,31 @@ function renderLeaveMessage(leaveState: string | undefined, supportEmail: string
   switch (leaveState) {
     case "success":
       return "You have been removed from this game.";
-    case "refund-requested":
-      return "You have been removed from this game. SPELLBOOK staff has been emailed to begin the refund review process.";
-    case "refund-contact-required":
-      return `You have been removed from this game, but the refund email could not be sent automatically. Please contact ${supportEmail} to begin the refund process.`;
+    case "paid-refund-only":
+      return "Paid league tickets now use the Request refund action instead of the standard leave button.";
+    case "refund-window-closed":
+      return `Paid ticket refund requests close ${PAID_GAME_REFUND_WINDOW_HOURS} hours before the scheduled start time. This game is now inside that window, so no online refund requests are being accepted. Please use the SPELLBOOK Discord if you want to sell or give away your ticket.`;
     case "not-signed-up":
       return "You are not currently signed up for this game.";
     case "closed":
       return `This game is no longer open for online leave requests. Please contact ${supportEmail} for help.`;
+    default:
+      return null;
+  }
+}
+
+function renderRefundMessage(refundState: string | undefined, supportEmail: string) {
+  switch (refundState) {
+    case "requested":
+      return "Your refund request has been submitted. Your seat has been removed and SPELLBOOK staff has been emailed to begin review.";
+    case "contact-required":
+      return `Your seat has been removed, but the refund email could not be sent automatically. Please contact ${supportEmail} to begin the refund process.`;
+    case "refund-window-closed":
+      return `Paid ticket refund requests close ${PAID_GAME_REFUND_WINDOW_HOURS} hours before the scheduled start time. This game is now inside that window, so no online refund requests are being accepted. Please use the SPELLBOOK Discord if you want to sell or give away your ticket.`;
+    case "not-signed-up":
+      return "You are not currently signed up for this game.";
+    case "closed":
+      return `This game is no longer open for online refund requests. Please contact ${supportEmail} for help.`;
     default:
       return null;
   }
@@ -145,6 +169,10 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
     !isPaidTicketPrice(game.ticketPrice) &&
     !game.isGrimTidings &&
     availableSpots > 0;
+  const isPaidLeagueGame = isPaidTicketPrice(game.ticketPrice) && !game.isGrimTidings;
+  const paidRefundCutoff = isPaidLeagueGame ? getPaidGameRefundCutoff(game.datePlayed) : null;
+  const canRequestPaidRefund =
+    Boolean(playerSignup) && isSignupOpen && isPaidLeagueGame && isPaidGameRefundRequestOpen(game.datePlayed);
   const isPlayer = Boolean(player?.roles.some((role) => role.role === "PLAYER"));
   const eligibleCharacters =
     player?.characters.filter(
@@ -160,6 +188,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
   );
   const signupMessage = renderSignupMessage(resolvedSearchParams.signup);
   const leaveMessage = renderLeaveMessage(resolvedSearchParams.leave, supportEmail);
+  const refundMessage = renderRefundMessage(resolvedSearchParams.refund, supportEmail);
   const parsedGameSummary = parseStoredGameSummary(game.gameSummary);
 
   return (
@@ -339,6 +368,31 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 </div>
               ) : null}
 
+              {isPaidLeagueGame ? (
+                <div className="list-card stack" style={{ gap: "0.5rem" }}>
+                  <strong>Paid ticket refund policy</strong>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Paid league game refund requests are eligible until{" "}
+                    <strong>{PAID_GAME_REFUND_WINDOW_HOURS} hours before the scheduled start time</strong>.
+                  </p>
+                  <p className="muted" style={{ margin: 0 }}>
+                    After that point, paid tickets are non-refundable. If you cannot attend, use the
+                    SPELLBOOK Discord to sell or give away your ticket.
+                  </p>
+                  {paidRefundCutoff ? (
+                    <p className="muted" style={{ margin: 0 }}>
+                      Refund request cutoff:{" "}
+                      <LocalizedEventTime isoString={paidRefundCutoff.toISOString()} />
+                    </p>
+                  ) : null}
+                  <div>
+                    <Link className="button button-secondary" href="https://discord.gg/wxnpXZchWx">
+                      Join the SPELLBOOK Discord
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
+
               {playerSignup && isPlayer ? (
                 <div className="list-card stack" style={{ gap: "0.75rem" }}>
                   <div className="stack" style={{ gap: "0.35rem" }}>
@@ -351,6 +405,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
 
                   {signupMessage ? <p style={{ margin: 0 }}>{signupMessage}</p> : null}
                   {leaveMessage ? <p style={{ margin: 0 }}>{leaveMessage}</p> : null}
+                  {refundMessage ? <p style={{ margin: 0 }}>{refundMessage}</p> : null}
 
                   {isSignupOpen ? (
                     <>
@@ -388,18 +443,37 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                       <p className="muted" style={{ margin: 0 }}>
                         {game.isGrimTidings
                           ? "Leaving this game will refund the Tidings spent for this seat."
+                          : isPaidLeagueGame && canRequestPaidRefund
+                          ? `Requesting a refund will remove your seat and email SPELLBOOK staff to review the refund. Online paid-ticket refund requests close ${PAID_GAME_REFUND_WINDOW_HOURS} hours before the scheduled start time.`
+                          : isPaidLeagueGame
+                          ? `Paid ticket refund requests are now closed because this game begins within ${PAID_GAME_REFUND_WINDOW_HOURS} hours. You can still use the SPELLBOOK Discord to sell or give away your ticket.`
                           : isPaidTicketPrice(game.ticketPrice)
                           ? "Leaving this game will remove your seat and email SPELLBOOK staff to begin refund review for any paid ticket tied to this signup."
                           : "Leaving this game will remove your seat immediately."}
                       </p>
 
                       <div>
-                        <form action={leaveLeagueGame}>
-                          <input name="gameId" type="hidden" value={game.id} />
-                          <button className="button button-secondary" type="submit">
-                            Leave this game
-                          </button>
-                        </form>
+                        {isPaidLeagueGame ? (
+                          canRequestPaidRefund ? (
+                            <form action={requestLeagueGameRefund}>
+                              <input name="gameId" type="hidden" value={game.id} />
+                              <button className="button button-secondary" type="submit">
+                                Request refund
+                              </button>
+                            </form>
+                          ) : (
+                            <Link className="button button-secondary" href="https://discord.gg/wxnpXZchWx">
+                              Go to SPELLBOOK Discord
+                            </Link>
+                          )
+                        ) : (
+                          <form action={leaveLeagueGame}>
+                            <input name="gameId" type="hidden" value={game.id} />
+                            <button className="button button-secondary" type="submit">
+                              Leave this game
+                            </button>
+                          </form>
+                        )}
                       </div>
                     </>
                   ) : (
@@ -412,10 +486,11 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 </div>
               ) : null}
 
-              {isPaidTicketPrice(game.ticketPrice) && leaveMessage ? (
+              {isPaidTicketPrice(game.ticketPrice) && (leaveMessage || refundMessage) ? (
                 <div className="list-card stack" style={{ gap: "0.75rem" }}>
                   <strong>Game signup update</strong>
-                  <p style={{ margin: 0 }}>{leaveMessage}</p>
+                  {leaveMessage ? <p style={{ margin: 0 }}>{leaveMessage}</p> : null}
+                  {refundMessage ? <p style={{ margin: 0 }}>{refundMessage}</p> : null}
                 </div>
               ) : null}
 

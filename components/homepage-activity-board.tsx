@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { CharacterBuildDisplay } from "@/components/character-build-display";
-import { TableActionMenu } from "@/components/table-action-menu";
 import {
   formatClassSummary,
   getCharacterTier,
@@ -24,36 +22,21 @@ type PlayerRow = {
   class3Name: string | null;
   class3Subclass?: string | null;
   class3Level: number | null;
+  tokenImagePath: string | null;
   totalGold: number;
   gamesPlayed: number;
-};
-
-type PlayerColumnFilters = {
-  player: string;
-  character: string;
-  build: string;
-  tier: string;
 };
 
 type DmRow = {
   id: string;
   name: string;
   gamesLogged: number;
+  profileImagePath: string | null;
 };
 
 const MIN_VISIBLE_ACTIVITY_ROWS = 10;
 
-function matchesFilter(value: string, query: string) {
-  const normalized = query.trim().toLowerCase();
-
-  if (!normalized) {
-    return true;
-  }
-
-  return value.toLowerCase().includes(normalized);
-}
-
-function filterPlayerRows(rows: PlayerRow[], query: string, filters: PlayerColumnFilters) {
+function filterPlayerRows(rows: PlayerRow[], query: string) {
   const normalized = query.trim().toLowerCase();
 
   return rows.filter((row) => {
@@ -68,13 +51,7 @@ function filterPlayerRows(rows: PlayerRow[], query: string, filters: PlayerColum
       tierLabel.toLowerCase().includes(normalized) ||
       String(row.gamesPlayed).includes(normalized);
 
-    return (
-      globalMatch &&
-      matchesFilter(row.playerName, filters.player) &&
-      matchesFilter(row.characterName, filters.character) &&
-      matchesFilter(build, filters.build) &&
-      matchesFilter(tierLabel, filters.tier)
-    );
+    return globalMatch;
   });
 }
 
@@ -94,39 +71,22 @@ export function HomepagePlayerActivityCard({
   playerRoster: PlayerRow[];
 }) {
   const [playerSearch, setPlayerSearch] = useState("");
-  const [playerFilters, setPlayerFilters] = useState<PlayerColumnFilters>({
-    player: "",
-    character: "",
-    build: "",
-    tier: "",
-  });
 
   const filteredPlayers = useMemo(
-    () => filterPlayerRows(playerRoster, playerSearch, playerFilters),
-    [playerFilters, playerRoster, playerSearch]
+    () => filterPlayerRows(playerRoster, playerSearch),
+    [playerRoster, playerSearch]
   );
-  const playerPlaceholderCount = Math.max(
-    0,
-    MIN_VISIBLE_ACTIVITY_ROWS - filteredPlayers.length
-  );
-
-  function updatePlayerFilter(key: keyof PlayerColumnFilters, value: string) {
-    setPlayerFilters((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  }
 
   return (
     <section className="card ledger-panel stack homepage-player-activity-card">
       <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0 }}>Player roster</h2>
+        <h2 style={{ margin: 0 }}>Character roster</h2>
       </div>
 
       <div className="list-card stack">
         <div className="stack" style={{ gap: "0.55rem" }}>
           <input
-            aria-label="Search player roster"
+            aria-label="Search character roster"
             className="input"
             onChange={(event) => setPlayerSearch(event.target.value)}
             placeholder="Search players, characters, or builds"
@@ -135,112 +95,59 @@ export function HomepagePlayerActivityCard({
           />
         </div>
 
-        <div className="table-wrap ledger-table activity-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Player</th>
-                <th>Character</th>
-                <th>Build</th>
-                <th>Tier</th>
-                <th>Games</th>
-                <th>Actions</th>
-              </tr>
-              <tr className="table-filter-row">
-                <th>
-                  <input
-                    aria-label="Filter player roster by player"
-                    className="input table-filter-input"
-                    onChange={(event) => updatePlayerFilter("player", event.target.value)}
-                    placeholder="Filter player"
-                    type="search"
-                    value={playerFilters.player}
-                  />
-                </th>
-                <th>
-                  <input
-                    aria-label="Filter player roster by character"
-                    className="input table-filter-input"
-                    onChange={(event) => updatePlayerFilter("character", event.target.value)}
-                    placeholder="Filter character"
-                    type="search"
-                    value={playerFilters.character}
-                  />
-                </th>
-                <th>
-                  <input
-                    aria-label="Filter player roster by build"
-                    className="input table-filter-input"
-                    onChange={(event) => updatePlayerFilter("build", event.target.value)}
-                    placeholder="Filter build"
-                    type="search"
-                    value={playerFilters.build}
-                  />
-                </th>
-                <th>
-                  <input
-                    aria-label="Filter player roster by tier"
-                    className="input table-filter-input"
-                    onChange={(event) => updatePlayerFilter("tier", event.target.value)}
-                    placeholder="Filter tier"
-                    type="search"
-                    value={playerFilters.tier}
-                  />
-                </th>
-                <th aria-hidden="true" />
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlayers.length ? (
-                [
-                  ...filteredPlayers.map((row) => {
-                    const totalLevel = getCharacterTotalLevel(row);
+        <div className="homepage-character-roster-grid">
+          {filteredPlayers.length ? (
+            filteredPlayers.map((row) => {
+              return (
+                <article key={row.id} className="homepage-character-roster-card">
+                  {row.tokenImagePath ? (
+                    <img
+                      alt={`${row.characterName} token`}
+                      className="homepage-character-roster-token"
+                      src={row.tokenImagePath}
+                    />
+                  ) : (
+                    <div className="homepage-character-roster-token homepage-character-roster-token-placeholder">
+                      <span>{row.characterName.slice(0, 1).toUpperCase()}</span>
+                    </div>
+                  )}
 
-                    return (
-                      <tr key={row.id}>
-                        <td>{row.playerName}</td>
-                        <td>{row.characterName}</td>
-                        <td>
-                          <CharacterBuildDisplay character={row} compact />
-                        </td>
-                        <td>Tier {getCharacterTier(totalLevel)}</td>
-                        <td>{row.gamesPlayed}</td>
-                        <td>
-                          <Link
-                            className="button button-secondary button-small"
-                            href={`/player/characters/${row.id}`}
-                          >
-                            View
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  }),
-                  ...Array.from({ length: playerPlaceholderCount }, (_, index) => (
-                    <tr key={`player-placeholder-${index}`}>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                    </tr>
-                  )),
-                ]
-              ) : (
-                <tr>
-                  <td className="muted" colSpan={6}>
-                    No player activity matches your search.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  <div className="homepage-character-roster-header">
+                    <strong>{row.characterName}</strong>
+                    <span className="muted homepage-character-roster-games">
+                      {row.gamesPlayed} game{row.gamesPlayed === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  <div className="stack" style={{ gap: "0.25rem" }}>
+                    <span className="muted">{row.playerName}</span>
+                  </div>
+
+                  <dl className="homepage-character-roster-details">
+                    <div>
+                      <dt>Build</dt>
+                      <dd>{formatClassSummary(row)}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="homepage-character-roster-actions">
+                    <Link
+                      className="button button-secondary button-small"
+                      href={`/player/characters/${row.id}`}
+                    >
+                      View
+                    </Link>
+                  </div>
+                </article>
+              );
+            })
+          ) : (
+            <div className="empty">No character activity matches your search.</div>
+          )}
         </div>
 
         <img
-          alt="Player roster divider"
+          alt="Character roster divider"
           className="homepage-roster-divider"
           src="/divider4.png"
         />
@@ -259,10 +166,6 @@ export function HomepageDmActivityCard({
   const filteredDms = useMemo(
     () => filterDmRows(dmRoster, dmSearch),
     [dmRoster, dmSearch]
-  );
-  const dmPlaceholderCount = Math.max(
-    0,
-    MIN_VISIBLE_ACTIVITY_ROWS - filteredDms.length
   );
 
   return (
@@ -283,49 +186,46 @@ export function HomepageDmActivityCard({
           />
         </div>
 
-        <div className="table-wrap ledger-table activity-table-wrap dm-activity-table-wrap">
-          <table className="dm-activity-table">
-            <thead>
-              <tr>
-                <th>Dungeon Master</th>
-                <th>Games Logged</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ...filteredDms.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.name}</td>
-                    <td>{row.gamesLogged}</td>
-                    <td>
-                      <TableActionMenu>
-                        <Link
-                          className="button button-secondary button-small"
-                          href={`/dm/${row.id}#upcoming-schedule`}
-                        >
-                          Schedule
-                        </Link>
-                        <Link
-                          className="button button-secondary button-small"
-                          href={`/dm/${row.id}`}
-                        >
-                          View
-                        </Link>
-                      </TableActionMenu>
-                    </td>
-                  </tr>
-                )),
-                ...Array.from({ length: dmPlaceholderCount }, (_, index) => (
-                  <tr key={`dm-placeholder-${index}`}>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                  </tr>
-                )),
-              ]}
-            </tbody>
-          </table>
+        <div className="homepage-dm-roster-grid">
+          {filteredDms.length ? (
+            filteredDms.map((row) => (
+              <article key={row.id} className="homepage-dm-roster-card">
+                {row.profileImagePath ? (
+                  <img
+                    alt={`${row.name} profile`}
+                    className="homepage-dm-roster-image"
+                    src={row.profileImagePath}
+                  />
+                ) : (
+                  <div className="homepage-dm-roster-image homepage-dm-roster-image-placeholder">
+                    <span>{row.name.slice(0, 1).toUpperCase()}</span>
+                  </div>
+                )}
+
+                <div className="stack" style={{ gap: "0.25rem" }}>
+                  <strong>{row.name}</strong>
+                </div>
+
+                <dl className="homepage-dm-roster-details">
+                  <div>
+                    <dt>Games</dt>
+                    <dd>{row.gamesLogged}</dd>
+                  </div>
+                </dl>
+
+                <div className="homepage-dm-roster-actions">
+                  <Link
+                    className="button button-secondary button-small"
+                    href={`/dm/${row.id}`}
+                  >
+                    View profile
+                  </Link>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="empty">No dungeon masters match your search.</div>
+          )}
         </div>
       </div>
     </section>

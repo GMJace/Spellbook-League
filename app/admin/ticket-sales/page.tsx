@@ -481,6 +481,7 @@ export default async function AdminTicketSalesPage({
     unavailable: "DM payment methods are unavailable until the new Prisma migration/client is applied.",
   };
   const refundMessageMap: Record<string, string> = {
+    "created-auto": "Refund logged and PayPal refund attempt submitted automatically.",
     created: "Refund logged.",
     invalid: "Refund could not be logged.",
     unavailable: "Refund logging is unavailable until the new Prisma migration/client is applied.",
@@ -1096,8 +1097,9 @@ export default async function AdminTicketSalesPage({
             <div>
               <h2 style={{ margin: 0 }}>Refund log</h2>
               <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                Refunds are manual records right now. Use this to track ticket reimbursements even
-                if the money movement happened outside this page.
+                Refunds are logged here for accounting. When a linked PayPal capture is available,
+                SPELLBOOK will also try to submit the PayPal refund automatically. Credit adjustments
+                still need to be handled separately on the user account.
               </p>
             </div>
             <Link className="button secondary" href="/admin/accounting/export?report=refunds">
@@ -1193,6 +1195,20 @@ export default async function AdminTicketSalesPage({
                           <div className="muted">
                             Credit given: {formatUsd(refund.creditAmountUsd)}
                           </div>
+                        ) : null}
+                        {refund.paypalRefundStatus ? (
+                          <div className="muted">
+                            PayPal status: {refund.paypalRefundStatus}
+                            {refund.paypalRefundId ? ` (${refund.paypalRefundId})` : ""}
+                          </div>
+                        ) : null}
+                        {typeof refund.paypalRefundedAmountUsd === "number" ? (
+                          <div className="muted">
+                            PayPal refunded: {formatUsd(refund.paypalRefundedAmountUsd)}
+                          </div>
+                        ) : null}
+                        {refund.paypalRefundError ? (
+                          <div className="muted">{refund.paypalRefundError}</div>
                         ) : null}
                         {refund.notes ? (
                           <div>{refund.notes}</div>

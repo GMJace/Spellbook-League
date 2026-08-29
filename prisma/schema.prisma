@@ -335,8 +335,10 @@ model CharacterDowntimeEntry {
 
 model TradingPostListing {
   id                String                   @id @default(cuid())
-  userId            String
-  characterId       String
+  userId            String?
+  characterId       String?
+  guestPlayerName   String                   @default("")
+  guestCharacterName String                  @default("")
   rarity            TradingPostRarity
   item              String
   itemName          String                   @default("")
@@ -348,8 +350,8 @@ model TradingPostListing {
   status            TradingPostListingStatus @default(ACTIVE)
   createdAt         DateTime                 @default(now())
   updatedAt         DateTime                 @updatedAt
-  user              User                     @relation("TradingPostListingUser", fields: [userId], references: [id], onDelete: Cascade)
-  character         Character                @relation("TradingPostListingCharacter", fields: [characterId], references: [id], onDelete: Cascade)
+  user              User?                    @relation("TradingPostListingUser", fields: [userId], references: [id], onDelete: SetNull)
+  character         Character?               @relation("TradingPostListingCharacter", fields: [characterId], references: [id], onDelete: SetNull)
   proposals         TradingPostProposal[]
 
   @@index([status, createdAt(sort: Desc)])
@@ -360,8 +362,10 @@ model TradingPostListing {
 model TradingPostProposal {
   id                String                    @id @default(cuid())
   listingId         String
-  proposerUserId    String
-  proposerCharacterId String
+  proposerUserId    String?
+  proposerCharacterId String?
+  guestPlayerName   String                    @default("")
+  guestCharacterName String                   @default("")
   item              String
   itemName          String                    @default("")
   minorProperty     String                    @default("")
@@ -374,8 +378,8 @@ model TradingPostProposal {
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
   listing           TradingPostListing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  proposerUser      User                      @relation("TradingPostProposalUser", fields: [proposerUserId], references: [id], onDelete: Cascade)
-  proposerCharacter Character                 @relation("TradingPostProposalCharacter", fields: [proposerCharacterId], references: [id], onDelete: Cascade)
+  proposerUser      User?                     @relation("TradingPostProposalUser", fields: [proposerUserId], references: [id], onDelete: SetNull)
+  proposerCharacter Character?                @relation("TradingPostProposalCharacter", fields: [proposerCharacterId], references: [id], onDelete: SetNull)
   reviewedByUser    User?                     @relation("TradingPostProposalReviewedByUser", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
 
   @@index([listingId, status, createdAt(sort: Desc)])
@@ -850,6 +854,12 @@ model TicketRefund {
   currencyCode   String               @default("USD")
   reason         String
   notes          String?
+  paypalCaptureId String?
+  paypalRefundId  String?
+  paypalRefundStatus String?
+  paypalRefundedAmountUsd Float?
+  paypalRefundDataJson String?
+  paypalRefundError String?
   refundedAt     DateTime             @default(now())
   createdByUserId String?
   createdAt      DateTime             @default(now())

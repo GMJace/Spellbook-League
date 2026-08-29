@@ -18,8 +18,13 @@ import {
   TICKET_PAYOUT_STATUSES,
   TICKET_SALE_SOURCE_TYPES,
 } from "@/lib/ticket-sales";
+import {
+  extractPayPalCaptureFromOrderData,
+  refundPayPalCapture,
+} from "@/lib/paypal-refunds";
 import { createRefundReceiptNumber } from "@/lib/ticket-receipts";
 import { prisma } from "@/lib/prisma";
+import { roundUsdAmount } from "@/lib/store-credit";
 import { spendTidingsForGame } from "@/lib/tidings";
 import { isPaidTicketPrice } from "@/lib/utils";
 import { gameParticipantsSchema, gameSchema } from "@/lib/validation";
@@ -614,6 +619,9 @@ export async function createTicketRefund(formData: FormData) {
   const effectiveRefundedAt = refundedAt ?? new Date();
   const effectiveCreditAmountUsd = parsed.data.creditAmountUsd;
   const creditGiven = effectiveCreditAmountUsd > 0;
+  const paypalRefundAmountUsd = roundUsdAmount(
+    Math.max(parsed.data.amountUsd - effectiveCreditAmountUsd, 0),
+  );
 
   if (effectiveCreditAmountUsd > parsed.data.amountUsd) {
     redirectToTicketSales("refund", "invalid");
@@ -624,9 +632,14 @@ export async function createTicketRefund(formData: FormData) {
       id: parsed.data.checkoutOrderId,
     },
     select: {
+      amountUsd: true,
+      captureDataJson: true,
       checkoutType: true,
+      currencyCode: true,
       id: true,
       itemDataJson: true,
+      paypalOrderId: true,
+      provider: true,
       summaryText: true,
     },
   });
@@ -642,6 +655,52 @@ export async function createTicketRefund(formData: FormData) {
     "refund",
   );
 
+  let paypalCaptureId: null | string = null;
+  let paypalRefundDataJson: null | string = null;
+  let paypalRefundError: null | string = null;
+  let paypalRefundId: null | string = null;
+  let paypalRefundStatus: null | string = null;
+  let paypalRefundedAmountUsd: null | number = null;
+
+  if (paypalRefundAmountUsd <= 0) {
+    paypalRefundStatus = creditGiven ? "CREDIT_ONLY" : null;
+  } else if (checkoutOrder.provider !== "PAYPAL") {
+    paypalRefundStatus = "MANUAL_REQUIRED";
+    paypalRefundError = `This checkout uses ${checkoutOrder.provider}, so no PayPal refund was attempted.`;
+  } else {
+    const capturedPayment = extractPayPalCaptureFromOrderData(checkoutOrder.captureDataJson);
+
+    if (!capturedPayment) {
+      paypalRefundStatus = "MISSING_CAPTURE";
+      paypalRefundError =
+        "No captured PayPal payment ID was stored for this checkout order, so the refund still needs manual review.";
+    } else {
+      paypalCaptureId = capturedPayment.captureId;
+
+      try {
+        const paypalRefund = await refundPayPalCapture({
+          amountUsd: paypalRefundAmountUsd,
+          captureId: capturedPayment.captureId,
+          currencyCode: capturedPayment.currencyCode ?? checkoutOrder.currencyCode,
+          noteToPayer: parsed.data.reason,
+          requestId: `spellbook-refund-${checkoutOrder.id}-${effectiveRefundedAt.getTime()}`,
+        });
+
+        paypalRefundDataJson = paypalRefund ? JSON.stringify(paypalRefund) : null;
+        paypalRefundId = paypalRefund?.id ?? null;
+        paypalRefundStatus = paypalRefund?.status ?? "SUBMITTED";
+        paypalRefundedAmountUsd =
+          paypalRefund?.amount?.value && !Number.isNaN(Number(paypalRefund.amount.value))
+            ? roundUsdAmount(Number(paypalRefund.amount.value))
+            : paypalRefundAmountUsd;
+      } catch (error) {
+        paypalRefundStatus = "FAILED";
+        paypalRefundError =
+          error instanceof Error ? error.message : "PayPal refund could not be completed automatically.";
+      }
+    }
+  }
+
   await ticketRefund.create?.({
     data: {
       amountUsd: parsed.data.amountUsd,
@@ -651,6 +710,12 @@ export async function createTicketRefund(formData: FormData) {
       creditGiven,
       createdByUserId: currentUser.id,
       notes: parsed.data.notes,
+      paypalCaptureId,
+      paypalRefundDataJson,
+      paypalRefundError,
+      paypalRefundId,
+      paypalRefundStatus,
+      paypalRefundedAmountUsd,
       receiptNumber: createRefundReceiptNumber(effectiveRefundedAt),
       reason: parsed.data.reason,
       refundedAt: effectiveRefundedAt,
@@ -661,7 +726,15 @@ export async function createTicketRefund(formData: FormData) {
   });
 
   revalidatePath(ticketSalesPath);
-  redirectToTicketSales("refund", "created");
+  redirectToTicketSales(
+    "refund",
+    paypalRefundAmountUsd > 0 &&
+      paypalRefundStatus !== "FAILED" &&
+      paypalRefundStatus !== "MANUAL_REQUIRED" &&
+      paypalRefundStatus !== "MISSING_CAPTURE"
+      ? "created-auto"
+      : "created",
+  );
 }
 
 export async function createSpellbookExpenseReceipt(formData: FormData) {

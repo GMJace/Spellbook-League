@@ -419,7 +419,7 @@ async function buildGrimoireCheckout(
       : nextEvent.ticketPriceUsd;
   const badgeLabel =
     payload.badgeType === "FLYING_CARPET"
-      ? "Flying Carpet Badge"
+      ? "Tome Key Badge"
       : nextEvent.ticketLabel;
   let subtotalUsd = 0;
 

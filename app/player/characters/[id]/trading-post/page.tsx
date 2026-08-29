@@ -42,6 +42,40 @@ function formatOptionalText(value: string) {
   return value.trim() || "Not added";
 }
 
+function getListingOwnerLabel(listing: {
+  character: {
+    name: string;
+    user: {
+      name: string;
+    };
+  } | null;
+  guestPlayerName: string;
+  guestCharacterName: string;
+}) {
+  if (listing.character?.user?.name) {
+    return `${listing.character.user.name} · ${listing.character.name}`;
+  }
+
+  return `${listing.guestPlayerName} · ${listing.guestCharacterName}`;
+}
+
+function getProposalOwnerLabel(proposal: {
+  proposerCharacter: {
+    name: string;
+    user: {
+      name: string;
+    };
+  } | null;
+  guestPlayerName: string;
+  guestCharacterName: string;
+}) {
+  if (proposal.proposerCharacter?.user?.name) {
+    return `Offered by ${proposal.proposerCharacter.user.name} · ${proposal.proposerCharacter.name}`;
+  }
+
+  return `Guest offer from ${proposal.guestPlayerName} · ${proposal.guestCharacterName}`;
+}
+
 function renderListingDetails(listing: {
   item: string;
   itemName: string;
@@ -264,6 +298,8 @@ export default async function CharacterTradingPostPage({
             rarity: true,
             item: true,
             itemName: true,
+            guestPlayerName: true,
+            guestCharacterName: true,
             minorProperty: true,
             flavorNotes: true,
             adventureCode: true,
@@ -297,10 +333,10 @@ export default async function CharacterTradingPostPage({
     <main className="page-shell">
       <section className="stack">
         {query.listing === "created" ? (
-          <p style={{ color: "#ffffff", margin: 0 }}>Trading Post listing added.</p>
+          <p style={{ color: "#ffffff", margin: 0 }}>Mercane Mercantile listing added.</p>
         ) : null}
         {query.listing === "withdrawn" ? (
-          <p style={{ color: "#ffffff", margin: 0 }}>Trading Post listing removed.</p>
+          <p style={{ color: "#ffffff", margin: 0 }}>Mercane Mercantile listing removed.</p>
         ) : null}
         {query.listing === "invalid" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
@@ -309,7 +345,7 @@ export default async function CharacterTradingPostPage({
         ) : null}
         {query.listing === "missing" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
-            That Trading Post listing is no longer available.
+            That Mercane Mercantile listing is no longer available.
           </p>
         ) : null}
         {query.proposal === "sent" ? (
@@ -318,6 +354,11 @@ export default async function CharacterTradingPostPage({
         {query.proposal === "accepted" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             Trade proposal accepted and added to both trade logs.
+          </p>
+        ) : null}
+        {query.proposal === "accepted-guest" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Guest trade proposal accepted and the listing was marked as traded.
           </p>
         ) : null}
         {query.proposal === "declined" ? (
@@ -333,6 +374,12 @@ export default async function CharacterTradingPostPage({
             Please complete the proposal details and try again.
           </p>
         ) : null}
+        {query.proposal === "guest-hosted" ? (
+          <p style={{ color: "#ffffff", margin: 0 }}>
+            Guest-hosted listings can be browsed here, but in-app trade offers currently work only
+            on character-owned listings.
+          </p>
+        ) : null}
         {query.proposal === "missing" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
             That proposal or listing is no longer available.
@@ -342,10 +389,10 @@ export default async function CharacterTradingPostPage({
         <div className="section-heading">
           <div className="stack" style={{ gap: "0.35rem" }}>
             <p className="eyebrow">Character logsheet</p>
-            <h1 style={{ margin: 0 }}>Trading Post for {character.name}</h1>
+            <h1 style={{ margin: 0 }}>Mercane Mercantile for {character.name}</h1>
             <p className="muted" style={{ margin: 0 }}>
-              Offer magic items for trade, browse current listings, and review trade proposals for
-              this character.
+              Offer magic items for trade, browse the public Mercane Mercantile, and review trade
+              proposals for this character.
             </p>
           </div>
           <Link className="button button-secondary" href={`/player/characters/${character.id}`}>
@@ -356,7 +403,7 @@ export default async function CharacterTradingPostPage({
         <section className="list-card stack">
           <div className="section-heading">
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <h2 style={{ margin: 0 }}>Post an item for trade</h2>
+              <h2 style={{ margin: 0 }}>Post an item to Mercane Mercantile</h2>
               <p className="muted" style={{ margin: 0 }}>
                 Add the item details exactly as this character has them recorded.
               </p>
@@ -415,14 +462,14 @@ export default async function CharacterTradingPostPage({
 
             <div>
               <button className="button" type="submit">
-                Add item to Trading Post
+                Add item to Mercane Mercantile
               </button>
             </div>
           </form>
         </section>
 
         <img
-          alt="Trading Post divider"
+          alt="Mercane Mercantile divider"
           className="homepage-roster-divider"
           src="/divider4.png"
         />
@@ -430,7 +477,7 @@ export default async function CharacterTradingPostPage({
         <section className="list-card stack">
           <div className="section-heading">
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <h2 style={{ margin: 0 }}>Items currently up for trade</h2>
+              <h2 style={{ margin: 0 }}>Mercane Mercantile listings</h2>
               <p className="muted" style={{ margin: 0 }}>
                 Browse active listings and offer another item of the same rarity.
               </p>
@@ -474,7 +521,7 @@ export default async function CharacterTradingPostPage({
                       </p>
                       <h3 style={{ margin: 0 }}>{formatTradingPostItemName(listing)}</h3>
                       <p className="muted" style={{ margin: 0 }}>
-                        Offered by {listing.character.user.name} · {listing.character.name}
+                        Offered by {getListingOwnerLabel(listing)}
                       </p>
                       <p className="muted" style={{ margin: 0 }}>
                         Posted {formatDate(listing.createdAt)}
@@ -501,6 +548,10 @@ export default async function CharacterTradingPostPage({
                           Sent {formatDate(latestOwnProposal.createdAt)}
                         </p>
                       </div>
+                    ) : !listing.userId || !listing.characterId ? (
+                      <p className="muted" style={{ margin: 0 }}>
+                        Guest-hosted listing
+                      </p>
                     ) : (
                       <details className="table-action-menu">
                         <summary className="button button-secondary button-small table-action-menu-summary">
@@ -527,7 +578,7 @@ export default async function CharacterTradingPostPage({
             </div>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              No items are on the Trading Post yet.
+              No items are listed in Mercane Mercantile yet.
             </p>
           )}
         </section>
@@ -588,8 +639,7 @@ export default async function CharacterTradingPostPage({
                           {formatTradingPostItemName(proposal)}
                         </h4>
                         <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                          Offered by {proposal.proposerCharacter.user.name} ·{" "}
-                          {proposal.proposerCharacter.name}
+                          {getProposalOwnerLabel(proposal)}
                         </p>
                         <p className="muted" style={{ margin: "0.35rem 0 0" }}>
                           Sent {formatDate(proposal.createdAt)}
@@ -675,8 +725,7 @@ export default async function CharacterTradingPostPage({
                         <td>{formatDate(proposal.createdAt)}</td>
                         <td>{formatTradingPostProposalStatus(proposal.status)}</td>
                         <td>
-                          <div>{proposal.listing.character.name}</div>
-                          <div className="muted">{proposal.listing.character.user.name}</div>
+                          <div>{getListingOwnerLabel(proposal.listing)}</div>
                         </td>
                         <td>{formatTradingPostItemName(proposal.listing)}</td>
                         <td>{formatTradingPostItemName(proposal)}</td>

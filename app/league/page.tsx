@@ -1,6 +1,5 @@
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
-import { TableActionMenu } from "@/components/table-action-menu";
 import { getHomepageData } from "@/lib/data";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 import Link from "next/link";
@@ -39,7 +38,7 @@ export default async function LeaguePage() {
 
           <p>
             Throughout the year, we host <GrimoireGatheringsText />, a series
-            of quarterly online convention events featuring games run by our
+            of online convention events featuring games run by our
             roster of professional <RainbowSpellbook /> Dungeon Masters.
             {" "}
             <GrimoireGatheringsText /> events use purchasable badges and game
@@ -118,79 +117,90 @@ export default async function LeaguePage() {
         </div>
 
         <div className="list-card stack">
-          <div className="table-wrap ledger-table activity-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date &amp; time</th>
-                  <th>Game</th>
-                  <th>DM</th>
-                  <th>Tier</th>
-                  <th>Price</th>
-                  <th>Players</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {openLeagueGames.length ? (
-                  openLeagueGames.map((game) => {
-                    const signedUpCount = game._count.participants;
+          <div className="homepage-open-games-grid">
+            {openLeagueGames.length ? (
+              openLeagueGames.map((game) => {
+                const signedUpCount = game._count.participants;
+                const canAddToCart = game.isGrimTidings || isPaidTicketPrice(game.ticketPrice);
 
-                    return (
-                      <tr key={game.id}>
-                        <td>{formatDateTime(game.datePlayed)}</td>
-                        <td>
-                          <div className="stack" style={{ gap: "0.2rem" }}>
-                            <strong>{game.title}</strong>
-                            <span className="muted">{game.adventureCode}</span>
-                          </div>
-                        </td>
-                        <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
-                        <td>{formatTier(game.tier)}</td>
-                        <td>
-                          {game.isGrimTidings
-                            ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
-                            : game.ticketPrice}
-                        </td>
-                        <td>{signedUpCount}/{game.seatCapacity}</td>
-                        <td>
-                          <TableActionMenu>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/league/games/${game.id}`}
-                            >
-                              View game
-                            </Link>
-                            {game.dm?.id ? (
-                              <Link
-                                className="button button-secondary button-small"
-                                href={`/dm/${game.dm.id}`}
-                              >
-                                View DM
-                              </Link>
-                            ) : null}
-                            {isPaidTicketPrice(game.ticketPrice) ? (
-                              <Link
-                                className="button button-small"
-                                href={`/league/cart?games=${encodeURIComponent(game.id)}`}
-                              >
-                                Add to cart
-                              </Link>
-                            ) : null}
-                          </TableActionMenu>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={7}>
-                      No open league games are scheduled right now.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                return (
+                  <article key={game.id} className="homepage-open-game-card">
+                    {game.adventureImagePath ? (
+                      <img
+                        alt={`${game.title} cover art`}
+                        className="homepage-open-game-card-image"
+                        src={game.adventureImagePath}
+                      />
+                    ) : (
+                      <div className="homepage-open-game-card-image homepage-open-game-card-image-placeholder">
+                        <div className="ggcon-game-hero-placeholder-inner">
+                          <p className="eyebrow" style={{ margin: 0 }}>
+                            Adventure art
+                          </p>
+                          <strong>{game.title}</strong>
+                          <p className="muted" style={{ margin: 0 }}>
+                            Image placeholder
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="stack homepage-open-game-card-copy">
+                      <div className="stack" style={{ gap: "0.25rem" }}>
+                        <strong>{game.title}</strong>
+                        <span className="muted">{game.adventureCode}</span>
+                      </div>
+
+                      <dl className="homepage-open-game-card-details">
+                        <div>
+                          <dt>Date &amp; time</dt>
+                          <dd>{formatDateTime(game.datePlayed)}</dd>
+                        </div>
+                        <div>
+                          <dt>DM</dt>
+                          <dd>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</dd>
+                        </div>
+                        <div>
+                          <dt>Tier</dt>
+                          <dd>{formatTier(game.tier)}</dd>
+                        </div>
+                        <div>
+                          <dt>Price</dt>
+                          <dd>
+                            {game.isGrimTidings
+                              ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                              : game.ticketPrice}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Players</dt>
+                          <dd>{signedUpCount}/{game.seatCapacity}</dd>
+                        </div>
+                      </dl>
+
+                      <div className="homepage-open-game-card-actions">
+                        <Link
+                          className="button button-secondary button-small"
+                          href={`/league/games/${game.id}`}
+                        >
+                          View game
+                        </Link>
+                        {canAddToCart ? (
+                          <Link
+                            className="button button-small"
+                            href={`/league/cart?games=${encodeURIComponent(game.id)}`}
+                          >
+                            Add to cart
+                          </Link>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="empty">No open league games are scheduled right now.</div>
+            )}
           </div>
         </div>
       </section>

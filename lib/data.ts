@@ -80,6 +80,7 @@ export async function getHomepageData() {
       class3Name: character.class3Name,
       class3Subclass: character.class3Subclass,
       class3Level: character.class3Level,
+      tokenImagePath: character.tokenImagePath,
       totalGold: character.totalGold,
       gamesPlayed: character.participants.length,
     }))
@@ -101,6 +102,7 @@ export async function getHomepageData() {
     select: {
       id: true,
       name: true,
+      profileImagePath: true,
       _count: {
         select: {
           gamesCreated: true,
@@ -113,6 +115,7 @@ export async function getHomepageData() {
     .map((dm) => ({
       id: dm.id,
       name: dm.name,
+      profileImagePath: dm.profileImagePath,
       gamesLogged: dm._count.gamesCreated,
     }))
     .sort((a, b) => b.gamesLogged - a.gamesLogged || a.name.localeCompare(b.name));

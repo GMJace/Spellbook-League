@@ -16,6 +16,7 @@ import {
   sendLeagueRefundRequestConfirmationEmail,
   sendLeagueRefundRequestEmail,
 } from "@/lib/transactional-email";
+import { isPaidGameRefundRequestOpen } from "@/lib/refund-policy";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 
 function redirectToSignupState(gameId: string, state: string) {
@@ -24,6 +25,10 @@ function redirectToSignupState(gameId: string, state: string) {
 
 function redirectToLeaveState(gameId: string, state: string) {
   redirect(`/league/games/${gameId}?leave=${encodeURIComponent(state)}`);
+}
+
+function redirectToRefundState(gameId: string, state: string) {
+  redirect(`/league/games/${gameId}?refund=${encodeURIComponent(state)}`);
 }
 
 function getLeagueSupportEmail() {
@@ -390,6 +395,15 @@ export async function leaveLeagueGame(formData: FormData) {
       };
     }
 
+    if (isPaidTicketPrice(participant.game.ticketPrice) && !participant.game.isGrimTidings) {
+      return {
+        gameId,
+        state: isPaidGameRefundRequestOpen(participant.game.datePlayed)
+          ? ("paid-refund-only" as const)
+          : ("refund-window-closed" as const),
+      };
+    }
+
     const matchingOrderSummaries: string[] = [];
     const requiresRefundReview = isPaidTicketPrice(participant.game.ticketPrice);
 
@@ -529,4 +543,215 @@ export async function leaveLeagueGame(formData: FormData) {
   }
 
   redirectToLeaveState(gameId, result.state);
+}
+
+export async function requestLeagueGameRefund(formData: FormData) {
+  const user = await requireRole("PLAYER");
+  const gameId = String(formData.get("gameId") ?? "").trim();
+
+  if (!gameId) {
+    redirect("/league");
+  }
+
+  const supportEmail = getLeagueSupportEmail();
+  const result = await prisma.$transaction(async (tx) => {
+    const participant = await tx.gameParticipant.findFirst({
+      where: {
+        gameId,
+        userId: user.id,
+      },
+      include: {
+        character: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        game: {
+          select: {
+            id: true,
+            adventureCode: true,
+            datePlayed: true,
+            isGrimTidings: true,
+            status: true,
+            ticketPrice: true,
+            tier: true,
+            title: true,
+          },
+        },
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!participant) {
+      return {
+        gameId,
+        state: "not-signed-up" as const,
+      };
+    }
+
+    if (participant.game.status !== "SCHEDULED") {
+      return {
+        gameId,
+        state: "closed" as const,
+      };
+    }
+
+    if (participant.game.isGrimTidings || !isPaidTicketPrice(participant.game.ticketPrice)) {
+      return {
+        gameId,
+        state: "paid-refund-only" as const,
+      };
+    }
+
+    if (!isPaidGameRefundRequestOpen(participant.game.datePlayed)) {
+      return {
+        gameId,
+        state: "refund-window-closed" as const,
+      };
+    }
+
+    const relevantOrders = await tx.checkoutOrder.findMany({
+      where: {
+        checkoutType: "LEAGUE",
+        status: "COMPLETED",
+        OR: [
+          {
+            userId: user.id,
+          },
+          {
+            payerEmail: participant.user.email,
+          },
+          {
+            recipientDataJson: {
+              contains: participant.user.email,
+            },
+          },
+        ],
+      },
+      orderBy: [
+        {
+          capturedAt: "desc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ],
+    });
+
+    const matchingOrderSummaries: string[] = [];
+
+    for (const order of relevantOrders) {
+      const matchingItems = parseSerializedLeagueCheckoutItems(order.itemDataJson).filter(
+        (item) => item.gameId === participant.game.id,
+      );
+
+      for (const item of matchingItems) {
+        const guestEmails = Array.isArray(item.guestEmails)
+          ? item.guestEmails.filter(
+              (email): email is string => typeof email === "string" && Boolean(email),
+            )
+          : [];
+        const capturedAtLabel = formatDateTime(order.capturedAt ?? order.createdAt);
+        const quantity = typeof item.quantity === "number" && item.quantity > 0 ? item.quantity : 1;
+
+        matchingOrderSummaries.push(
+          [
+            `Order ${order.paypalOrderId}`,
+            `${item.title ?? participant.game.title} x${quantity}`,
+            item.ticketPrice ?? participant.game.ticketPrice,
+            `captured ${capturedAtLabel}`,
+            item.characterName ? `character ${item.characterName}` : "",
+            order.payerEmail ? `payer ${order.payerEmail}` : "",
+            guestEmails.length ? `guests ${guestEmails.join(", ")}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | "),
+        );
+      }
+    }
+
+    await tx.gameParticipant.delete({
+      where: {
+        id: participant.id,
+      },
+    });
+
+    return {
+      characterId: participant.character?.id ?? null,
+      characterName: getParticipantCharacterLabel(participant.character?.name),
+      gameAdventureCode: participant.game.adventureCode,
+      gameDateTime: formatDateTime(participant.game.datePlayed),
+      gameId: participant.game.id,
+      gamePath: `/league/games/${participant.game.id}`,
+      gameTier: formatTier(participant.game.tier),
+      gameTitle: participant.game.title,
+      matchingOrderSummaries,
+      playerEmail: participant.user.email,
+      playerName: participant.user.name,
+      state: "success" as const,
+      supportEmail,
+    };
+  });
+
+  if (result.state !== "success") {
+    redirectToRefundState(gameId, result.state);
+  }
+
+  const successfulResult = result as {
+    characterId: null | string;
+    characterName: string;
+    gameAdventureCode: string;
+    gameDateTime: string;
+    gameId: string;
+    gamePath: string;
+    gameTier: string;
+    gameTitle: string;
+    matchingOrderSummaries: string[];
+    playerEmail: string;
+    playerName: string;
+    state: "success";
+    supportEmail: string;
+  };
+
+  revalidatePath("/");
+  revalidatePath("/league");
+  revalidatePath(`/league/games/${successfulResult.gameId}`);
+  revalidatePath("/player");
+  if (successfulResult.characterId) {
+    revalidatePath(`/player/characters/${successfulResult.characterId}`);
+  }
+
+  try {
+    await sendLeagueRefundRequestEmail({
+      characterName: successfulResult.characterName,
+      gameAdventureCode: successfulResult.gameAdventureCode,
+      gameDateTime: successfulResult.gameDateTime,
+      gamePath: successfulResult.gamePath,
+      gameTier: successfulResult.gameTier,
+      gameTitle: successfulResult.gameTitle,
+      matchingOrderSummaries: successfulResult.matchingOrderSummaries,
+      playerEmail: successfulResult.playerEmail,
+      playerName: successfulResult.playerName,
+      to: successfulResult.supportEmail,
+    });
+    await sendLeagueRefundRequestConfirmationEmail({
+      gameAdventureCode: successfulResult.gameAdventureCode,
+      gameDateTime: successfulResult.gameDateTime,
+      gamePath: successfulResult.gamePath,
+      gameTitle: successfulResult.gameTitle,
+      playerName: successfulResult.playerName,
+      supportEmail: successfulResult.supportEmail,
+      to: successfulResult.playerEmail,
+    });
+    redirectToRefundState(successfulResult.gameId, "requested");
+  } catch (error) {
+    console.error("Unable to send league refund request email.", error);
+    redirectToRefundState(successfulResult.gameId, "contact-required");
+  }
 }

@@ -125,7 +125,9 @@ const faqEntries = [
     question: "Can I cancel or transfer a ticket?",
     answers: [
       "Cancellation, refund, and transfer rules may vary by event. Check the event pack or ticket policy before purchasing.",
+      "Paid SPELLBOOK league game refund requests close 72 hours before the scheduled game start time.",
       "The Grimoire Gathering events have a 72-hour before the event refund policy.",
+      "Within the final 72 hours before a paid game or event begins, tickets are non-refundable. Players may still use the SPELLBOOK Discord to sell or give away a ticket.",
       "If you are removed from a game or event for violating league rules, you may not be eligible for a refund.",
     ],
   },

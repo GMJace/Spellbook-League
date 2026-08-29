@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { LocalizedEventTime } from "@/components/localized-event-time";
+import { GrimoireEventGamesGrid } from "@/components/grimoire-event-games-grid";
 import {
-  formatGrimoireTier,
   formatUsd,
   grimoireEventTicketNotice,
 } from "@/lib/grimoire";
@@ -117,55 +116,11 @@ export default async function GrimoireEventPackPage({ params }: PageProps) {
             </div>
           </div>
 
-          {games.length ? (
-            <div className="table-wrap ledger-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Game</th>
-                    <th>Tier</th>
-                    <th>Start Time</th>
-                    <th>DM</th>
-                    <th>Price</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {games.map((game) => (
-                    <tr key={game.slug}>
-                      <td>
-                        <div className="stack" style={{ gap: "0.25rem" }}>
-                          <strong>{game.game}</strong>
-                          {game.gameCode ? (
-                            <span className="muted ggcon-meta-note">{game.gameCode}</span>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td>{formatGrimoireTier(game.tier)}</td>
-                      <td>
-                        <LocalizedEventTime isoString={game.startAt} />
-                      </td>
-                      <td>{game.dm}</td>
-                      <td>{game.ticketPrice}</td>
-                      <td>
-                        <Link
-                          className="button secondary ggcon-table-button"
-                          href={`/grimoire-gathering/games/${game.slug}`}
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="empty">
-              No games have been posted for this event yet. Dungeon Masters can add tables from
-              the Grimoire DM page.
-            </div>
-          )}
+          <GrimoireEventGamesGrid
+            emptyMessage="No games have been posted for this event yet. Dungeon Masters can add tables from the Grimoire DM page."
+            games={games}
+            showPrice
+          />
         </section>
       </section>
     </main>

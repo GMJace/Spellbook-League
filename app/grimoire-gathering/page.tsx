@@ -3,11 +3,10 @@ import { cookies } from "next/headers";
 
 import { unlockGrimoireDiscord } from "@/app/grimoire-gathering/actions";
 import { FlyingCarpetSection } from "@/components/flying-carpet-section";
+import { GrimoireEventGamesGrid } from "@/components/grimoire-event-games-grid";
 import { GrimoireGatheringText } from "@/components/grimoire-gathering-text";
-import { LocalizedEventTime } from "@/components/localized-event-time";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import {
-  formatGrimoireTier,
   getNextEvent,
   grimoireEventTicketNotice,
   type SeasonEvent,
@@ -105,6 +104,11 @@ export default async function GrimoireGatheringPage({
             Dungeons &amp; Dragons adventures, organized play, one-shots, and
             epic community games.
           </p>
+          <img
+            alt="Grimoire Gathering divider"
+            className="homepage-roster-divider"
+            src="/divider4.png"
+          />
         </section>
 
         <section className="card ledger-panel stack">
@@ -139,6 +143,11 @@ export default async function GrimoireGatheringPage({
           Dungeons &amp; Dragons adventures, organized play, one-shots, and
           epic community games.
         </p>
+        <img
+          alt="Grimoire Gathering divider"
+          className="homepage-roster-divider"
+          src="/divider4.png"
+        />
       </section>
 
       <section className="ggcon-hero">
@@ -212,39 +221,10 @@ export default async function GrimoireGatheringPage({
             View cart
           </Link>
         </div>
-        <div className="table-wrap ledger-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Game</th>
-                <th>Tier</th>
-                <th>Start Time</th>
-                <th>DM</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedGames.map((game) => (
-                <tr key={game.slug}>
-                  <td>{game.game}</td>
-                  <td>{formatGrimoireTier(game.tier)}</td>
-                  <td>
-                    <LocalizedEventTime isoString={game.startAt} />
-                  </td>
-                  <td>{game.dm}</td>
-                  <td>
-                    <Link
-                      className="button secondary ggcon-table-button"
-                      href={`/grimoire-gathering/games/${game.slug}`}
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <GrimoireEventGamesGrid
+          emptyMessage="No games have been posted for this event yet."
+          games={displayedGames}
+        />
       </section>
 
       <section className="card ledger-panel stack">
@@ -267,6 +247,11 @@ export default async function GrimoireGatheringPage({
               key={event.id}
               className={`ggcon-schedule-card${event.finale ? " finale" : ""}`}
             >
+              <img
+                alt="Grimoire Gathering banner"
+                className="ggcon-schedule-card-image"
+                src="/grimoire-gathering-banner.png"
+              />
               <p className="ggcon-schedule-month">{event.label}</p>
               {event.finale ? <span className="pill ggcon-event-pill">GGCON Event</span> : null}
               <h3>{event.subtitle}</h3>

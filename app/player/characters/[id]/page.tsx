@@ -676,7 +676,7 @@ export default async function CharacterLogsheetPage({
                   className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/trading-post`}
                 >
-                  Trading Post
+                  Mercane Mercantile
                 </Link>
                 <Link
                   className="button button-secondary button-small"

@@ -6,7 +6,6 @@ import {
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
-import { TableActionMenu } from "@/components/table-action-menu";
 import { getHomepageData } from "@/lib/data";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 
@@ -132,11 +131,13 @@ export default async function HomePage() {
             href="/hire-a-dm"
           >
             <img
-              alt="Hire a DM icon"
+              alt="Hire a SPELLBOOK DM icon"
               className="homepage-character-log-icon"
-              src="/Spellbook-icon.png"
+              src="/grim-book.png"
             />
-            <strong>HIRE A DM</strong>
+            <strong>
+              Hire a <RainbowSpellbook /> DM
+            </strong>
           </Link>
         </div>
       </section>
@@ -181,7 +182,7 @@ export default async function HomePage() {
           </a>
           <a
             className="handbook-link-card"
-            href="/handbooks/adventurers-league-dm-service-awards-2025v2.2.pdf"
+            href="/handbooks/DD_Adventurers_League_Service_Rewards_v2026.1.pdf"
             download
             rel="noreferrer"
             target="_blank"
@@ -252,81 +253,90 @@ export default async function HomePage() {
         </div>
 
         <div className="list-card stack">
-          <div className="table-wrap ledger-table activity-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date &amp; time</th>
-                  <th>Game</th>
-                  <th>DM</th>
-                  <th>Tier</th>
-                  <th>Price</th>
-                  <th>Players</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {openLeagueGames.length ? (
-                  openLeagueGames.map((game) => (
-                    (() => {
-                      const signedUpCount = game._count.participants;
+          <div className="homepage-open-games-grid">
+            {openLeagueGames.length ? (
+              openLeagueGames.map((game) => {
+                const signedUpCount = game._count.participants;
+                const canAddToCart = game.isGrimTidings || isPaidTicketPrice(game.ticketPrice);
 
-                      return (
-                        <tr key={game.id}>
-                          <td>{formatDateTime(game.datePlayed)}</td>
-                          <td>
-                            <div className="stack" style={{ gap: "0.2rem" }}>
-                              <strong>{game.title}</strong>
-                              <span className="muted">{game.adventureCode}</span>
-                            </div>
-                          </td>
-                          <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
-                          <td>{formatTier(game.tier)}</td>
-                          <td>
+                return (
+                  <article key={game.id} className="homepage-open-game-card">
+                    {game.adventureImagePath ? (
+                      <img
+                        alt={`${game.title} cover art`}
+                        className="homepage-open-game-card-image"
+                        src={game.adventureImagePath}
+                      />
+                    ) : (
+                      <div className="homepage-open-game-card-image homepage-open-game-card-image-placeholder">
+                        <div className="ggcon-game-hero-placeholder-inner">
+                          <p className="eyebrow" style={{ margin: 0 }}>
+                            Adventure art
+                          </p>
+                          <strong>{game.title}</strong>
+                          <p className="muted" style={{ margin: 0 }}>
+                            Image placeholder
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="stack homepage-open-game-card-copy">
+                      <div className="stack" style={{ gap: "0.25rem" }}>
+                        <strong>{game.title}</strong>
+                        <span className="muted">{game.adventureCode}</span>
+                      </div>
+
+                      <dl className="homepage-open-game-card-details">
+                        <div>
+                          <dt>Date &amp; time</dt>
+                          <dd>{formatDateTime(game.datePlayed)}</dd>
+                        </div>
+                        <div>
+                          <dt>DM</dt>
+                          <dd>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</dd>
+                        </div>
+                        <div>
+                          <dt>Tier</dt>
+                          <dd>{formatTier(game.tier)}</dd>
+                        </div>
+                        <div>
+                          <dt>Price</dt>
+                          <dd>
                             {game.isGrimTidings
                               ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
                               : game.ticketPrice}
-                          </td>
-                          <td>{signedUpCount}/{game.seatCapacity}</td>
-                          <td>
-                            <TableActionMenu>
-                              <Link
-                                className="button button-secondary button-small"
-                                href={`/league/games/${game.id}`}
-                              >
-                                View game
-                              </Link>
-                              {game.dm?.id ? (
-                                <Link
-                                  className="button button-secondary button-small"
-                                  href={`/dm/${game.dm.id}`}
-                                >
-                                  View DM
-                                </Link>
-                              ) : null}
-                              {isPaidTicketPrice(game.ticketPrice) ? (
-                                <Link
-                                  className="button button-small"
-                                  href={`/league/cart?games=${encodeURIComponent(game.id)}`}
-                                >
-                                  Add to cart
-                                </Link>
-                              ) : null}
-                            </TableActionMenu>
-                          </td>
-                        </tr>
-                      );
-                    })()
-                  ))
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={7}>
-                      No open league games are scheduled right now.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Players</dt>
+                          <dd>{signedUpCount}/{game.seatCapacity}</dd>
+                        </div>
+                      </dl>
+
+                      <div className="homepage-open-game-card-actions">
+                        <Link
+                          className="button button-secondary button-small"
+                          href={`/league/games/${game.id}`}
+                        >
+                          View game
+                        </Link>
+                        {canAddToCart ? (
+                          <Link
+                            className="button button-small"
+                            href={`/league/cart?games=${encodeURIComponent(game.id)}`}
+                          >
+                            Add to cart
+                          </Link>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="empty">No open league games are scheduled right now.</div>
+            )}
           </div>
 
           <img
@@ -370,6 +380,50 @@ export default async function HomePage() {
             />
           </div>
         </section>
+      </section>
+
+      <section className="card ledger-panel stack homepage-mercane-callout">
+        <img
+          alt="Mercane Mercantile divider"
+          className="homepage-roster-divider"
+          src="/divider4.png"
+        />
+
+        <div className="homepage-mercane-grid">
+          <div className="stack homepage-mercane-copy" style={{ gap: "1rem" }}>
+            <div className="stack" style={{ gap: "0.35rem" }}>
+              <p className="eyebrow" style={{ margin: 0 }}>
+                Community marketplace
+              </p>
+              <h2 style={{ margin: 0 }}>Mercane Mercantile</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                <strong>Mercane Mercantile</strong> is the SPELLBOOK League marketplace for
+                adventurers looking to trade magic items. Browse what other players have listed,
+                discover rare and useful treasures, and post your own magic items for trade with the
+                community.
+              </p>
+            </div>
+            <div>
+              <Link className="button button-secondary" href="/mercane-mercantile">
+                Browse Mercane Mercantile
+              </Link>
+            </div>
+          </div>
+
+          <div className="homepage-mercane-art">
+            <img
+              alt="Mercane Mercantile artwork"
+              className="homepage-mercane-image"
+              src="/mercane-mercantile.png"
+            />
+          </div>
+        </div>
+
+        <img
+          alt="Mercane Mercantile divider"
+          className="homepage-roster-divider"
+          src="/divider4.png"
+        />
       </section>
 
       <section className="card ledger-panel stack homepage-tv-section">

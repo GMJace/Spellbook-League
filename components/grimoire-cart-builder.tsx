@@ -63,7 +63,7 @@ export function GrimoireCartBuilder({
   const [receiverEmails, setReceiverEmails] = useState<string[]>([""]);
   const regularBadgeLabel = nextEvent.ticketLabel;
   const regularBadgePriceUsd = nextEvent.ticketPriceUsd;
-  const flyingCarpetBadgeLabel = "Flying Carpet Badge";
+  const flyingCarpetBadgeLabel = "Tome Key Badge";
   const flyingCarpetBadgePriceUsd = nextEvent.ticketPriceUsd * FLYING_CARPET_BADGE_MULTIPLIER;
   const selectedBadgeLabel =
     badgeType === "FLYING_CARPET" ? flyingCarpetBadgeLabel : regularBadgeLabel;
