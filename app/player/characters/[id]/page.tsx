@@ -621,6 +621,8 @@ export default async function CharacterLogsheetPage({
             </div>
           </div>
 
+          <div className="store-line-divider" />
+
           <div
             style={{
               display: "flex",
@@ -698,91 +700,69 @@ export default async function CharacterLogsheetPage({
         </div>
 
         <div className="list-card stack">
-          <div className="section-heading">
-            <h2 style={{ margin: 0 }}>Character record</h2>
-          </div>
+          <div className="character-record-card">
+            <div className="character-record-grid">
+              <div className="character-record-token-panel">
+                <p className="muted" style={{ margin: 0 }}>
+                  Player token
+                </p>
+                {character.tokenImagePath ? (
+                  <img
+                    className="character-record-token-image"
+                    src={character.tokenImagePath}
+                    alt={`${character.name} token`}
+                  />
+                ) : (
+                  <div className="character-record-token-image character-record-token-placeholder">
+                    <span>No token uploaded</span>
+                  </div>
+                )}
+              </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: "1rem",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              alignItems: "start",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gap: "0.75rem",
-                justifyItems: "start",
-              }}
-            >
-              <p className="muted" style={{ margin: 0 }}>
-                Player token
-              </p>
-              {character.tokenImagePath ? (
-                <img
-                  src={character.tokenImagePath}
-                  alt={`${character.name} token`}
-                  style={{
-                    width: "112px",
-                    height: "112px",
-                    objectFit: "cover",
-                    borderRadius: "999px",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
-                  }}
-                />
-              ) : (
-                <p style={{ margin: 0 }}>No token uploaded</p>
-              )}
-            </div>
+              <div className="character-record-column">
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Character HP
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {character.hitPoints ?? "Not added"}
+                  </p>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Character AC
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {character.armorClass ?? "Not added"}
+                  </p>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Spell Save DC
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {character.spellSaveDc ?? "Not added"}
+                  </p>
+                </div>
+              </div>
 
-            <div
-              style={{
-                display: "grid",
-                gap: "1rem",
-                gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
-              }}
-            >
-              <div style={{ gridColumn: "1 / -1" }}>
-                <p className="muted" style={sectionItemHeaderStyle}>
-                  Vision
-                </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {visibleVision.length ? visibleVision.join(", ") : "Not added"}
-                </p>
-              </div>
-              <div>
-                <p className="muted" style={sectionItemHeaderStyle}>
-                  Character HP
-                </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {character.hitPoints ?? "Not added"}
-                </p>
-              </div>
-              <div>
-                <p className="muted" style={sectionItemHeaderStyle}>
-                  Character AC
-                </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {character.armorClass ?? "Not added"}
-                </p>
-              </div>
-              <div>
-                <p className="muted" style={sectionItemHeaderStyle}>
-                  Passive Perception
-                </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {character.passivePerception ?? "Not added"}
-                </p>
-              </div>
-              <div>
-                <p className="muted" style={sectionItemHeaderStyle}>
-                  Spell Save DC
-                </p>
-                <p style={{ margin: "0.35rem 0 0" }}>
-                  {character.spellSaveDc ?? "Not added"}
-                </p>
+              <div className="character-record-column">
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Senses
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {visibleVision.length ? visibleVision.join(", ") : "Not added"}
+                  </p>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Passive Perception
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {character.passivePerception ?? "Not added"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -801,53 +781,45 @@ export default async function CharacterLogsheetPage({
               <h3 style={{ margin: 0 }}>Achievements</h3>
             </div>
 
-            <div className="table-wrap">
-              <table className="ledger-table">
-                <thead>
-                  <tr>
-                    <th>Badge</th>
-                    <th>Name</th>
-                    <th>Date</th>
-                    <th>Game Code</th>
-                    <th>Awarded By</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {character.achievementAwards.length ? (
-                    character.achievementAwards.map((award) => (
-                      <tr key={award.id}>
-                        <td>
-                          {award.achievement.badgeImagePath ? (
-                            <img
-                              alt={`${award.achievement.name} badge`}
-                              src={award.achievement.badgeImagePath}
-                              style={{
-                                width: "48px",
-                                height: "48px",
-                                objectFit: "cover",
-                                borderRadius: "14px",
-                                border: "1px solid rgba(255, 255, 255, 0.18)",
-                              }}
-                            />
-                          ) : (
-                            <span className="pill">No badge</span>
-                          )}
-                        </td>
-                        <td>{award.achievement.name}</td>
-                        <td>{formatDate(award.awardedAt)}</td>
-                        <td>{award.gameCode || "N/A"}</td>
-                        <td>{award.awardedBy.name}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="muted" colSpan={5}>
-                        No achievements awarded yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="character-achievement-grid">
+              {character.achievementAwards.length ? (
+                character.achievementAwards.map((award) => (
+                  <article key={award.id} className="character-achievement-card">
+                    {award.achievement.badgeImagePath ? (
+                      <img
+                        alt={`${award.achievement.name} badge`}
+                        className="character-achievement-card-image"
+                        src={award.achievement.badgeImagePath}
+                      />
+                    ) : (
+                      <div className="character-achievement-card-image character-achievement-card-image-placeholder">
+                        <span className="pill">No badge</span>
+                      </div>
+                    )}
+
+                    <dl className="character-achievement-card-details">
+                      <div>
+                        <dt>Name</dt>
+                        <dd>{award.achievement.name}</dd>
+                      </div>
+                      <div>
+                        <dt>Date</dt>
+                        <dd>{formatDate(award.awardedAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>Game Code</dt>
+                        <dd>{award.gameCode || "N/A"}</dd>
+                      </div>
+                      <div>
+                        <dt>Awarded By</dt>
+                        <dd>{award.awardedBy.name}</dd>
+                      </div>
+                    </dl>
+                  </article>
+                ))
+              ) : (
+                <div className="empty">No achievements awarded yet.</div>
+              )}
             </div>
           </div>
 

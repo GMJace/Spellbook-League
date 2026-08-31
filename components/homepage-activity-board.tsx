@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { TwoRowScrollableGrid } from "@/components/two-row-scrollable-grid";
 
 import {
   formatClassSummary,
@@ -9,7 +10,7 @@ import {
   getCharacterTotalLevel,
 } from "@/lib/character";
 
-type PlayerRow = {
+export type PlayerRow = {
   id: string;
   playerName: string;
   characterName: string;
@@ -70,6 +71,28 @@ export function HomepagePlayerActivityCard({
 }: {
   playerRoster: PlayerRow[];
 }) {
+  return (
+    <section className="card ledger-panel stack homepage-player-activity-card">
+      <div className="inline-actions" style={{ justifyContent: "space-between" }}>
+        <h2 style={{ margin: 0 }}>Character roster</h2>
+      </div>
+
+      <CharacterRosterGrid playerRoster={playerRoster} />
+    </section>
+  );
+}
+
+export function CharacterRosterGrid({
+  emptyMessage = "No character activity matches your search.",
+  playerRoster,
+  scrollable = false,
+  showDivider = true,
+}: {
+  emptyMessage?: string;
+  playerRoster: PlayerRow[];
+  scrollable?: boolean;
+  showDivider?: boolean;
+}) {
   const [playerSearch, setPlayerSearch] = useState("");
 
   const filteredPlayers = useMemo(
@@ -78,28 +101,28 @@ export function HomepagePlayerActivityCard({
   );
 
   return (
-    <section className="card ledger-panel stack homepage-player-activity-card">
-      <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0 }}>Character roster</h2>
+    <div className="list-card stack">
+      <div className="stack" style={{ gap: "0.55rem" }}>
+        <input
+          aria-label="Search character roster"
+          className="input"
+          onChange={(event) => setPlayerSearch(event.target.value)}
+          placeholder="Search players, characters, or builds"
+          type="search"
+          value={playerSearch}
+        />
       </div>
 
-      <div className="list-card stack">
-        <div className="stack" style={{ gap: "0.55rem" }}>
-          <input
-            aria-label="Search character roster"
-            className="input"
-            onChange={(event) => setPlayerSearch(event.target.value)}
-            placeholder="Search players, characters, or builds"
-            type="search"
-            value={playerSearch}
-          />
-        </div>
-
-        <div className="homepage-character-roster-grid">
+      {scrollable ? (
+        <TwoRowScrollableGrid className="homepage-character-roster-grid">
           {filteredPlayers.length ? (
             filteredPlayers.map((row) => {
               return (
-                <article key={row.id} className="homepage-character-roster-card">
+                <article
+                  data-two-row-grid-item
+                  key={row.id}
+                  className="homepage-character-roster-card"
+                >
                   {row.tokenImagePath ? (
                     <img
                       alt={`${row.characterName} token`}
@@ -142,17 +165,70 @@ export function HomepagePlayerActivityCard({
               );
             })
           ) : (
-            <div className="empty">No character activity matches your search.</div>
+            <div className="empty">{emptyMessage}</div>
           )}
-        </div>
+        </TwoRowScrollableGrid>
+      ) : (
+        <div className="homepage-character-roster-grid">
+          {filteredPlayers.length ? (
+          filteredPlayers.map((row) => {
+            return (
+              <article key={row.id} className="homepage-character-roster-card">
+                {row.tokenImagePath ? (
+                  <img
+                    alt={`${row.characterName} token`}
+                    className="homepage-character-roster-token"
+                    src={row.tokenImagePath}
+                  />
+                ) : (
+                  <div className="homepage-character-roster-token homepage-character-roster-token-placeholder">
+                    <span>{row.characterName.slice(0, 1).toUpperCase()}</span>
+                  </div>
+                )}
 
+                <div className="homepage-character-roster-header">
+                  <strong>{row.characterName}</strong>
+                  <span className="muted homepage-character-roster-games">
+                    {row.gamesPlayed} game{row.gamesPlayed === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                <div className="stack" style={{ gap: "0.25rem" }}>
+                  <span className="muted">{row.playerName}</span>
+                </div>
+
+                <dl className="homepage-character-roster-details">
+                  <div>
+                    <dt>Build</dt>
+                    <dd>{formatClassSummary(row)}</dd>
+                  </div>
+                </dl>
+
+                <div className="homepage-character-roster-actions">
+                  <Link
+                    className="button button-secondary button-small"
+                    href={`/player/characters/${row.id}`}
+                  >
+                    View
+                  </Link>
+                </div>
+              </article>
+            );
+          })
+        ) : (
+          <div className="empty">{emptyMessage}</div>
+        )}
+        </div>
+      )}
+
+      {showDivider ? (
         <img
           alt="Character roster divider"
           className="homepage-roster-divider"
           src="/divider4.png"
         />
-      </div>
-    </section>
+      ) : null}
+    </div>
   );
 }
 

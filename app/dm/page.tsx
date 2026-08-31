@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { TableActionMenu } from "@/components/table-action-menu";
 import { requireRole } from "@/lib/auth";
 import { getProDmRosterEntry } from "@/lib/pro-dm-roster";
 import { prisma } from "@/lib/prisma";
@@ -167,20 +168,20 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
             <p className="eyebrow">DM dashboard</p>
             <h1>Your games</h1>
           </div>
-          <div className="inline-actions">
-            <Link href="/dm/players" className="button secondary">
+          <TableActionMenu label="DM actions" summarySmall={false}>
+            <Link href="/dm/players" className="button button-secondary button-small">
               Player roster
             </Link>
-            <Link href="/grimoire-gathering" className="button secondary">
+            <Link href="/grimoire-gathering" className="button button-secondary button-small">
               Grimoire page
             </Link>
-            <Link href="/dm/achievements" className="button secondary">
+            <Link href="/dm/achievements" className="button button-secondary button-small">
               Achievements
             </Link>
-            <Link href="/dm/games/new" className="button">
+            <Link href="/dm/games/new" className="button button-small">
               Create/Log Game
             </Link>
-          </div>
+          </TableActionMenu>
         </div>
 
         <form className="search-row" method="get" style={{ marginTop: "1rem" }}>

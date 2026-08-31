@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { CharacterRosterGrid, type PlayerRow } from "@/components/homepage-activity-board";
 import { ProfileAvatar } from "@/components/profile-avatar";
-import { TableActionMenu } from "@/components/table-action-menu";
-import { getCharacterLimitForRoles } from "@/lib/character-limits";
+import { TwoRowScrollableGrid } from "@/components/two-row-scrollable-grid";
 import {
-  getCharacterTier,
-  getCharacterTotalLevel,
-} from "@/lib/character";
+  getCharacterLimitForRoles,
+  hasPatronCharacterLimit,
+} from "@/lib/character-limits";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserTidingSummary } from "@/lib/tidings";
@@ -77,6 +76,27 @@ export default async function PlayerDashboardPage({
   const characterLimit = getCharacterLimitForRoles(user.roles);
   const canCreateCharacter = characters.length < characterLimit;
   const availableStoreCreditUsd = Math.max(user.storeCreditUsd - user.storeCreditHeldUsd, 0);
+  const playerRoster: PlayerRow[] = characters.map((character) => ({
+    id: character.id,
+    playerName,
+    characterName: character.name,
+    class1Name: character.class1Name,
+    class1Subclass: character.class1Subclass,
+    class1Level: character.class1Level,
+    class2Name: character.class2Name,
+    class2Subclass: character.class2Subclass,
+    class2Level: character.class2Level,
+    class3Name: character.class3Name,
+    class3Subclass: character.class3Subclass,
+    class3Level: character.class3Level,
+    tokenImagePath: character.tokenImagePath,
+    totalGold: character.totalGold,
+    gamesPlayed: character.participants.filter(
+      (participant) =>
+        participant.game.status === "COMPLETED" &&
+        participant.logStatus === "APPROVED"
+    ).length,
+  }));
 
   return (
     <main className="stack">
@@ -87,7 +107,7 @@ export default async function PlayerDashboardPage({
               Number(resolvedSearchParams.limit) || characterLimit
             }.`}
           </p>
-          {!user.roles.includes("PATRON") ? (
+          {!hasPatronCharacterLimit(user.roles) ? (
             <p className="muted" style={{ margin: 0 }}>
               Upgrade with{" "}
               <Link href="/league/cart?membership=1">Grimoire Guild membership</Link>{" "}
@@ -189,8 +209,8 @@ export default async function PlayerDashboardPage({
           <div className="stack" style={{ gap: "0.25rem" }}>
             <h2 style={{ margin: 0 }}>Character roster</h2>
             <p className="muted" style={{ margin: 0 }}>
-              {user.roles.includes("PATRON")
-                ? `Patron accounts can keep up to ${characterLimit} characters.`
+              {hasPatronCharacterLimit(user.roles)
+                ? `Patron-level accounts can keep up to ${characterLimit} characters.`
                 : `Standard player accounts can keep up to ${characterLimit} characters.`}
             </p>
           </div>
@@ -206,88 +226,12 @@ export default async function PlayerDashboardPage({
         </div>
 
         {characters.length ? (
-          <div className="table-wrap ledger-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Character</th>
-                  <th>Build</th>
-                  <th>Tier</th>
-                  <th>Gold</th>
-                  <th>Games</th>
-                  <th>Achievements</th>
-                  <th>Record</th>
-                </tr>
-              </thead>
-              <tbody>
-                {characters.map((character) => {
-                  const totalLevel = getCharacterTotalLevel(character);
-                  const loggedGameCount = character.participants.filter(
-                    (participant) =>
-                      participant.game.status === "COMPLETED" &&
-                      participant.logStatus === "APPROVED"
-                  ).length;
-                  const pendingReviewCount = character.participants.filter(
-                    (participant) =>
-                      participant.game.status === "COMPLETED" &&
-                      participant.logStatus === "PENDING"
-                  ).length;
-
-                  return (
-                    <tr key={character.id}>
-                      <td>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.75rem",
-                          }}
-                        >
-                          {character.tokenImagePath ? (
-                            <img
-                              src={character.tokenImagePath}
-                              alt={`${character.name} token`}
-                              style={{
-                                width: "48px",
-                                height: "48px",
-                                objectFit: "cover",
-                                borderRadius: "999px",
-                                border: "1px solid rgba(255, 255, 255, 0.18)",
-                              }}
-                            />
-                          ) : null}
-                          <div className="stack" style={{ gap: "0.25rem" }}>
-                            <strong>{character.name}</strong>
-                            {pendingReviewCount ? (
-                              <span className="pill" style={{ width: "fit-content" }}>
-                                {pendingReviewCount} pending review
-                                {pendingReviewCount === 1 ? "" : "s"}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <CharacterBuildDisplay character={character} compact />
-                      </td>
-                      <td>Tier {getCharacterTier(totalLevel)}</td>
-                      <td>{character.totalGold}</td>
-                      <td>{loggedGameCount}</td>
-                      <td>{character._count.achievementAwards}</td>
-                      <td>
-                        <Link
-                          href={`/player/characters/${character.id}`}
-                          className="button secondary"
-                        >
-                          OPEN LOGSHEET
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <CharacterRosterGrid
+            emptyMessage="No characters yet. Create one to begin your logsheet roster."
+            playerRoster={playerRoster}
+            scrollable
+            showDivider={false}
+          />
         ) : (
           <div className="empty">
             No characters yet. Create one to begin your logsheet roster.
@@ -305,72 +249,95 @@ export default async function PlayerDashboardPage({
         </div>
 
         <div className="list-card stack">
-          <div className="table-wrap ledger-table activity-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date &amp; time</th>
-                  <th>Game</th>
-                  <th>DM</th>
-                  <th>Tier</th>
-                  <th>Price</th>
-                  <th>Players</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {openLeagueGames.length ? (
-                  openLeagueGames.map((game) => {
-                    const signedUpCount = game._count.participants;
+          <TwoRowScrollableGrid className="homepage-open-games-grid">
+            {openLeagueGames.length ? (
+              openLeagueGames.map((game) => {
+                const signedUpCount = game._count.participants;
+                const canAddToCart = game.isGrimTidings || isPaidTicketPrice(game.ticketPrice);
 
-                    return (
-                      <tr key={game.id}>
-                        <td>{formatDateTime(game.datePlayed)}</td>
-                        <td>
-                          <div className="stack" style={{ gap: "0.2rem" }}>
-                            <strong>{game.title}</strong>
-                            <span className="muted">{game.adventureCode}</span>
-                          </div>
-                        </td>
-                        <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
-                        <td>{formatTier(game.tier)}</td>
-                        <td>
-                          {game.isGrimTidings
-                            ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
-                            : game.ticketPrice}
-                        </td>
-                        <td>{signedUpCount}/{game.seatCapacity}</td>
-                        <td>
-                          <TableActionMenu>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/league/games/${game.id}`}
-                            >
-                              View game
-                            </Link>
-                            {isPaidTicketPrice(game.ticketPrice) ? (
-                              <Link
-                                className="button button-small"
-                                href={`/league/cart?games=${encodeURIComponent(game.id)}`}
-                              >
-                                Add to cart
-                              </Link>
-                            ) : null}
-                          </TableActionMenu>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={7}>
-                      No open league games are scheduled right now.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                return (
+                  <article
+                    data-two-row-grid-item
+                    key={game.id}
+                    className="homepage-open-game-card"
+                  >
+                    {game.adventureImagePath ? (
+                      <img
+                        alt={`${game.title} cover art`}
+                        className="homepage-open-game-card-image"
+                        src={game.adventureImagePath}
+                      />
+                    ) : (
+                      <div className="homepage-open-game-card-image homepage-open-game-card-image-placeholder">
+                        <div className="ggcon-game-hero-placeholder-inner">
+                          <p className="eyebrow" style={{ margin: 0 }}>
+                            Adventure art
+                          </p>
+                          <strong>{game.title}</strong>
+                          <p className="muted" style={{ margin: 0 }}>
+                            Image placeholder
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="stack homepage-open-game-card-copy">
+                      <div className="stack" style={{ gap: "0.25rem" }}>
+                        <strong>{game.title}</strong>
+                        <span className="muted">{game.adventureCode}</span>
+                      </div>
+
+                      <dl className="homepage-open-game-card-details">
+                        <div>
+                          <dt>Date &amp; time</dt>
+                          <dd>{formatDateTime(game.datePlayed)}</dd>
+                        </div>
+                        <div>
+                          <dt>DM</dt>
+                          <dd>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</dd>
+                        </div>
+                        <div>
+                          <dt>Tier</dt>
+                          <dd>{formatTier(game.tier)}</dd>
+                        </div>
+                        <div>
+                          <dt>Price</dt>
+                          <dd>
+                            {game.isGrimTidings
+                              ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                              : game.ticketPrice}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Players</dt>
+                          <dd>{signedUpCount}/{game.seatCapacity}</dd>
+                        </div>
+                      </dl>
+
+                      <div className="homepage-open-game-card-actions">
+                        <Link
+                          className="button button-secondary button-small"
+                          href={`/league/games/${game.id}`}
+                        >
+                          View game
+                        </Link>
+                        {canAddToCart ? (
+                          <Link
+                            className="button button-small"
+                            href={`/league/cart?games=${encodeURIComponent(game.id)}`}
+                          >
+                            Add to cart
+                          </Link>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="empty">No open league games are scheduled right now.</div>
+            )}
+          </TwoRowScrollableGrid>
         </div>
       </section>
     </main>

@@ -44,11 +44,7 @@ import {
   getDefaultLegalToolOptions,
 } from "@/lib/league-legal-choices";
 
-type FormState = {
-  error: string;
-  success?: string;
-};
-type CharacterFormValues = {
+export type CharacterFormValues = {
   name: string;
   characterSheetLink: string | null;
   blindsightFt: number | null;
@@ -193,7 +189,7 @@ export function CharacterForm({
 }: {
   action?: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
-  initialValues?: CharacterFormValues;
+  initialValues?: Partial<CharacterFormValues>;
   legalBuildMagicItemOptions?: string[];
   legalUncommonMagicItemOptions?: string[];
   legalCommonMagicItemOptions?: string[];
@@ -928,12 +924,12 @@ export function CharacterForm({
         />
       ))}
 
-      <label>
+      <label className="character-magic-item-card">
         Character name
         <input name="name" type="text" required defaultValue={initialValues?.name ?? ""} />
       </label>
 
-      <label>
+      <label className="character-magic-item-card">
         Character sheet link
         <input
           name="characterSheetLink"
@@ -953,7 +949,7 @@ export function CharacterForm({
         <span>Make publicly viewable (Note: admin will still have access)</span>
       </label>
 
-      <div className="form-span-full stack" style={{ gap: "0.65rem" }}>
+      <div className="form-span-full stack character-magic-item-card" style={{ gap: "0.65rem" }}>
         <div className="stack" style={{ gap: "0.2rem" }}>
           <h3 style={{ margin: 0 }}>Vision</h3>
         </div>
@@ -991,7 +987,7 @@ export function CharacterForm({
       </div>
 
       <div className="form-grid">
-        <label>
+        <label className="character-magic-item-card">
           Character HP
           <input
             name="hitPoints"
@@ -1001,7 +997,7 @@ export function CharacterForm({
             defaultValue={initialValues?.hitPoints ?? ""}
           />
         </label>
-        <label>
+        <label className="character-magic-item-card">
           Character AC
           <input
             name="armorClass"
@@ -1011,7 +1007,7 @@ export function CharacterForm({
             defaultValue={initialValues?.armorClass ?? ""}
           />
         </label>
-        <label>
+        <label className="character-magic-item-card">
           Passive Perception
           <input
             name="passivePerception"
@@ -1021,7 +1017,7 @@ export function CharacterForm({
             defaultValue={initialValues?.passivePerception ?? ""}
           />
         </label>
-        <label>
+        <label className="character-magic-item-card">
           Character Spell Save DC
           <input
             name="spellSaveDc"
@@ -1033,7 +1029,7 @@ export function CharacterForm({
         </label>
       </div>
 
-      <div className="form-stack" style={{ gap: "0.5rem" }}>
+      <div className="form-stack character-magic-item-card" style={{ gap: "0.5rem" }}>
         <label>
           Player token
           <input
@@ -1532,7 +1528,7 @@ export function CharacterForm({
         <strong>Consumables</strong>
         <div className="form-grid">
           {consumables.map((item, index) => (
-            <label key={`consumable-${index}`}>
+            <label className="character-magic-item-card" key={`consumable-${index}`}>
               Consumable Slot {index + 1}
               <select
                 name="consumables"
@@ -1558,7 +1554,7 @@ export function CharacterForm({
         <strong>Boons, blessings, and charms</strong>
         <div className="form-grid">
           {boonSlotEnabled ? (
-            <label>
+            <label className="character-magic-item-card">
               Boon Slot
               {legalBoonOptions.length ? (
                 <select
@@ -1585,7 +1581,7 @@ export function CharacterForm({
           ) : (
             <input name="boon" type="hidden" value="" />
           )}
-          <label>
+          <label className="character-magic-item-card">
             Blessing Slot
             {legalBlessingOptions.length ? (
               <select
@@ -1610,7 +1606,7 @@ export function CharacterForm({
             )}
           </label>
           {charms.map((item, index) => (
-            <label key={`charm-${index}`}>
+            <label className="character-magic-item-card" key={`charm-${index}`}>
               Charm Slot {index + 1}
               {legalCharmOptions.length ? (
                 <select
@@ -1652,12 +1648,10 @@ export function CharacterForm({
           className="ggcon-table-divider"
           src="/divider4.png"
         />
-        <h2 style={{ margin: 0 }}>Character Details</h2>
       </div>
 
       <div className="form-grid">
         <div className="skill-matrix form-span-full">
-          <div aria-hidden="true" style={whiteDividerStyle} />
           <p style={{ margin: 0 }}>Skills</p>
           <div className="skill-matrix-columns">
             {skillGroups.map((group, groupIndex) => (

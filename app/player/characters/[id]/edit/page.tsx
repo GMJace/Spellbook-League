@@ -119,11 +119,13 @@ export default async function EditCharacterPage({
 
       <section className="card ledger-panel stack">
         {query.message ? (
-          <p style={{ color: "#ffffff", margin: 0 }}>
-            Could not save character logsheet: {query.message}
-          </p>
+          <div className="character-form-error-alert" role="alert">
+            <p style={{ margin: 0 }}>Could not save character logsheet: {query.message}</p>
+          </div>
         ) : query.error === "invalid" ? (
-          <p style={{ color: "#ffffff", margin: 0 }}>Please complete the character details.</p>
+          <div className="character-form-error-alert" role="alert">
+            <p style={{ margin: 0 }}>Please complete the character details.</p>
+          </div>
         ) : null}
         {query.created === "1" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>Character created.</p>

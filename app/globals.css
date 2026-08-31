@@ -899,6 +899,22 @@ button.button-small {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.two-row-scrollable-grid {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.4rem;
+  scrollbar-color: rgba(255, 255, 255, 0.42) rgba(255, 255, 255, 0.06);
+  scrollbar-width: thin;
+}
+
+.character-form-error-alert {
+  color: #ff8e8e;
+  background: rgba(148, 22, 22, 0.24);
+  border: 1px solid rgba(255, 104, 104, 0.72);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+}
+
 .homepage-character-roster-card {
   display: grid;
   gap: 1rem;
@@ -1509,6 +1525,142 @@ button.button-small {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.character-achievement-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.character-achievement-card {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-width: 0;
+  padding: 1rem;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    #040404;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.character-achievement-card-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  border-radius: 20px;
+  background: #050805;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.character-achievement-card-image-placeholder {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at top, rgba(115, 255, 88, 0.18), rgba(0, 0, 0, 0) 55%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    #050805;
+}
+
+.character-achievement-card-details {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.character-achievement-card-details div {
+  display: grid;
+  gap: 0.2rem;
+  align-items: start;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.character-achievement-card-details dt,
+.character-achievement-card-details dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.character-achievement-card-details dt {
+  color: var(--muted);
+}
+
+.character-record-card {
+  padding: 1rem;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    #040404;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.character-record-grid {
+  display: grid;
+  gap: 0;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.character-record-token-panel,
+.character-record-column {
+  min-width: 0;
+}
+
+.character-record-token-panel {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  padding: 1rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.character-record-token-image {
+  width: 100%;
+  height: 100%;
+  min-height: 15rem;
+  object-fit: cover;
+  display: block;
+  border-radius: 18px;
+  background: #050805;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.character-record-token-placeholder {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top, rgba(115, 255, 88, 0.18), rgba(0, 0, 0, 0) 55%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    #050805;
+}
+
+.character-record-column {
+  display: grid;
+  align-content: start;
+}
+
+.character-record-column:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.character-record-row {
+  padding: 1rem;
+}
+
+.character-record-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .ggcon-table-divider {
@@ -2897,7 +3049,9 @@ textarea {
   .homepage-mercane-grid,
   .homepage-open-games-grid,
   .homepage-character-roster-grid,
-  .homepage-dm-roster-grid {
+  .homepage-dm-roster-grid,
+  .character-achievement-grid,
+  .character-record-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3209,6 +3363,29 @@ textarea {
 
 .spellbook-expense-grid {
   grid-template-columns: 1fr;
+}
+
+.character-import-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.character-import-card {
+  background: #0b0b0b;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.character-import-manual-note {
+  margin: 0;
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  .character-import-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 720px) {
