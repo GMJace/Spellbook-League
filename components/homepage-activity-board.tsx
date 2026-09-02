@@ -77,7 +77,7 @@ export function HomepagePlayerActivityCard({
         <h2 style={{ margin: 0 }}>Character roster</h2>
       </div>
 
-      <CharacterRosterGrid playerRoster={playerRoster} />
+      <CharacterRosterGrid playerRoster={playerRoster} scrollable visibleRows={4} />
     </section>
   );
 }
@@ -87,11 +87,13 @@ export function CharacterRosterGrid({
   playerRoster,
   scrollable = false,
   showDivider = true,
+  visibleRows = 2,
 }: {
   emptyMessage?: string;
   playerRoster: PlayerRow[];
   scrollable?: boolean;
   showDivider?: boolean;
+  visibleRows?: number;
 }) {
   const [playerSearch, setPlayerSearch] = useState("");
 
@@ -114,7 +116,10 @@ export function CharacterRosterGrid({
       </div>
 
       {scrollable ? (
-        <TwoRowScrollableGrid className="homepage-character-roster-grid">
+        <TwoRowScrollableGrid
+          className="homepage-character-roster-grid"
+          visibleRows={visibleRows}
+        >
           {filteredPlayers.length ? (
             filteredPlayers.map((row) => {
               return (

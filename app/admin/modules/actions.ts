@@ -20,7 +20,7 @@ const simpleListSchema = z.array(z.string().trim().min(1).max(200)).max(100);
 const structuredMagicItemSchema = z
   .array(
     z.object({
-      flavorNotes: z.string().trim().max(200).default(""),
+      flavorNotes: z.string().trim().max(2000).default(""),
       item: z.string().trim().min(1).max(200),
       minorProperty: z.string().trim().max(120).default(""),
       name: z.string().trim().max(200).default(""),
@@ -30,7 +30,7 @@ const structuredMagicItemSchema = z
 const uncommonPlusMagicItemSchema = z
   .array(
     z.object({
-      flavorNotes: z.string().trim().max(200).default(""),
+      flavorNotes: z.string().trim().max(2000).default(""),
       item: z.string().trim().min(1).max(200),
       minorProperty: z.string().trim().max(120).default(""),
       rarity: z.enum(["LEGENDARY", "RARE", "UNCOMMON", "UNIQUE", "VERY_RARE"]),

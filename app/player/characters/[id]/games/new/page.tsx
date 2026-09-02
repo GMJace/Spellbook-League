@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlayerGameLogForm } from "@/components/player-game-log-form";
 import { requireRole } from "@/lib/auth";
@@ -51,12 +52,17 @@ export default async function NewPlayerGameLogPage({
   return (
     <main className="stack">
       <section className="panel stack">
-        <div>
-          <p className="eyebrow">Character logsheet</p>
-          <h1>Log a game for {character.name}</h1>
-          <p className="muted">
-            Add a player-managed game entry for this character.
-          </p>
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Character logsheet</p>
+            <h1>Log a game for {character.name}</h1>
+            <p className="muted">
+              Add a player-managed game entry for this character.
+            </p>
+          </div>
+          <Link className="button button-secondary" href={`/player/characters/${character.id}`}>
+            Back
+          </Link>
         </div>
         {query.error === "invalid" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>

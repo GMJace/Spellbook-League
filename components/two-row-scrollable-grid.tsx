@@ -7,9 +7,11 @@ const ITEM_SELECTOR = "[data-two-row-grid-item]";
 export function TwoRowScrollableGrid({
   children,
   className,
+  visibleRows = 2,
 }: {
   children: ReactNode;
   className: string;
+  visibleRows?: number;
 }) {
   const gridRef = useRef<HTMLDivElement | null>(null);
   const [maxHeight, setMaxHeight] = useState<number | null>(null);
@@ -28,19 +30,19 @@ export function TwoRowScrollableGrid({
         (left, right) => left - right,
       );
 
-      if (rowOffsets.length <= 2) {
+      if (rowOffsets.length <= visibleRows) {
         setMaxHeight(null);
         return;
       }
 
-      const secondRowOffset = rowOffsets[1];
-      const secondRowBottom = Math.max(
+      const finalVisibleRowOffset = rowOffsets[visibleRows - 1];
+      const finalVisibleRowBottom = Math.max(
         ...items
-          .filter((item) => item.offsetTop === secondRowOffset)
+          .filter((item) => item.offsetTop === finalVisibleRowOffset)
           .map((item) => item.offsetTop + item.offsetHeight),
       );
 
-      setMaxHeight(secondRowBottom);
+      setMaxHeight(finalVisibleRowBottom);
     }
 
     updateVisibleRows();
@@ -53,7 +55,7 @@ export function TwoRowScrollableGrid({
       resizeObserver.disconnect();
       window.removeEventListener("resize", updateVisibleRows);
     };
-  }, [children]);
+  }, [children, visibleRows]);
 
   return (
     <div

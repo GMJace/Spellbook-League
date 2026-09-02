@@ -61,7 +61,7 @@ export default async function ImportPlayerGameLogsheetPage({
   const errorMessage = getImportErrorMessage(query.error, query.details);
 
   return (
-    <main className="stack">
+    <main className="stack character-workflow-page">
       <section className="panel stack">
         <div>
           <p className="eyebrow">Character logsheet</p>

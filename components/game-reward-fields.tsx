@@ -180,7 +180,7 @@ function MagicRewardSelectList({
                   </span>
                   <input
                     name={nameName}
-                    maxLength={160}
+maxLength={160}
                     placeholder={`Add ${itemDisplayLabel.toLowerCase()} name`}
                     type="text"
                     value={itemNames[index] ?? ""}
@@ -222,7 +222,7 @@ function MagicRewardSelectList({
                   </span>
                   <input
                     name={flavorName}
-                    maxLength={160}
+                    maxLength={2000}
                     placeholder="Add flavor notes"
                     type="text"
                     value={itemFlavors[index] ?? ""}

@@ -3,6 +3,7 @@ import type { Prisma, TradingPostRarity } from "@prisma/client";
 
 import { auth } from "@/auth";
 import {
+  createTradingPostProposal,
   createGuestTradingPostListing,
   createGuestTradingPostProposal,
 } from "@/app/player/characters/[id]/trading-post/actions";
@@ -175,7 +176,7 @@ function GuestProposalFields({ listingId }: { listingId: string }) {
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
           <span>Notes (Flavor)</span>
-          <input name="flavorNotes" type="text" />
+          <input maxLength={2000} name="flavorNotes" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
           <span>Item received in adventure code</span>
@@ -190,6 +191,69 @@ function GuestProposalFields({ listingId }: { listingId: string }) {
       <div>
         <button className="button button-secondary button-small" type="submit">
           Send guest trade proposal
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function PlayerProposalFields({
+  characters,
+  listingId,
+}: {
+  characters: Array<{ id: string; name: string }>;
+  listingId: string;
+}) {
+  return (
+    <form action={createTradingPostProposal} className="stack" style={{ gap: "0.75rem" }}>
+      <input name="listingId" type="hidden" value={listingId} />
+
+      <div
+        style={{
+          display: "grid",
+          gap: "0.75rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        }}
+      >
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span>Offer from character</span>
+          <select defaultValue={characters[0]?.id} name="characterId" required>
+            {characters.map((character) => (
+              <option key={character.id} value={character.id}>
+                {character.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span>Item (Counts as)</span>
+          <input name="item" required type="text" />
+        </label>
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span>Name</span>
+          <input name="itemName" type="text" />
+        </label>
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span>Minor Property</span>
+          <input name="minorProperty" type="text" />
+        </label>
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span>Notes (Flavor)</span>
+          <input maxLength={2000} name="flavorNotes" type="text" />
+        </label>
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span>Item received in adventure code</span>
+          <input name="adventureCode" type="text" />
+        </label>
+        <label className="stack" style={{ gap: "0.35rem" }}>
+          <span>Downtime days spent</span>
+          <input defaultValue="0" min="0" name="downtimeDaysSpent" type="number" />
+        </label>
+      </div>
+
+      <div>
+        <button className="button button-secondary button-small" type="submit">
+          Send trade proposal
         </button>
       </div>
     </form>
@@ -238,7 +302,7 @@ function GuestListingFields() {
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
           <span>Notes (Flavor)</span>
-          <input name="flavorNotes" type="text" />
+          <input maxLength={2000} name="flavorNotes" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
           <span>Item received in adventure code</span>
@@ -533,10 +597,28 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
 
                     {renderListingDetails(listing)}
 
-                    {!session?.user?.id && listing.userId && listing.characterId ? (
+                    {canTradeWithCharacter &&
+                    listing.userId &&
+                    listing.characterId &&
+                    listing.userId !== session?.user?.id ? (
                       <details className="table-action-menu">
                         <summary className="button button-secondary button-small table-action-menu-summary">
-                          Make guest trade offer
+                          Propose trade
+                        </summary>
+                        <div className="table-action-menu-panel stack">
+                          <p className="muted" style={{ margin: 0 }}>
+                            Offer a matching-rarity magic item from one of your characters.
+                          </p>
+                          <PlayerProposalFields
+                            characters={currentUser?.characters ?? []}
+                            listingId={listing.id}
+                          />
+                        </div>
+                      </details>
+                    ) : !session?.user?.id && listing.userId && listing.characterId ? (
+                      <details className="table-action-menu">
+                        <summary className="button button-secondary button-small table-action-menu-summary">
+                          Propose trade
                         </summary>
                         <div className="table-action-menu-panel stack">
                           <p className="muted" style={{ margin: 0 }}>

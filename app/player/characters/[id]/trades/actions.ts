@@ -13,7 +13,7 @@ const tradeSideSchema = z.object({
   item: z.string().trim().min(1).max(80),
   itemName: z.string().trim().max(160).default(""),
   minorProperty: z.string().trim().max(80).default(""),
-  flavorNotes: z.string().trim().max(160).default(""),
+  flavorNotes: z.string().trim().max(2000).default(""),
   specialNotes: z.string().trim().max(600).default(""),
   adventureCode: z.string().trim().max(40).default(""),
 });

@@ -83,6 +83,7 @@ function TradeSideFields({
               : initialValues?.recipientFlavorNotes
           }
           name={`${prefix}FlavorNotes`}
+          maxLength={2000}
           type="text"
         />
       </label>

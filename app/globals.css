@@ -1604,7 +1604,7 @@ button.button-small {
 .character-record-grid {
   display: grid;
   gap: 0;
-  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(180px, 3fr) repeat(3, minmax(0, 2fr));
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
   overflow: hidden;
@@ -2029,6 +2029,16 @@ button.button-small {
   border-radius: 20px;
   background: #000000;
   border: none;
+}
+
+.player-game-log-form .list-card {
+  background: rgba(60, 60, 60, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.character-workflow-page .list-card {
+  background: rgba(60, 60, 60, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .metric-value {

@@ -137,7 +137,7 @@ export function PlayerGameLogForm({
   }
 
   return (
-    <form action={formAction} className="form-stack">
+<form action={formAction} className="form-stack player-game-log-form">
       <input name="characterId" type="hidden" value={characterId} />
       {gameId ? <input name="gameId" type="hidden" value={gameId} /> : null}
       {metadataLocked ? (
@@ -155,7 +155,7 @@ export function PlayerGameLogForm({
         </div>
       ) : null}
 
-      <div className="form-grid">
+<div className="list-card form-grid">
         <div className="stack" style={fieldBlockStyle}>
           <label>
             Game title
@@ -260,7 +260,7 @@ export function PlayerGameLogForm({
       </div>
       {autofillMessage ? <p className="muted" style={{ margin: 0 }}>{autofillMessage}</p> : null}
 
-      <div className="form-grid">
+<div className="list-card form-grid">
         <div className="stack" style={fieldBlockStyle}>
           <label>
             Downtime days awarded
@@ -303,17 +303,19 @@ export function PlayerGameLogForm({
         legalMinorPropertyOptions={legalMinorPropertyOptions}
       />
 
-      <label>
-        Session notes/Story Awards
+<div className="list-card stack">
+        <label>
+          Session notes/Story Awards
         <BulletTextarea
           key={`player-session-notes-${sessionNotesValue}`}
           defaultValue={sessionNotesValue}
           name="sessionNotes"
         />
-      </label>
-      <p className="muted" style={{ margin: 0 }}>
+        </label>
+        <p className="muted" style={{ margin: 0 }}>
         Each line is a bullet point.
-      </p>
+        </p>
+      </div>
 
       <SubmitButton label={submitLabel} />
     </form>

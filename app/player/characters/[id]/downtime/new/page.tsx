@@ -45,7 +45,7 @@ export default async function NewCharacterDowntimePage({
   }
 
   return (
-    <main className="stack">
+    <main className="stack character-workflow-page">
       <section className="panel stack">
         <div
           style={{

@@ -204,7 +204,7 @@ function MagicRewardSelectList({
                   </span>
                   <input
                     name={nameInputName}
-                    maxLength={160}
+maxLength={160}
                     placeholder="Add magic item name"
                     type="text"
                     value={value.name}
@@ -252,7 +252,7 @@ function MagicRewardSelectList({
                   </span>
                   <input
                     name={flavorInputName}
-                    maxLength={160}
+                    maxLength={2000}
                     placeholder="Add flavor notes"
                     type="text"
                     value={value.flavorNotes}

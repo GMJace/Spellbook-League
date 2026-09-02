@@ -2,11 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CharacterForm } from "@/components/character-form";
 import { updateCharacter } from "@/app/player/characters/[id]/actions";
-import { CharacterBuildDisplay } from "@/components/character-build-display";
-import {
-  getCharacterTier,
-  getCharacterTotalLevel,
-} from "@/lib/character";
 import { requireRole } from "@/lib/auth";
 import {
   getLeagueLegalBlessingOptions,
@@ -79,11 +74,8 @@ export default async function EditCharacterPage({
     notFound();
   }
 
-  const totalLevel = getCharacterTotalLevel(character);
-  const tier = getCharacterTier(totalLevel);
-
   return (
-    <main className="stack">
+    <main className="stack character-workflow-page">
       <section className="panel ledger-panel stack">
         <div
           style={{
@@ -97,22 +89,9 @@ export default async function EditCharacterPage({
           <div>
           <p className="eyebrow">Edit character log</p>
           <h1>{character.name}</h1>
-          <div className="stack" style={{ gap: "0.5rem", marginTop: "0.5rem" }}>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Build
-              </p>
-              <div style={{ marginTop: "0.35rem" }}>
-                <CharacterBuildDisplay character={character} compact />
-              </div>
-            </div>
-            <p className="muted" style={{ margin: 0 }}>
-              Tier {tier}
-            </p>
-          </div>
           </div>
           <Link className="button button-secondary" href={`/player/characters/${character.id}`}>
-            Return to character log
+            Back
           </Link>
         </div>
       </section>

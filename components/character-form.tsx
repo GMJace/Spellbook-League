@@ -1325,7 +1325,7 @@ export function CharacterForm({
                 <label>
                   Name
                   <input
-                    maxLength={160}
+maxLength={160}
                     name="magicItemNames"
                     placeholder="Add item name"
                     type="text"
@@ -1363,7 +1363,7 @@ export function CharacterForm({
                 <label>
                   Notes (Flavor)
                   <input
-                    maxLength={160}
+                    maxLength={2000}
                     name="magicItemFlavors"
                     placeholder="Add flavor notes"
                     type="text"
@@ -1501,7 +1501,7 @@ export function CharacterForm({
                 <label>
                   Notes (Flavor)
                   <input
-                    maxLength={160}
+                    maxLength={2000}
                     name="commonMagicItemFlavors"
                     placeholder="Add flavor notes"
                     type="text"

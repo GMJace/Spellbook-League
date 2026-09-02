@@ -151,7 +151,7 @@ export const characterSchema = z
       .array(z.string().trim().max(80))
       .max(10),
     magicItemFlavors: z
-      .array(z.string().trim().max(160))
+      .array(z.string().trim().max(2000))
       .max(10),
     commonMagicItems: z.array(z.string().trim().min(1).max(80)).max(5),
     commonMagicItemNames: z
@@ -161,7 +161,7 @@ export const characterSchema = z
       .array(z.string().trim().max(80))
       .max(5),
     commonMagicItemFlavors: z
-      .array(z.string().trim().max(160))
+      .array(z.string().trim().max(2000))
       .max(5),
     consumables: z
       .array(z.string().trim().min(1).max(80))
@@ -210,11 +210,11 @@ const characterFieldErrorMessages: Partial<Record<keyof CharacterFormData, strin
   magicItems: "Each current build magic item must be 80 characters or fewer.",
   magicItemNames: "Each current build magic item name must be 160 characters or fewer.",
   magicItemMinorProperties: "Each current build magic item minor property must be 80 characters or fewer.",
-  magicItemFlavors: "Each current build magic item notes field must be 160 characters or fewer.",
+  magicItemFlavors: "Each current build magic item notes field must be 2000 characters or fewer.",
   commonMagicItems: "Each common magic item must be 80 characters or fewer.",
   commonMagicItemNames: "Each common magic item name must be 160 characters or fewer.",
   commonMagicItemMinorProperties: "Each common magic item minor property must be 80 characters or fewer.",
-  commonMagicItemFlavors: "Each common magic item notes field must be 160 characters or fewer.",
+  commonMagicItemFlavors: "Each common magic item notes field must be 2000 characters or fewer.",
   consumables: "Each consumable must be 80 characters or fewer.",
   boon: "Boon must be 80 characters or fewer.",
   blessing: "Blessing must be 80 characters or fewer.",

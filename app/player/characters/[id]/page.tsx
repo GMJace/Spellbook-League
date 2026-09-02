@@ -652,15 +652,15 @@ export default async function CharacterLogsheetPage({
                 />
                 <Link
                   className="button button-secondary button-small"
-                  href={`/player/characters/${character.id}/games/new`}
-                >
-                  Log game
-                </Link>
-                <Link
-                  className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/games/import`}
                 >
                   Import logsheet
+                </Link>
+                <Link
+                  className="button button-secondary button-small"
+                  href={`/player/characters/${character.id}/games/new`}
+                >
+                  Log game
                 </Link>
                 <Link
                   className="button button-secondary button-small"
@@ -672,7 +672,7 @@ export default async function CharacterLogsheetPage({
                   className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/downtime/new`}
                 >
-                  Log downtime
+                  Downtime Activities
                 </Link>
                 <Link
                   className="button button-secondary button-small"
@@ -680,11 +680,21 @@ export default async function CharacterLogsheetPage({
                 >
                   Mercane Mercantile
                 </Link>
+                {character.characterSheetLink ? (
+                  <a
+                    className="button button-secondary button-small"
+                    href={character.characterSheetLink}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Character link
+                  </a>
+                ) : null}
                 <Link
                   className="button button-secondary button-small"
                   href={`/player/characters/${character.id}/edit`}
                 >
-                  Edit character log
+                  Edit Character
                 </Link>
                 <form action={deleteCharacter.bind(null, character.id)}>
                   <ConfirmSubmitButton
@@ -764,6 +774,38 @@ export default async function CharacterLogsheetPage({
                   </p>
                 </div>
               </div>
+
+              <div className="character-record-column">
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Build
+                  </p>
+                  <div style={{ marginTop: "0.35rem" }}>
+                    <CharacterBuildDisplay
+                      character={character}
+                      className="character-build-display-logsheet"
+                    />
+                  </div>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Tier
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{tierLabel}</p>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Gold
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{character.totalGold ?? 0}</p>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Games played
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{visibleGameLog.length}</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -825,76 +867,6 @@ export default async function CharacterLogsheetPage({
 
         </div>
         <div className="list-card stack">
-          <div
-            aria-hidden="true"
-            style={{
-              width: "100%",
-              height: "1px",
-              background: "rgba(255, 255, 255, 0.85)",
-            }}
-          />
-
-          <div className="section-heading">
-            <h2 style={{ margin: 0 }}>Character details</h2>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gap: "1rem",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            }}
-          >
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Build
-              </p>
-              <div style={{ marginTop: "0.35rem" }}>
-                <CharacterBuildDisplay
-                  character={character}
-                  className="character-build-display-logsheet"
-                />
-              </div>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Tier
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>{tierLabel}</p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Gold
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>{character.totalGold ?? 0}</p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Games played
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>{visibleGameLog.length}</p>
-            </div>
-            <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Character sheet
-              </p>
-              <p style={{ margin: "0.35rem 0 0" }}>
-                {character.characterSheetLink ? (
-                  <a
-                    className="button secondary"
-                    href={character.characterSheetLink}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    OPEN SHEET
-                  </a>
-                ) : (
-                  "Not added"
-                )}
-              </p>
-            </div>
-          </div>
-
           <div
             aria-hidden="true"
             style={{

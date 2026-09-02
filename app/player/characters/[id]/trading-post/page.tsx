@@ -166,7 +166,7 @@ function ProposalFields({
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
           <span>Notes (Flavor)</span>
-          <input name="flavorNotes" type="text" />
+          <input maxLength={2000} name="flavorNotes" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
           <span>Item received in adventure code</span>
@@ -330,7 +330,7 @@ export default async function CharacterTradingPostPage({
   }
 
   return (
-    <main className="page-shell">
+    <main className="page-shell character-workflow-page">
       <section className="stack">
         {query.listing === "created" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>Mercane Mercantile listing added.</p>
@@ -396,7 +396,7 @@ export default async function CharacterTradingPostPage({
             </p>
           </div>
           <Link className="button button-secondary" href={`/player/characters/${character.id}`}>
-            Back to character
+            Back
           </Link>
         </div>
 
@@ -444,7 +444,7 @@ export default async function CharacterTradingPostPage({
               </label>
               <label className="stack" style={{ gap: "0.35rem" }}>
                 <span>Notes (Flavor)</span>
-                <input name="flavorNotes" type="text" />
+                <input maxLength={2000} name="flavorNotes" type="text" />
               </label>
               <label className="stack" style={{ gap: "0.35rem" }}>
                 <span>Item received in adventure code</span>
