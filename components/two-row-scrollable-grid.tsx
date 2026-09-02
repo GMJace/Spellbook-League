@@ -39,10 +39,10 @@ export function TwoRowScrollableGrid({
       const finalVisibleRowBottom = Math.max(
         ...items
           .filter((item) => item.offsetTop === finalVisibleRowOffset)
-          .map((item) => item.offsetTop + item.offsetHeight),
+          .map((item) => item.getBoundingClientRect().bottom),
       );
 
-      setMaxHeight(finalVisibleRowBottom);
+      setMaxHeight(finalVisibleRowBottom - grid.getBoundingClientRect().top);
     }
 
     updateVisibleRows();
