@@ -79,9 +79,10 @@ export async function findAdventureCatalogAutofill(params: {
     const byCode = await prisma.adventureCatalog.findFirst({
       where: {
         lookupCode,
-        ...(tier ? { tier } : {}),
       },
-      orderBy: [{ title: "asc" }, { adventureCode: "asc" }],
+      // An adventure code identifies the module. Do not let the form's default
+      // tier prevent the module from loading before its saved tier can populate.
+      orderBy: [{ updatedAt: "desc" }, { title: "asc" }, { adventureCode: "asc" }],
     });
 
     if (byCode) {

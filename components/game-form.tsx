@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { lookupAdventureCatalogAutofill } from "@/lib/adventure-catalog-client";
 import { BulletTextarea } from "@/components/bullet-textarea";
@@ -241,6 +241,7 @@ export function GameForm({
   );
   const [error, setError] = useState("");
   const [autofillMessage, setAutofillMessage] = useState("");
+  const lookupRequestRef = useRef(0);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<GameFormFieldName, string>>>({});
   const [isPending, startTransition] = useTransition();
   const resolvedTicketPrice = initialValues?.ticketPrice ?? "Free";
@@ -269,21 +270,36 @@ export function GameForm({
     lineHeight: 1.35,
   } as const;
 
-  async function autofillAdventureDetails() {
-    if (!titleValue.trim() && !adventureCodeValue.trim()) {
+  async function autofillAdventureDetails({
+    adventureCode = adventureCodeValue,
+    showNoMatch = true,
+    title = titleValue,
+  }: {
+    adventureCode?: string;
+    showNoMatch?: boolean;
+    title?: string;
+  } = {}) {
+    if (!title.trim() && !adventureCode.trim()) {
       setAutofillMessage("");
       return;
     }
 
+    const requestId = ++lookupRequestRef.current;
+
     try {
       const { match } = await lookupAdventureCatalogAutofill({
-        adventureCode: adventureCodeValue,
-        title: titleValue,
-        tier: tierValue,
+        adventureCode,
+        title,
       });
 
+      if (requestId !== lookupRequestRef.current) {
+        return;
+      }
+
       if (!match) {
-        setAutofillMessage("No saved adventure matched that title or code yet.");
+        if (showNoMatch) {
+          setAutofillMessage("No saved adventure matched that title or code yet.");
+        }
         return;
       }
 
@@ -319,6 +335,10 @@ export function GameForm({
       clearFieldError("rewardsSummary");
       clearFieldError("sessionNotes");
     } catch (lookupError) {
+      if (requestId !== lookupRequestRef.current) {
+        return;
+      }
+
       setAutofillMessage(
         lookupError instanceof Error
           ? lookupError.message
@@ -326,6 +346,24 @@ export function GameForm({
       );
     }
   }
+
+  useEffect(() => {
+    lookupRequestRef.current += 1;
+
+    if (!adventureCodeValue.trim()) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void autofillAdventureDetails({
+        adventureCode: adventureCodeValue,
+        showNoMatch: false,
+        title: "",
+      });
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [adventureCodeValue]);
 
   function getFieldError(name: GameFormFieldName) {
     return fieldErrors[name] ?? "";
@@ -456,6 +494,7 @@ export function GameForm({
                 void autofillAdventureDetails();
               }}
               onChange={(event) => {
+                lookupRequestRef.current += 1;
                 setAdventureCodeValue(event.target.value);
                 clearFieldError("adventureCode");
                 setAutofillMessage("");

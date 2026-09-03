@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
@@ -97,22 +97,39 @@ export function PlayerGameLogForm({
   const [downtimeDaysAwardedValue, setDowntimeDaysAwardedValue] = useState(
     initialValues?.downtimeDaysAwarded ?? "10"
   );
+  const lookupRequestRef = useRef(0);
   const resolvedTier = tierValue;
 
-  async function autofillAdventureDetails() {
-    if (!titleValue.trim() && !adventureCodeValue.trim()) {
+  async function autofillAdventureDetails({
+    adventureCode = adventureCodeValue,
+    showNoMatch = true,
+    title = titleValue,
+  }: {
+    adventureCode?: string;
+    showNoMatch?: boolean;
+    title?: string;
+  } = {}) {
+    if (!title.trim() && !adventureCode.trim()) {
       setAutofillMessage("");
       return;
     }
 
+    const requestId = ++lookupRequestRef.current;
+
     try {
       const { match } = await lookupAdventureCatalogAutofill({
-        adventureCode: adventureCodeValue,
-        title: titleValue,
+        adventureCode,
+        title,
       });
 
+      if (requestId !== lookupRequestRef.current) {
+        return;
+      }
+
       if (!match) {
-        setAutofillMessage("No saved adventure matched that title or code yet.");
+        if (showNoMatch) {
+          setAutofillMessage("No saved adventure matched that title or code yet.");
+        }
         return;
       }
 
@@ -128,6 +145,10 @@ export function PlayerGameLogForm({
       setSessionNotesValue(match.sessionNotes);
       setAutofillMessage(`Loaded adventure details for ${match.adventureCode}.`);
     } catch (lookupError) {
+      if (requestId !== lookupRequestRef.current) {
+        return;
+      }
+
       setAutofillMessage(
         lookupError instanceof Error
           ? lookupError.message
@@ -135,6 +156,24 @@ export function PlayerGameLogForm({
       );
     }
   }
+
+  useEffect(() => {
+    lookupRequestRef.current += 1;
+
+    if (metadataLocked || !adventureCodeValue.trim()) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void autofillAdventureDetails({
+        adventureCode: adventureCodeValue,
+        showNoMatch: false,
+        title: "",
+      });
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [adventureCodeValue, metadataLocked]);
 
   return (
 <form action={formAction} className="form-stack player-game-log-form">
@@ -190,6 +229,7 @@ export function PlayerGameLogForm({
                 }
               }}
               onChange={(event) => {
+                lookupRequestRef.current += 1;
                 setAdventureCodeValue(event.target.value);
                 setAutofillMessage("");
               }}
