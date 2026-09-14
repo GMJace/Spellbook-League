@@ -4,7 +4,7 @@ import { importCharacterFromDndBeyondLink, isDndBeyondLink, type DndBeyondCharac
 export const DND_BEYOND_REFRESH_INTERVAL_MS = 30_000;
 
 export function characterSyncFields(imported: DndBeyondCharacterImport) {
-  // Explicit allowlist: currency, league slots, awards, trades and notes stay local.
+  // Explicit allowlist: currency, league slots, awards and trades stay local.
   return {
     name: imported.name,
     class1Name: imported.class1Name, class1Level: imported.class1Level, class1Subclass: imported.class1Subclass,
@@ -15,6 +15,8 @@ export function characterSyncFields(imported: DndBeyondCharacterImport) {
     passivePerception: imported.passivePerception, spellSaveDc: imported.spellSaveDc,
     blindsightFt: imported.blindsightFt, darkvisionFt: imported.darkvisionFt,
     tremorsenseFt: imported.tremorsenseFt, truesightFt: imported.truesightFt,
+    ...(imported.notes !== undefined ? { notes: imported.notes } : {}),
+    ...(imported.backstory !== undefined ? { backstory: imported.backstory } : {}),
   };
 }
 

@@ -14,6 +14,7 @@ function buildImportedInitialValues(character: Record<string, unknown>): Partial
       typeof character.characterSheetLink === "string" ? character.characterSheetLink : null,
     feats: typeof character.feats === "string" ? character.feats : undefined,
     backstory: typeof character.backstory === "string" ? character.backstory : undefined,
+    notes: typeof character.notes === "string" ? character.notes : undefined,
     languages: typeof character.languages === "string" ? character.languages : undefined,
     name: typeof character.name === "string" ? character.name : "",
     proficiencies:

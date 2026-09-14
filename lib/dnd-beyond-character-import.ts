@@ -11,6 +11,21 @@ const number = (value: unknown): number | null => typeof value === "number" && N
 const id = (value: unknown) => typeof value === "number" || typeof value === "string" ? String(value) : "";
 // Descriptions are rendered as text, never injected as HTML.
 const plainText = (value: unknown) => string(value).replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+const narrativeText = (value: unknown) => string(value)
+  .replace(/<br\s*\/?>/gi, "\n")
+  .replace(/<li(?:\s[^>]*)?>/gi, "• ")
+  .replace(/<\/(?:p|div|li|h[1-6]|blockquote)>/gi, "\n")
+  .replace(/<[^>]*>/g, "")
+  .replace(/&nbsp;/gi, " ")
+  .replace(/&amp;/gi, "&")
+  .replace(/&quot;/gi, '"')
+  .replace(/&#39;|&apos;/gi, "'")
+  .replace(/&lt;/gi, "<")
+  .replace(/&gt;/gi, ">")
+  .replace(/[^\S\r\n]+/g, " ")
+  .replace(/ *\r?\n */g, "\n")
+  .replace(/\n{3,}/g, "\n\n")
+  .trim();
 
 export type DndBeyondInventoryItem = {
   id: string; name: string; originalName: string; quantity: number;
@@ -26,6 +41,7 @@ export type DndBeyondCharacterImport = DndBeyondDerivedStats & {
   feats?: string; proficiencies?: string; tools?: string; languages?: string;
   customSkills: { name: string; rank: string }[];
   featNames?: string[]; toolNames?: string[]; languageNames?: string[];
+  notes?: string; backstory?: string;
   inventory: DndBeyondInventoryItem[]; species: string; background: string;
   currencies: Record<string, number>; spells: { name: string; level: number | null }[];
   warnings: string[];
@@ -123,6 +139,23 @@ export function parseDndBeyondCharacter(payload: unknown, characterId: string): 
     background: string(record(record(data.background).customBackground).name) || string(record(record(data.background).definition).name),
     currencies: {}, spells: [], customSkills: [], ...deriveDndBeyondStats(data),
   };
+  if (data.notes && typeof data.notes === "object" && !Array.isArray(data.notes)) {
+    const characterNotes = record(data.notes);
+    result.backstory = narrativeText(characterNotes.backstory).slice(0, 4000);
+    const noteSections = [
+      ["Other notes", characterNotes.otherNotes],
+      ["Allies", characterNotes.allies],
+      ["Enemies", characterNotes.enemies],
+      ["Organizations", characterNotes.organizations],
+      ["Personal possessions", characterNotes.personalPossessions],
+      ["Other holdings", characterNotes.otherHoldings],
+    ] as const;
+    result.notes = noteSections
+      .map(([label, value]) => [label, narrativeText(value)].filter(Boolean).join("\n"))
+      .filter(section => section.includes("\n"))
+      .join("\n\n")
+      .slice(0, 4000);
+  }
   if (Array.isArray(data.feats)) {
     result.featNames = [...new Set(rows(data.feats).map(feat => string(record(feat.definition).name)).filter(Boolean))];
     result.feats = JSON.stringify(result.featNames);

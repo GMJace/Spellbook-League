@@ -39,6 +39,15 @@ function fixture() {
     customItems: [{ id: 1, name: "Keepsake", quantity: 0, description: "<img src=x onerror=alert(1)>A gift" }],
     characterValues: [{ typeId: 8, valueId: "2", valueTypeId: "99", value: "Healing draught" }, { typeId: 9, valueId: "2", valueTypeId: "99", value: "From an adventure" }],
     currencies: { gp: 100, sp: 2 },
+    notes: {
+      backstory: "<p>Raised among dragons.</p><p>Now seeks lost lore.</p>",
+      otherNotes: "Remember the <strong>silver key</strong>.",
+      allies: "The Azure Sage",
+      enemies: "",
+      organizations: "The Lantern Guild",
+      personalPossessions: "A scorched journal",
+      otherHoldings: "",
+    },
     classSpells: [{ spells: [{ definition: { name: "Light", level: 0 } }] }],
   } };
 }
@@ -57,6 +66,8 @@ test("complete inventory retains identity, containers, quantities, customization
   assert.equal(JSON.parse(result.proficiencies!).Perception, "expertise");
   assert.deepEqual(JSON.parse(result.tools!), ["Thieves' Tools"]);
   assert.equal(result.spells[0].name, "Light");
+  assert.equal(result.backstory, "Raised among dragons.\nNow seeks lost lore.");
+  assert.equal(result.notes, "Other notes\nRemember the silver key.\n\nAllies\nThe Azure Sage\n\nOrganizations\nThe Lantern Guild\n\nPersonal possessions\nA scorched journal");
 });
 
 test("partial combat values and currency cannot overwrite league fields", () => {
@@ -65,7 +76,14 @@ test("partial combat values and currency cannot overwrite league fields", () => 
   assert.equal(result.armorClass, undefined);
   assert.ok(result.warnings[0].includes("maximum HP"));
   const fields = characterSyncFields(result);
-  for (const field of ["totalGold", "magicItems", "consumables", "notes", "backstory", "characterSheetLink"]) assert.ok(!(field in fields));
+  for (const field of ["totalGold", "magicItems", "consumables", "characterSheetLink"]) assert.ok(!(field in fields));
+  assert.equal(fields.notes, result.notes);
+  assert.equal(fields.backstory, result.backstory);
+  const withoutBiography = fixture();
+  delete (withoutBiography.data as Partial<typeof withoutBiography.data>).notes;
+  const biographyFields = characterSyncFields(parseDndBeyondCharacter(withoutBiography, "123456"));
+  assert.ok(!("notes" in biographyFields));
+  assert.ok(!("backstory" in biographyFields));
   const explicit = fixture();
   Object.assign(explicit.data, { overrideHitPoints: 0, armorClass: 17 });
   assert.equal(parseDndBeyondCharacter(explicit, "123456").hitPoints, 0);
@@ -119,7 +137,7 @@ after(async () => { await db.$disconnect(); rmSync(directory, { recursive: true,
 async function createCharacter() {
   return db.character.create({ data: {
     userId: "sync-test-user", name: "Original", class1Name: "Wizard", class1Level: 1, characterSheetLink: link,
-    hitPoints: 40, armorClass: 15, totalGold: 50, notes: "Keep local notes", magicItems: '["League award"]',
+    hitPoints: 40, armorClass: 15, totalGold: 50, notes: "Keep local notes", backstory: "Keep local backstory", magicItems: '["League award"]',
   } });
 }
 const importer = async () => parseDndBeyondCharacter(fixture(), "123456");
@@ -130,13 +148,19 @@ test("sync saves exact inventory snapshots, removes absent items, preserves leag
   let saved = (await db.character.findUniqueOrThrow({ where: { id: character.id } }));
   assert.equal(saved.name, "Test Wizard"); assert.equal(saved.class1Level, 5);
   assert.equal(saved.hitPoints, 40); assert.equal(saved.armorClass, 15); assert.equal(saved.totalGold, 50);
-  assert.equal(saved.notes, "Keep local notes"); assert.equal(saved.magicItems, '["League award"]');
+  assert.equal(saved.notes, "Other notes\nRemember the silver key.\n\nAllies\nThe Azure Sage\n\nOrganizations\nThe Lantern Guild\n\nPersonal possessions\nA scorched journal");
+  assert.equal(saved.backstory, "Raised among dragons.\nNow seeks lost lore."); assert.equal(saved.magicItems, '["League award"]');
   assert.equal(JSON.parse(saved.dndBeyondData!).inventory.length, 4);
   assert.equal((await syncDndBeyondCharacter(db, character.id, async () => { throw new Error("Should not fetch"); })).status, "recent");
-  await db.character.update({ where: { id: character.id }, data: { dndBeyondAttemptAt: null } });
-  await syncDndBeyondCharacter(db, character.id, async () => { const next = fixture(); next.data.inventory = []; next.data.customItems = []; return parseDndBeyondCharacter(next, "123456"); });
+  await db.character.update({ where: { id: character.id }, data: { dndBeyondAttemptAt: null, notes: "Local fallback notes", backstory: "Local fallback backstory" } });
+  await syncDndBeyondCharacter(db, character.id, async () => {
+    const next = fixture(); next.data.inventory = []; next.data.customItems = [];
+    delete (next.data as Partial<typeof next.data>).notes;
+    return parseDndBeyondCharacter(next, "123456");
+  });
   saved = await db.character.findUniqueOrThrow({ where: { id: character.id } });
   assert.deepEqual(JSON.parse(saved.dndBeyondData!).inventory, []);
+  assert.equal(saved.notes, "Local fallback notes"); assert.equal(saved.backstory, "Local fallback backstory");
 });
 
 test("failed refresh preserves the last snapshot and timestamp; changed links do not display the old inventory", async () => {
