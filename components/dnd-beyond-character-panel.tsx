@@ -11,6 +11,8 @@ export function DndBeyondCharacterPanel({ characterId, link, data, syncedAt, sav
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
+  const [localSyncedAt, setLocalSyncedAt] = useState(syncedAt);
+  useEffect(() => { setLocalSyncedAt(syncedAt ? new Date(syncedAt).toLocaleString() : null); }, [syncedAt]);
   const imported = useMemo(() => {
     try { return data ? JSON.parse(data) as DndBeyondCharacterImport : null; } catch { return null; }
   }, [data]);
@@ -33,7 +35,7 @@ export function DndBeyondCharacterPanel({ characterId, link, data, syncedAt, sav
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <div>
           <h2 id="dnd-beyond-heading" style={{ margin: 0 }}>D&amp;D Beyond inventory</h2>
-          <p className="muted" style={{ margin: ".4rem 0 0" }}>Refreshes when this log opens. Last synced: {syncedAt ? new Date(syncedAt).toLocaleString() : "Not yet synced"}.</p>
+          <p className="muted" style={{ margin: ".4rem 0 0" }}>Refreshes when this log opens. Last synced: {localSyncedAt || "Not yet synced"}.</p>
         </div>
         <button type="button" className="button-secondary" disabled={busy} onClick={() => void refresh()}>{busy ? "Refreshing…" : "Refresh now"}</button>
       </div>
@@ -41,8 +43,7 @@ export function DndBeyondCharacterPanel({ characterId, link, data, syncedAt, sav
       {savedError ? <p className="muted">Last refresh error: {savedError}</p> : null}
       {imported?.warnings.map(warning => <p key={warning} className="muted" style={{ margin: 0 }}>{warning}</p>)}
       {imported ? <>
-        <p style={{ margin: 0 }}>{[imported.species, imported.background].filter(Boolean).join(" · ")}</p>
-        <p className="muted" style={{ margin: 0 }}>D&amp;D Beyond currency: {Object.entries(imported.currencies).map(([unit, amount]) => `${amount.toLocaleString()} ${unit.toUpperCase()}`).join(" · ") || "Not supplied"}. SPELLBOOK gold and league item selections are managed separately.</p>
+        <p className="muted" style={{ margin: 0 }}>D&amp;D Beyond currency: {Object.entries(imported.currencies).map(([unit, amount]) => `${amount.toLocaleString("en-US")} ${unit.toUpperCase()}`).join(" · ") || "Not supplied"}. SPELLBOOK gold and league item selections are managed separately.</p>
         <label>Find an inventory item<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Item, type, or container" /></label>
         <p style={{ margin: 0 }}>{items.length} of {imported.inventory.length} inventory entries</p>
         <div style={{ overflowX: "auto", maxHeight: "36rem" }}>

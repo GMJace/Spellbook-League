@@ -1,4 +1,5 @@
-import { DND_SKILLS, DND_TOOLS, serializeFeatSelections, serializeLanguageSelections, serializeSkillSelections, serializeToolSelections, type SkillSelectionRank } from "@/lib/character";
+import { DND_SKILLS, DND_TOOLS, serializeSkillSelections, type SkillSelectionRank } from "@/lib/character";
+import { deriveDndBeyondStats, getActiveDndBeyondModifiers, DDB_SKILL_IDS, type DndBeyondDerivedStats } from "@/lib/dnd-beyond-derived-stats";
 
 const hosts = new Set(["dndbeyond.com", "www.dndbeyond.com", "ddb.ac", "www.ddb.ac"]);
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -17,13 +18,14 @@ export type DndBeyondInventoryItem = {
   type: string; rarity: string; weight: number | null; magic: boolean;
   consumable: boolean; custom: boolean; notes: string; description: string;
 };
-export type DndBeyondCharacterImport = {
+export type DndBeyondCharacterImport = DndBeyondDerivedStats & {
   characterSheetLink: string; name: string;
   class1Name: string; class1Level: number; class1Subclass: string | null;
   class2Name: string | null; class2Level: number | null; class2Subclass: string | null;
   class3Name: string | null; class3Level: number | null; class3Subclass: string | null;
   feats?: string; proficiencies?: string; tools?: string; languages?: string;
-  hitPoints?: number; armorClass?: number; passivePerception?: number; spellSaveDc?: number;
+  customSkills: { name: string; rank: string }[];
+  featNames?: string[]; toolNames?: string[]; languageNames?: string[];
   inventory: DndBeyondInventoryItem[]; species: string; background: string;
   currencies: Record<string, number>; spells: { name: string; level: number | null }[];
   warnings: string[];
@@ -118,26 +120,43 @@ export function parseDndBeyondCharacter(payload: unknown, characterId: string): 
     class2Name: classes[1]?.name ?? null, class2Level: classes[1]?.level ?? null, class2Subclass: classes[1]?.subclass ?? null,
     class3Name: classes[2]?.name ?? null, class3Level: classes[2]?.level ?? null, class3Subclass: classes[2]?.subclass ?? null,
     inventory, species: string(record(data.race).fullName) || string(record(data.race).baseName),
-    background: string(record(record(data.background).definition).name), currencies: {}, spells: [], warnings: [],
+    background: string(record(record(data.background).customBackground).name) || string(record(record(data.background).definition).name),
+    currencies: {}, spells: [], customSkills: [], ...deriveDndBeyondStats(data),
   };
-  if (Array.isArray(data.feats)) result.feats = serializeFeatSelections(Object.fromEntries(rows(data.feats).map(feat => [string(record(feat.definition).name), true as const]).filter(([name]) => name)));
-  // Only character modifiers are used; inventory definitions include bonuses from inactive items.
+  if (Array.isArray(data.feats)) {
+    result.featNames = [...new Set(rows(data.feats).map(feat => string(record(feat.definition).name)).filter(Boolean))];
+    result.feats = JSON.stringify(result.featNames);
+  }
+  // Include equipped/attuned item grants, but never inactive inventory bonuses.
   if (data.modifiers && typeof data.modifiers === "object") {
-    const modifiers = Object.entries(record(data.modifiers)).filter(([source]) => source !== "item").flatMap(([, value]) => rows(value));
+    const modifiers = getActiveDndBeyondModifiers(data);
     const skills: Record<string, SkillSelectionRank> = {};
     const tools: Record<string, true> = {};
     const languages: Record<string, true> = {};
     for (const modifier of modifiers) {
-      const name = string(modifier.friendlySubtypeName);
+      const rawName = string(modifier.friendlySubtypeName);
+      const name = [...DND_SKILLS, ...DND_TOOLS].find(entry => entry.name.toLowerCase().replace(/[’']/g, "") === rawName.toLowerCase().replace(/[’']/g, ""))?.name || rawName;
       if (!name || name.startsWith("Choose ")) continue;
       if (modifier.type === "language") languages[name] = true;
       if (modifier.type !== "proficiency" && modifier.type !== "expertise") continue;
       if (DND_SKILLS.some(skill => skill.name === name) && skills[name] !== "expertise") skills[name] = modifier.type === "expertise" ? "expertise" : "proficiency";
       if (DND_TOOLS.some(tool => tool.name === name)) tools[name] = true;
     }
+    for (const [name, skillId] of Object.entries(DDB_SKILL_IDS)) {
+      const override = customizations.find(value => value.typeId === 26 && id(value.valueId) === String(skillId));
+      if (override?.value === 4) skills[name] = "expertise";
+      else if (override?.value === 3) skills[name] = "proficiency";
+      else if (override?.value === 1 || override?.value === 2) delete skills[name];
+    }
+    for (const proficiency of rows(data.customProficiencies)) {
+      const name = string(proficiency.name);
+      if (proficiency.type === 1 && name) result.customSkills.push({ name, rank: ({ 1: "Not proficient", 2: "Half proficiency", 3: "Proficiency", 4: "Expertise" } as Record<number, string>)[number(proficiency.proficiencyLevel) ?? 1] || "Not proficient" });
+    }
     result.proficiencies = serializeSkillSelections(skills);
-    result.tools = serializeToolSelections(tools);
-    result.languages = serializeLanguageSelections(languages);
+    result.toolNames = Object.keys(tools).sort();
+    result.languageNames = Object.keys(languages).sort();
+    result.tools = JSON.stringify(result.toolNames);
+    result.languages = JSON.stringify(result.languageNames);
   }
   for (const currency of ["cp", "sp", "ep", "gp", "pp"]) {
     const value = number(record(data.currencies)[currency]);
@@ -151,20 +170,6 @@ export function parseDndBeyondCharacter(payload: unknown, characterId: string): 
     if (name && !spellNames.has(name)) { spellNames.add(name); result.spells.push({ name, level: number(definition.level) }); }
   }
   result.spells.sort((a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name));
-  const missing: string[] = [];
-  for (const [field, label, value] of [
-    ["hitPoints", "maximum HP", data.overrideHitPoints ?? data.maxHitPoints],
-    ["armorClass", "AC", data.armorClass],
-    ["passivePerception", "passive Perception", data.passivePerception],
-    ["spellSaveDc", "spell save DC", data.spellSaveDc ?? data.spellSaveDC],
-  ] as const) {
-    const parsed = number(value);
-    if (parsed != null && Number.isInteger(parsed) && parsed >= 0) result[field] = parsed;
-    else missing.push(label);
-  }
-  // baseHitPoints excludes Constitution; nested armorClass can belong to unequipped armor.
-  // Never replace a player's final combat totals with these partial values.
-  if (missing.length) result.warnings.push(`D&D Beyond did not supply final ${missing.join(", ")} values. Keep these fields updated manually in Edit Character.`);
   return result;
 }
 

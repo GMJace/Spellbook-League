@@ -13,6 +13,8 @@ export function characterSyncFields(imported: DndBeyondCharacterImport) {
     feats: imported.feats, proficiencies: imported.proficiencies, languages: imported.languages, tools: imported.tools,
     hitPoints: imported.hitPoints, armorClass: imported.armorClass,
     passivePerception: imported.passivePerception, spellSaveDc: imported.spellSaveDc,
+    blindsightFt: imported.blindsightFt, darkvisionFt: imported.darkvisionFt,
+    tremorsenseFt: imported.tremorsenseFt, truesightFt: imported.truesightFt,
   };
 }
 
