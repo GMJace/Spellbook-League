@@ -1,679 +1,200 @@
-import { serializeFeatSelections } from "@/lib/character";
-import { DND_CLASSES } from "@/lib/character-options";
+import { DND_SKILLS, DND_TOOLS, serializeFeatSelections, serializeLanguageSelections, serializeSkillSelections, serializeToolSelections, type SkillSelectionRank } from "@/lib/character";
 
-const DND_BEYOND_HOSTS = new Set([
-  "dndbeyond.com",
-  "www.dndbeyond.com",
-  "ddb.ac",
-  "www.ddb.ac",
-]);
+const hosts = new Set(["dndbeyond.com", "www.dndbeyond.com", "ddb.ac", "www.ddb.ac"]);
+const MAX_BYTES = 10 * 1024 * 1024;
+type RecordValue = Record<string, unknown>;
+const record = (value: unknown): RecordValue => value && typeof value === "object" && !Array.isArray(value) ? value as RecordValue : {};
+const rows = (value: unknown): RecordValue[] => Array.isArray(value) ? value.map(record) : [];
+const string = (value: unknown) => typeof value === "string" ? value.trim() : "";
+const number = (value: unknown): number | null => typeof value === "number" && Number.isFinite(value) ? value : null;
+const id = (value: unknown) => typeof value === "number" || typeof value === "string" ? String(value) : "";
+// Descriptions are rendered as text, never injected as HTML.
+const plainText = (value: unknown) => string(value).replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 
-const DND_BEYOND_FETCH_HEADERS = {
-  Accept: "text/html,application/json;q=0.9,*/*;q=0.8",
-  "User-Agent": "SPELLBOOK League Character Importer",
-} as const;
-
-const CLASS_NAME_MAP = new Map(
-  DND_CLASSES.map((className) => [className.trim().toLowerCase(), className]),
-);
-
+export type DndBeyondInventoryItem = {
+  id: string; name: string; originalName: string; quantity: number;
+  equipped: boolean; attuned: boolean; container: string; containerId: string | null;
+  type: string; rarity: string; weight: number | null; magic: boolean;
+  consumable: boolean; custom: boolean; notes: string; description: string;
+};
 export type DndBeyondCharacterImport = {
-  armorClass?: number | null;
-  blindsightFt?: number | null;
-  characterSheetLink: string;
-  class1Level?: number;
-  class1Name?: string;
-  class1Subclass?: string | null;
-  class2Level?: number | null;
-  class2Name?: string | null;
-  class2Subclass?: string | null;
-  class3Level?: number | null;
-  class3Name?: string | null;
-  class3Subclass?: string | null;
-  darkvisionFt?: number | null;
-  feats?: string;
-  hitPoints?: number | null;
-  name?: string;
-  passivePerception?: number | null;
-  spellSaveDc?: number | null;
-  tremorsenseFt?: number | null;
-  truesightFt?: number | null;
+  characterSheetLink: string; name: string;
+  class1Name: string; class1Level: number; class1Subclass: string | null;
+  class2Name: string | null; class2Level: number | null; class2Subclass: string | null;
+  class3Name: string | null; class3Level: number | null; class3Subclass: string | null;
+  feats?: string; proficiencies?: string; tools?: string; languages?: string;
+  hitPoints?: number; armorClass?: number; passivePerception?: number; spellSaveDc?: number;
+  inventory: DndBeyondInventoryItem[]; species: string; background: string;
+  currencies: Record<string, number>; spells: { name: string; level: number | null }[];
+  warnings: string[];
 };
 
-type FetchResult =
-  | {
-      contentType: string;
-      ok: true;
-      text: string;
-      url: string;
-    }
-  | {
-      ok: false;
-      status: number;
-      statusText: string;
-      url: string;
-    };
-
-type CandidateScore = {
-  node: Record<string, unknown>;
-  score: number;
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function coerceInteger(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Math.trunc(value);
-  }
-
-  if (typeof value === "string") {
-    const normalizedValue = value.trim();
-
-    if (!normalizedValue) {
-      return null;
-    }
-
-    const parsed = Number(normalizedValue);
-    return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
-  }
-
-  return null;
-}
-
-function coerceString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeClassName(value: unknown) {
-  const className = coerceString(value);
-  return CLASS_NAME_MAP.get(className.toLowerCase()) ?? className;
-}
-
-function parseCharacterIdFromUrl(urlString: string) {
-  try {
-    const url = new URL(urlString);
-    const match = url.pathname.match(/\/characters\/(\d{4,})/i);
-    return match ? match[1] : null;
-  } catch {
-    return null;
-  }
-}
-
-function parseDndBeyondLink(input: string) {
-  const normalizedInput = input.trim();
-
-  if (!normalizedInput) {
-    throw new Error("Paste a D&D Beyond character link first.");
-  }
-
-  const withProtocol = /^[a-z]+:\/\//i.test(normalizedInput)
-    ? normalizedInput
-    : `https://${normalizedInput}`;
-
+export function parseDndBeyondLink(input: string) {
   let url: URL;
-
-  try {
-    url = new URL(withProtocol);
-  } catch {
-    throw new Error("That doesn't look like a valid D&D Beyond link.");
+  try { url = new URL(input.trim()); } catch { throw new Error("Enter a full HTTPS D&D Beyond character share link."); }
+  if (url.protocol !== "https:" || !hosts.has(url.hostname.toLowerCase()) || url.port || url.username || url.password) {
+    throw new Error("Use an HTTPS character share link from dndbeyond.com or ddb.ac.");
   }
-
-  if (!DND_BEYOND_HOSTS.has(url.hostname.toLowerCase())) {
-    throw new Error("Use a D&D Beyond share link from dndbeyond.com.");
-  }
-
-  return {
-    originalUrl: url.toString(),
-  };
+  return url;
 }
 
-async function fetchCandidate(url: string): Promise<FetchResult> {
+export function isDndBeyondLink(input: string | null | undefined) {
+  try { return Boolean(input && parseDndBeyondLink(input)); } catch { return false; }
+}
+
+async function readJson(response: Response) {
+  if (!response.body) throw new Error("D&D Beyond returned an empty response.");
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
   try {
-    const response = await fetch(url, {
-      headers: DND_BEYOND_FETCH_HEADERS,
-      redirect: "follow",
-      cache: "no-store",
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      length += chunk.value.byteLength;
+      if (length > MAX_BYTES) throw new Error("The D&D Beyond response was too large to import.");
+      chunks.push(chunk.value);
+    }
+  } finally { await reader.cancel(); }
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+  try { return JSON.parse(new TextDecoder().decode(bytes)) as unknown; }
+  catch { throw new Error("D&D Beyond did not return readable character data."); }
+}
+
+export function parseDndBeyondCharacter(payload: unknown, characterId: string): DndBeyondCharacterImport {
+  const envelope = record(payload);
+  const data = record(envelope.data);
+  if (envelope.success !== true || id(data.id) !== characterId || !string(data.name)) {
+    throw new Error("D&D Beyond did not return the requested character. Check that the sheet is Public.");
+  }
+  // A missing list is not an empty inventory. Reject partial responses rather than erase saved items.
+  if (!Array.isArray(data.inventory) || !Array.isArray(data.classes) || !data.classes.length ||
+      (data.customItems != null && !Array.isArray(data.customItems))) {
+    throw new Error("D&D Beyond returned incomplete character data. Saved details and inventory were kept.");
+  }
+  const classes = rows(data.classes).map(entry => ({
+    name: string(record(entry.definition).name), level: number(entry.level),
+    subclass: string(record(entry.subclassDefinition).name) || null,
+  }));
+  if (classes.length > 3 || classes.some(entry => !entry.name || !entry.level || !Number.isInteger(entry.level) || entry.level < 1 || entry.level > 20)) {
+    throw new Error("This character's class breakdown cannot be represented in SPELLBOOK's three class slots.");
+  }
+  const customizations = rows(data.characterValues);
+  const inventory: DndBeyondInventoryItem[] = [];
+  for (const [custom, entries] of [[false, rows(data.inventory)], [true, rows(data.customItems)]] as const) {
+    for (const entry of entries) {
+      const definition = custom ? entry : record(entry.definition);
+      const sourceId = id(entry.id);
+      const originalName = string(definition.name);
+      if (!sourceId || !originalName) throw new Error("D&D Beyond returned an incomplete inventory item. Saved inventory was kept.");
+      const overrides = customizations.filter(value => id(value.valueId) === sourceId && id(value.valueTypeId) === id(entry.entityTypeId));
+      const name = string(overrides.find(value => value.typeId === 8)?.value) || originalName;
+      const quantity = number(entry.quantity) ?? 1;
+      if (!Number.isInteger(quantity) || quantity < 0) throw new Error("D&D Beyond returned an invalid item quantity.");
+      const containerId = id(entry.containerEntityId);
+      inventory.push({
+        id: `${custom ? "custom" : "item"}:${sourceId}`, name, originalName, quantity,
+        equipped: entry.equipped === true, attuned: entry.isAttuned === true,
+        containerId: containerId && containerId !== characterId ? containerId : null,
+        container: "Carried", type: string(definition.filterType) || string(definition.type) || (custom ? "Custom item" : "Equipment"),
+        rarity: string(definition.rarity), weight: number(definition.weight), magic: definition.magic === true,
+        consumable: definition.isConsumable === true, custom,
+        notes: plainText(overrides.find(value => value.typeId === 9)?.value ?? entry.notes),
+        description: plainText(definition.description),
+      });
+    }
+  }
+  const uniqueIds = new Set(inventory.map(item => item.id));
+  if (uniqueIds.size !== inventory.length) throw new Error("D&D Beyond returned duplicate inventory identifiers.");
+  const itemNames = new Map(inventory.filter(item => !item.custom).map(item => [item.id.slice(5), item.name]));
+  for (const item of inventory) {
+    if (item.containerId) item.container = itemNames.get(item.containerId) ?? "Other container";
+  }
+  const result: DndBeyondCharacterImport = {
+    characterSheetLink: `https://www.dndbeyond.com/characters/${characterId}`, name: string(data.name),
+    class1Name: classes[0].name, class1Level: classes[0].level!, class1Subclass: classes[0].subclass,
+    class2Name: classes[1]?.name ?? null, class2Level: classes[1]?.level ?? null, class2Subclass: classes[1]?.subclass ?? null,
+    class3Name: classes[2]?.name ?? null, class3Level: classes[2]?.level ?? null, class3Subclass: classes[2]?.subclass ?? null,
+    inventory, species: string(record(data.race).fullName) || string(record(data.race).baseName),
+    background: string(record(record(data.background).definition).name), currencies: {}, spells: [], warnings: [],
+  };
+  if (Array.isArray(data.feats)) result.feats = serializeFeatSelections(Object.fromEntries(rows(data.feats).map(feat => [string(record(feat.definition).name), true as const]).filter(([name]) => name)));
+  // Only character modifiers are used; inventory definitions include bonuses from inactive items.
+  if (data.modifiers && typeof data.modifiers === "object") {
+    const modifiers = Object.entries(record(data.modifiers)).filter(([source]) => source !== "item").flatMap(([, value]) => rows(value));
+    const skills: Record<string, SkillSelectionRank> = {};
+    const tools: Record<string, true> = {};
+    const languages: Record<string, true> = {};
+    for (const modifier of modifiers) {
+      const name = string(modifier.friendlySubtypeName);
+      if (!name || name.startsWith("Choose ")) continue;
+      if (modifier.type === "language") languages[name] = true;
+      if (modifier.type !== "proficiency" && modifier.type !== "expertise") continue;
+      if (DND_SKILLS.some(skill => skill.name === name) && skills[name] !== "expertise") skills[name] = modifier.type === "expertise" ? "expertise" : "proficiency";
+      if (DND_TOOLS.some(tool => tool.name === name)) tools[name] = true;
+    }
+    result.proficiencies = serializeSkillSelections(skills);
+    result.tools = serializeToolSelections(tools);
+    result.languages = serializeLanguageSelections(languages);
+  }
+  for (const currency of ["cp", "sp", "ep", "gp", "pp"]) {
+    const value = number(record(data.currencies)[currency]);
+    if (value != null && value >= 0) result.currencies[currency] = value;
+  }
+  const spells = [...rows(data.classSpells).flatMap(group => rows(group.spells)), ...Object.values(record(data.spells)).flatMap(rows)];
+  const spellNames = new Set<string>();
+  for (const spell of spells) {
+    const definition = record(spell.definition);
+    const name = string(definition.name);
+    if (name && !spellNames.has(name)) { spellNames.add(name); result.spells.push({ name, level: number(definition.level) }); }
+  }
+  result.spells.sort((a, b) => (a.level ?? 0) - (b.level ?? 0) || a.name.localeCompare(b.name));
+  const missing: string[] = [];
+  for (const [field, label, value] of [
+    ["hitPoints", "maximum HP", data.overrideHitPoints ?? data.maxHitPoints],
+    ["armorClass", "AC", data.armorClass],
+    ["passivePerception", "passive Perception", data.passivePerception],
+    ["spellSaveDc", "spell save DC", data.spellSaveDc ?? data.spellSaveDC],
+  ] as const) {
+    const parsed = number(value);
+    if (parsed != null && Number.isInteger(parsed) && parsed >= 0) result[field] = parsed;
+    else missing.push(label);
+  }
+  // baseHitPoints excludes Constitution; nested armorClass can belong to unequipped armor.
+  // Never replace a player's final combat totals with these partial values.
+  if (missing.length) result.warnings.push(`D&D Beyond did not supply final ${missing.join(", ")} values. Keep these fields updated manually in Edit Character.`);
+  return result;
+}
+
+export async function importCharacterFromDndBeyondLink(input: string): Promise<DndBeyondCharacterImport> {
+  let url = parseDndBeyondLink(input);
+  const signal = AbortSignal.timeout(15_000);
+  let characterId = url.pathname.match(/^\/(?:profile\/[^/]+\/)?characters\/(\d+)\/?$/)?.[1];
+  try {
+    // Resolve only allowlisted share redirects; never fetch arbitrary URLs supplied by a user.
+    for (let redirects = 0; !characterId && redirects < 4; redirects++) {
+      const response = await fetch(url, { redirect: "manual", cache: "no-store", signal });
+      await response.body?.cancel();
+      const location = response.headers.get("location");
+      if (response.status < 300 || response.status >= 400 || !location) break;
+      url = parseDndBeyondLink(new URL(location, url).toString());
+      characterId = url.pathname.match(/^\/(?:profile\/[^/]+\/)?characters\/(\d+)\/?$/)?.[1];
+    }
+    if (!characterId) throw new Error("Use the character's full D&D Beyond share link, including /characters/ and its number.");
+    const response = await fetch(`https://character-service.dndbeyond.com/character/v5/character/${characterId}`, {
+      cache: "no-store", redirect: "error", signal, headers: { Accept: "application/json" },
     });
-
     if (!response.ok) {
-      return {
-        ok: false,
-        status: response.status,
-        statusText: response.statusText,
-        url,
-      };
+      await response.body?.cancel();
+      if ([401, 403, 404].includes(response.status)) throw new Error("D&D Beyond could not share this character. Set Character Privacy to Public, then try again.");
+      if (response.status === 429) throw new Error("D&D Beyond is limiting requests. Please try again later.");
+      throw new Error("D&D Beyond is temporarily unavailable. Saved details and inventory were kept.");
     }
-
-    return {
-      contentType: response.headers.get("content-type") ?? "",
-      ok: true,
-      text: await response.text(),
-      url: response.url || url,
-    };
-  } catch {
-    return {
-      ok: false,
-      status: 0,
-      statusText: "Fetch failed",
-      url,
-    };
+    return parseDndBeyondCharacter(await readJson(response), characterId);
+  } catch (error) {
+    if (signal.aborted) throw new Error("D&D Beyond took too long to respond. Saved details and inventory were kept.");
+    throw error;
   }
-}
-
-function safeJsonParse<T>(value: string): T | null {
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return null;
-  }
-}
-
-function detectDndBeyondAccessProblem(html: string) {
-  const normalizedHtml = html.toLowerCase();
-
-  if (
-    normalizedHtml.includes("the page you were looking for isn’t here") ||
-    normalizedHtml.includes("the page you were looking for isn't here")
-  ) {
-    return "D&D Beyond returned a missing-page response for that link. The shared link may be expired, private, or only available while signed in there.";
-  }
-
-  if (normalizedHtml.includes("sign in to view your")) {
-    return "D&D Beyond returned a sign-in page instead of a public character sheet. That usually means the link is not fully public to external viewers.";
-  }
-
-  if (normalizedHtml.includes("your privacy choices") && normalizedHtml.includes("accept all")) {
-    return "D&D Beyond returned a cookie or access gate instead of the character sheet. The link may still need a browser session to open.";
-  }
-
-  return null;
-}
-
-function collectJsonScriptPayloads(html: string) {
-  const payloads: unknown[] = [];
-
-  for (const match of html.matchAll(
-    /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi,
-  )) {
-    const parsed = safeJsonParse(match[1]);
-
-    if (parsed != null) {
-      payloads.push(parsed);
-    }
-  }
-
-  for (const match of html.matchAll(
-    /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/gi,
-  )) {
-    const parsed = safeJsonParse(match[1]);
-
-    if (parsed != null) {
-      payloads.push(parsed);
-    }
-  }
-
-  for (const match of html.matchAll(
-    /window\.__[A-Z0-9_]+__\s*=\s*({[\s\S]*?});/gi,
-  )) {
-    const parsed = safeJsonParse(match[1]);
-
-    if (parsed != null) {
-      payloads.push(parsed);
-    }
-  }
-
-  return payloads;
-}
-
-function scoreCharacterCandidate(node: Record<string, unknown>) {
-  let score = 0;
-
-  if (typeof node.name === "string" && node.name.trim()) {
-    score += 2;
-  }
-
-  if (Array.isArray(node.classes) && node.classes.length > 0) {
-    score += 5;
-  }
-
-  if (Array.isArray(node.stats) && node.stats.length > 0) {
-    score += 2;
-  }
-
-  if (Array.isArray(node.feats) && node.feats.length > 0) {
-    score += 1;
-  }
-
-  if ("baseHitPoints" in node || "overrideHitPoints" in node || "passivePerception" in node) {
-    score += 1;
-  }
-
-  if ("modifiers" in node || "inventory" in node) {
-    score += 1;
-  }
-
-  return score;
-}
-
-function findBestCharacterCandidate(root: unknown) {
-  const matches: CandidateScore[] = [];
-
-  const visit = (value: unknown) => {
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        visit(entry);
-      }
-
-      return;
-    }
-
-    if (!isRecord(value)) {
-      return;
-    }
-
-    const score = scoreCharacterCandidate(value);
-
-    if (score >= 5) {
-      matches.push({ node: value, score });
-    }
-
-    for (const nestedValue of Object.values(value)) {
-      visit(nestedValue);
-    }
-  };
-
-  visit(root);
-
-  return matches.sort((left, right) => right.score - left.score)[0]?.node ?? null;
-}
-
-function findNumberByKeys(root: unknown, keys: string[]) {
-  const normalizedKeys = new Set(keys.map((key) => key.toLowerCase()));
-  let foundValue: number | null = null;
-
-  const visit = (value: unknown) => {
-    if (foundValue != null) {
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        visit(entry);
-      }
-
-      return;
-    }
-
-    if (!isRecord(value)) {
-      return;
-    }
-
-    for (const [key, nestedValue] of Object.entries(value)) {
-      const directValue =
-        normalizedKeys.has(key.toLowerCase()) ? coerceInteger(nestedValue) : null;
-
-      if (directValue != null) {
-        foundValue = directValue;
-        return;
-      }
-
-      visit(nestedValue);
-
-      if (foundValue != null) {
-        return;
-      }
-    }
-  };
-
-  visit(root);
-  return foundValue;
-}
-
-function extractSenseValue(root: unknown, label: string) {
-  const directValue = findNumberByKeys(root, [
-    label,
-    `${label}Ft`,
-    `${label}Feet`,
-    `${label}Distance`,
-  ]);
-
-  if (directValue != null) {
-    return directValue;
-  }
-
-  let foundValue: number | null = null;
-  const normalizedLabel = label.toLowerCase();
-
-  const visit = (value: unknown) => {
-    if (foundValue != null) {
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        visit(entry);
-      }
-
-      return;
-    }
-
-    if (!isRecord(value)) {
-      return;
-    }
-
-    const possibleLabel = [value.name, value.label, value.type]
-      .map((entry) => coerceString(entry).toLowerCase())
-      .find(Boolean);
-
-    if (possibleLabel === normalizedLabel) {
-      foundValue =
-        coerceInteger(value.distance) ??
-        coerceInteger(value.range) ??
-        coerceInteger(value.value) ??
-        coerceInteger(value.feet);
-
-      if (foundValue != null) {
-        return;
-      }
-    }
-
-    for (const nestedValue of Object.values(value)) {
-      visit(nestedValue);
-
-      if (foundValue != null) {
-        return;
-      }
-    }
-  };
-
-  visit(root);
-  return foundValue;
-}
-
-function collectFeatNames(root: unknown) {
-  const featNames = new Set<string>();
-
-  const collectFromArray = (value: unknown) => {
-    if (!Array.isArray(value)) {
-      return;
-    }
-
-    for (const entry of value) {
-      if (isRecord(entry)) {
-        const featName =
-          coerceString(entry.name) ||
-          coerceString(isRecord(entry.definition) ? entry.definition.name : "");
-
-        if (featName) {
-          featNames.add(featName);
-        }
-      } else if (typeof entry === "string" && entry.trim()) {
-        featNames.add(entry.trim());
-      }
-    }
-  };
-
-  const visit = (value: unknown) => {
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        visit(entry);
-      }
-
-      return;
-    }
-
-    if (!isRecord(value)) {
-      return;
-    }
-
-    for (const [key, nestedValue] of Object.entries(value)) {
-      if (key.toLowerCase() === "feats") {
-        collectFromArray(nestedValue);
-      }
-
-      visit(nestedValue);
-    }
-  };
-
-  visit(root);
-
-  return serializeFeatSelections(
-    [...featNames].reduce((selected, featName) => {
-      selected[featName] = true;
-      return selected;
-    }, {} as Record<string, true>),
-  );
-}
-
-function extractClasses(characterData: Record<string, unknown>) {
-  const classes = Array.isArray(characterData.classes) ? characterData.classes : [];
-  const normalizedClasses = classes
-    .filter(isRecord)
-    .map((entry) => {
-      const definition = isRecord(entry.definition) ? entry.definition : null;
-      const subclassDefinition = isRecord(entry.subclassDefinition)
-        ? entry.subclassDefinition
-        : null;
-      const className = normalizeClassName(definition?.name ?? entry.name);
-      const level = coerceInteger(entry.level);
-
-      return {
-        className,
-        level,
-        subclassName:
-          coerceString(subclassDefinition?.name) ||
-          coerceString(isRecord(entry.subclass) ? entry.subclass.name : ""),
-      };
-    })
-    .filter((entry) => entry.className && entry.level != null && entry.level > 0)
-    .slice(0, 3);
-
-  return {
-    class1Level: normalizedClasses[0]?.level ?? 1,
-    class1Name: normalizedClasses[0]?.className ?? "",
-    class1Subclass: normalizedClasses[0]?.subclassName || null,
-    class2Level: normalizedClasses[1]?.level ?? null,
-    class2Name: normalizedClasses[1]?.className ?? null,
-    class2Subclass: normalizedClasses[1]?.subclassName || null,
-    class3Level: normalizedClasses[2]?.level ?? null,
-    class3Name: normalizedClasses[2]?.className ?? null,
-    class3Subclass: normalizedClasses[2]?.subclassName || null,
-  };
-}
-
-function extractNumberFromHtml(html: string, labelPatterns: string[]) {
-  for (const labelPattern of labelPatterns) {
-    const match = html.match(new RegExp(`${labelPattern}[^0-9]{0,80}(\\d{1,3})`, "i"));
-
-    if (match) {
-      return Number.parseInt(match[1], 10);
-    }
-  }
-
-  return null;
-}
-
-function extractSenseFromHtml(html: string, label: string) {
-  return extractNumberFromHtml(html, [label]);
-}
-
-function buildImportFromCharacterData(
-  characterData: Record<string, unknown>,
-  fallbackHtml: string | null,
-  characterSheetLink: string,
-): DndBeyondCharacterImport {
-  const classes = extractClasses(characterData);
-  const hitPoints =
-    coerceInteger(characterData.overrideHitPoints) ??
-    coerceInteger(characterData.maxHitPoints) ??
-    coerceInteger(characterData.baseHitPoints) ??
-    findNumberByKeys(characterData, ["maxHitPoints", "baseHitPoints", "hitPoints"]) ??
-    (fallbackHtml ? extractNumberFromHtml(fallbackHtml, ["Hit Points"]) : null);
-  const armorClass =
-    coerceInteger(characterData.armorClass) ??
-    findNumberByKeys(characterData, ["armorClass", "ac"]) ??
-    (fallbackHtml ? extractNumberFromHtml(fallbackHtml, ["Armor Class"]) : null);
-  const passivePerception =
-    coerceInteger(characterData.passivePerception) ??
-    coerceInteger(characterData.passiveWisdom) ??
-    findNumberByKeys(characterData, ["passivePerception", "passiveWisdom"]) ??
-    (fallbackHtml
-      ? extractNumberFromHtml(fallbackHtml, ["Passive Perception", "Passive Wisdom"])
-      : null);
-  const spellSaveDc =
-    coerceInteger(characterData.spellSaveDc) ??
-    coerceInteger(characterData.spellSaveDC) ??
-    findNumberByKeys(characterData, ["spellSaveDc", "spellSaveDC", "spellDC", "spellSave"]) ??
-    (fallbackHtml ? extractNumberFromHtml(fallbackHtml, ["Spell Save DC"]) : null);
-
-  return {
-    ...classes,
-    armorClass,
-    blindsightFt:
-      extractSenseValue(characterData, "blindsight") ??
-      (fallbackHtml ? extractSenseFromHtml(fallbackHtml, "Blindsight") : null),
-    characterSheetLink,
-    darkvisionFt:
-      extractSenseValue(characterData, "darkvision") ??
-      (fallbackHtml ? extractSenseFromHtml(fallbackHtml, "Darkvision") : null),
-    feats: collectFeatNames(characterData),
-    hitPoints,
-    name: coerceString(characterData.name),
-    passivePerception,
-    spellSaveDc,
-    tremorsenseFt:
-      extractSenseValue(characterData, "tremorsense") ??
-      (fallbackHtml ? extractSenseFromHtml(fallbackHtml, "Tremorsense") : null),
-    truesightFt:
-      extractSenseValue(characterData, "truesight") ??
-      (fallbackHtml ? extractSenseFromHtml(fallbackHtml, "Truesight") : null),
-  };
-}
-
-function isUsableImport(candidate: DndBeyondCharacterImport) {
-  return Boolean(
-    candidate.name ||
-      candidate.class1Name ||
-      candidate.hitPoints != null ||
-      candidate.armorClass != null ||
-      candidate.passivePerception != null,
-  );
-}
-
-function getCharacterDataFromJson(json: unknown) {
-  if (isRecord(json) && isRecord(json.data) && scoreCharacterCandidate(json.data) >= 5) {
-    return json.data;
-  }
-
-  if (isRecord(json) && isRecord(json.character) && scoreCharacterCandidate(json.character) >= 5) {
-    return json.character;
-  }
-
-  return findBestCharacterCandidate(json);
-}
-
-export async function importCharacterFromDndBeyondLink(input: string) {
-  const { originalUrl } = parseDndBeyondLink(input);
-  const initialResponse = await fetchCandidate(originalUrl);
-  const resolvedCharacterId = initialResponse.ok ? parseCharacterIdFromUrl(initialResponse.url) : null;
-  const publicUrl = resolvedCharacterId
-    ? `https://www.dndbeyond.com/characters/${resolvedCharacterId}`
-    : originalUrl.replace(/\/+$/, "");
-
-  if (initialResponse.ok) {
-    const initialAccessProblem = detectDndBeyondAccessProblem(initialResponse.text);
-
-    if (initialAccessProblem) {
-      throw new Error(initialAccessProblem);
-    }
-
-    const payloads = collectJsonScriptPayloads(initialResponse.text);
-
-    for (const payload of payloads) {
-      const characterData = getCharacterDataFromJson(payload);
-
-      if (!characterData) {
-        continue;
-      }
-
-      const importedCharacter = buildImportFromCharacterData(
-        characterData,
-        initialResponse.text,
-        publicUrl,
-      );
-
-      if (isUsableImport(importedCharacter)) {
-        return importedCharacter;
-      }
-    }
-  }
-
-  const jsonCandidates = [
-    resolvedCharacterId ? `https://www.dndbeyond.com/character/${resolvedCharacterId}/json` : null,
-    initialResponse.ok ? `${initialResponse.url.replace(/\/+$/, "")}/json` : null,
-    resolvedCharacterId ? `${publicUrl}/json` : null,
-  ].filter((candidateUrl): candidateUrl is string => Boolean(candidateUrl));
-
-  for (const candidateUrl of jsonCandidates) {
-    const response = await fetchCandidate(candidateUrl);
-
-    if (!response.ok || !response.contentType.toLowerCase().includes("json")) {
-      continue;
-    }
-
-    const parsed = safeJsonParse(response.text);
-    const characterData = getCharacterDataFromJson(parsed);
-
-    if (!characterData) {
-      continue;
-    }
-
-    const importedCharacter = buildImportFromCharacterData(characterData, null, publicUrl);
-
-    if (isUsableImport(importedCharacter)) {
-      return importedCharacter;
-    }
-  }
-
-  const htmlCandidates = [...new Set([publicUrl, originalUrl])];
-
-  for (const candidateUrl of htmlCandidates) {
-    const response = await fetchCandidate(candidateUrl);
-
-    if (!response.ok) {
-      continue;
-    }
-
-    const accessProblem = detectDndBeyondAccessProblem(response.text);
-
-    if (accessProblem) {
-      throw new Error(accessProblem);
-    }
-
-    const payloads = collectJsonScriptPayloads(response.text);
-
-    for (const payload of payloads) {
-      const characterData = getCharacterDataFromJson(payload);
-
-      if (!characterData) {
-        continue;
-      }
-
-      const importedCharacter = buildImportFromCharacterData(
-        characterData,
-        response.text,
-        publicUrl,
-      );
-
-      if (isUsableImport(importedCharacter)) {
-        return importedCharacter;
-      }
-    }
-  }
-
-  throw new Error(
-    "We couldn't read character details from that link. Make sure the character is shared publicly on D&D Beyond and try again.",
-  );
 }

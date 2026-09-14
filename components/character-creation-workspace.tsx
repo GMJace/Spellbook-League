@@ -119,6 +119,28 @@ export function CharacterCreationWorkspace({
       <div className="store-line-divider" />
       <div className="character-import-grid">
         {spreadsheetImportCard}
+        <form className="list-card form-stack character-import-card" onSubmit={event => {
+          event.preventDefault();
+          const formData = new FormData(event.currentTarget);
+          startTransition(async () => {
+            setErrorMessage(null);
+            setStatusMessage(null);
+            try {
+              const response = await fetch("/api/dndbeyond/character-import", { method: "POST", body: formData });
+              const payload = await response.json();
+              if (!response.ok || !payload.character) throw new Error(payload.error || "The character link could not be imported.");
+              setImportedValues(buildImportedInitialValues(payload.character));
+              setFormKey(current => current + 1);
+              setStatusMessage(`Imported ${payload.character.name}. Save the character to enable automatic inventory sync. ${(payload.character.warnings ?? []).join(" ")}`);
+            } catch (error) { setErrorMessage(error instanceof Error ? error.message : "Import failed."); }
+          });
+        }}>
+          <h2 style={{ margin: 0 }}>Import from D&amp;D Beyond link</h2>
+          <p className="muted">Set your character to Public, then paste its share link. After saving, character details and inventory refresh when the log opens.</p>
+          <label>Character share link<input name="characterSheetLink" type="url" required placeholder="https://www.dndbeyond.com/characters/…" /></label>
+          <p className="muted">Importing replaces unsaved values in the form below.</p>
+          <button disabled={isPending} type="submit">{isPending ? "Importing…" : "Import character link"}</button>
+        </form>
         <form
           className="list-card form-stack character-import-card"
           onSubmit={(event) => {
@@ -195,9 +217,9 @@ export function CharacterCreationWorkspace({
           <button disabled={isPending} type="submit">
             {isPending ? "Importing..." : "Import from D&D Beyond PDF"}
           </button>
-          {statusMessage ? <p style={{ color: "#ffffff", margin: 0 }}>{statusMessage}</p> : null}
         </form>
       </div>
+      {statusMessage ? <p role="status" style={{ margin: "1rem 0" }}>{statusMessage}</p> : null}
       <p className="muted character-import-manual-note">
         You can also create a Character Logsheet manually.
       </p>

@@ -13,6 +13,8 @@ import {
   deleteCharacterTrade,
 } from "@/app/player/characters/[id]/trades/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { DndBeyondCharacterPanel } from "@/components/dnd-beyond-character-panel";
+import { isDndBeyondLink } from "@/lib/dnd-beyond-character-import";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   CopyMusterInfoButton,
@@ -1098,6 +1100,15 @@ export default async function CharacterLogsheetPage({
           </div>
         </div>
 
+        {isDndBeyondLink(character.characterSheetLink) ? (
+          <DndBeyondCharacterPanel
+            characterId={character.id}
+            link={character.characterSheetLink}
+            data={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondData : null}
+            syncedAt={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondSyncedAt?.toISOString() ?? null : null}
+            savedError={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondError : null}
+          />
+        ) : null}
         <div className="list-card stack">
           <img
             alt="Trade log divider"

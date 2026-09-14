@@ -199,6 +199,11 @@ model Character {
   name         String
   isPubliclyViewable Boolean     @default(true)
   characterSheetLink String?
+  dndBeyondData String?
+  dndBeyondSyncedAt DateTime?
+  dndBeyondAttemptAt DateTime?
+  dndBeyondSyncLink String?
+  dndBeyondError String?
   blindsightFt Int?
   darkvisionFt Int?
   tremorsenseFt Int?
