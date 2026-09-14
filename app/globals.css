@@ -1646,6 +1646,12 @@ button.button-small {
     #050805;
 }
 
+.character-record-token-stat {
+  width: 100%;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 .character-record-column {
   display: grid;
   align-content: start;

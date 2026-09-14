@@ -733,11 +733,37 @@ export default async function CharacterLogsheetPage({
                     <span>No token uploaded</span>
                   </div>
                 )}
-                <div style={{ width: "100%" }}>
-                  <p className="muted" style={sectionItemHeaderStyle}>Species</p>
+                <div className="character-record-token-stat">
+                  <p className="muted" style={sectionItemHeaderStyle}>Games played</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{visibleGameLog.length}</p>
+                </div>
+              </div>
+
+              <div className="character-record-column">
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Species
+                  </p>
                   <p style={{ margin: "0.35rem 0 0" }}>{dndBeyond?.species || "Not added"}</p>
                 </div>
-                <div style={{ width: "100%" }}>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Build
+                  </p>
+                  <div style={{ marginTop: "0.35rem" }}>
+                    <CharacterBuildDisplay
+                      character={character}
+                      className="character-build-display-logsheet"
+                    />
+                  </div>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Tier
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{tierLabel}</p>
+                </div>
+                <div className="character-record-row">
                   <p className="muted" style={sectionItemHeaderStyle}>Background</p>
                   <p style={{ margin: "0.35rem 0 0" }}>{dndBeyond?.background || "Not added"}</p>
                 </div>
@@ -745,34 +771,19 @@ export default async function CharacterLogsheetPage({
 
               <div className="character-record-column">
                 <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Character HP
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {character.hitPoints ?? "Not added"}
-                  </p>
+                  <p className="muted" style={sectionItemHeaderStyle}>Character HP</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{character.hitPoints ?? "Not added"}</p>
                   {dndBeyond?.currentHitPoints != null ? <p className="muted" style={{ margin: "0.2rem 0 0" }}>Current: {dndBeyond.currentHitPoints}{dndBeyond.temporaryHitPoints ? ` · Temporary: ${dndBeyond.temporaryHitPoints}` : ""}</p> : null}
                 </div>
                 <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Character AC
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {character.armorClass ?? "Not added"}
-                  </p>
+                  <p className="muted" style={sectionItemHeaderStyle}>Character AC</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{character.armorClass ?? "Not added"}</p>
                 </div>
                 <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Spell Save DC
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {character.spellSaveDc ?? "Not added"}
-                  </p>
+                  <p className="muted" style={sectionItemHeaderStyle}>Spell Save DC</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{character.spellSaveDc ?? "Not added"}</p>
                   {new Set(dndBeyond?.spellSaveDcs?.map(c => c.dc)).size > 1 ? <p className="muted" style={{ margin: "0.2rem 0 0" }}>{dndBeyond?.spellSaveDcs.map(c => `${c.name}: ${c.dc}`).join(" · ")}</p> : null}
                 </div>
-              </div>
-
-              <div className="character-record-column">
                 <div className="character-record-row">
                   <p className="muted" style={sectionItemHeaderStyle}>
                     Senses
@@ -794,37 +805,18 @@ export default async function CharacterLogsheetPage({
 
               <div className="character-record-column">
                 <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Build
+                  <p className="muted" style={sectionItemHeaderStyle}>Gold</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {dndBeyond?.currencies?.gp != null
+                      ? `${dndBeyond.currencies.gp.toLocaleString()} GP`
+                      : isDndBeyondLink(character.characterSheetLink)
+                        ? "Not yet synced"
+                        : "Not linked"}
                   </p>
-                  <div style={{ marginTop: "0.35rem" }}>
-                    <CharacterBuildDisplay
-                      character={character}
-                      className="character-build-display-logsheet"
-                    />
-                  </div>
                 </div>
                 <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Tier
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>{tierLabel}</p>
-                </div>
-                <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    League gold
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>{character.totalGold ?? 0}</p>
-                </div>
-                {isDndBeyondLink(character.characterSheetLink) ? <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>D&amp;D Beyond gold</p>
-                  <p style={{ margin: "0.35rem 0 0" }}>{dndBeyond?.currencies?.gp != null ? `${dndBeyond.currencies.gp.toLocaleString()} GP` : "Not yet synced"}</p>
-                </div> : null}
-                <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Games played
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>{visibleGameLog.length}</p>
+                  <p className="muted" style={sectionItemHeaderStyle}>Downtime</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{remainingDowntimeDays} days</p>
                 </div>
               </div>
             </div>
