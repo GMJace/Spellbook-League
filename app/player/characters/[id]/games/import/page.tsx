@@ -142,7 +142,7 @@ export default async function ImportPlayerGameLogsheetPage({
           <label>
             Completed logsheet spreadsheet
             <input
-              accept=".csv,text/csv,.xls,application/vnd.ms-excel,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               name="logsheetFile"
               required
               type="file"

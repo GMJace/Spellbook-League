@@ -334,7 +334,7 @@ export async function importPlayerGameLogsheet(formData: FormData) {
 
   const filename = file.name.toLowerCase();
 
-  if (!filename.endsWith(".csv") && !filename.endsWith(".xlsx") && !filename.endsWith(".xls")) {
+  if (!filename.endsWith(".csv") && !filename.endsWith(".xlsx")) {
     redirect(buildImportErrorHref(character.id, "invalid-file"));
   }
 

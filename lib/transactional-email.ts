@@ -177,8 +177,8 @@ async function sendTransactionalEmail({
   }
 }
 
-export function buildPasswordResetUrl(token: string, baseUrlOverride?: string) {
-  const baseUrl = (baseUrlOverride?.trim() || getAppBaseUrl()).replace(/\/+$/, "");
+export function buildPasswordResetUrl(token: string) {
+  const baseUrl = getAppBaseUrl().replace(/\/+$/, "");
 
   if (!baseUrl) {
     throw new Error(

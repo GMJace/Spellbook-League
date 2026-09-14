@@ -1,13 +1,12 @@
 import "server-only";
 
-import { createHash } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 import { prisma } from "@/lib/prisma";
 
 export const GRIMOIRE_DISCORD_SETTINGS_ID = "default";
 export const GRIMOIRE_DISCORD_COOKIE_NAME = "grimoire_discord_access";
 export const DEFAULT_GRIMOIRE_DISCORD_INVITE_URL = "https://discord.gg/jpFhaWyQGB";
-export const DEFAULT_GRIMOIRE_DISCORD_PASSWORD = "Gr1mT1d1ngs";
 
 export type GrimoireDiscordSettingsRecord = {
   id: string;
@@ -39,10 +38,19 @@ export async function getGrimoireDiscordSettings(): Promise<GrimoireDiscordSetti
   return {
     id: GRIMOIRE_DISCORD_SETTINGS_ID,
     inviteUrl: settings?.inviteUrl?.trim() || DEFAULT_GRIMOIRE_DISCORD_INVITE_URL,
-    password: settings?.password || DEFAULT_GRIMOIRE_DISCORD_PASSWORD,
+    password: settings?.password || process.env.GRIMOIRE_DISCORD_PASSWORD?.trim() || "",
   };
 }
 
 export function createGrimoireDiscordAccessToken(password: string) {
-  return createHash("sha256").update(password).digest("hex");
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error("AUTH_SECRET is required for Discord access cookies.");
+  return createHmac("sha256", secret).update(password).digest("hex");
+}
+
+export function isGrimoireDiscordPasswordValid(enteredPassword: string, password: string) {
+  if (!enteredPassword || !password) return false;
+  const entered = Buffer.from(enteredPassword);
+  const expected = Buffer.from(password);
+  return entered.length === expected.length && timingSafeEqual(entered, expected);
 }

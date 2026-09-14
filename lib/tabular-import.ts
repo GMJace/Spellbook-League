@@ -1,8 +1,8 @@
-import * as XLSX from "xlsx";
+import { readSheet } from "read-excel-file/node";
 
 import { parseCsvText } from "@/lib/csv";
 
-export async function parseUploadedTabularFile(file: File) {
+export async function parseUploadedTabularFile(file: File): Promise<string[][]> {
   const filename = file.name.toLowerCase();
 
   if (filename.endsWith(".csv")) {
@@ -10,23 +10,9 @@ export async function parseUploadedTabularFile(file: File) {
     return parseCsvText(rawText);
   }
 
-  if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
+  if (filename.endsWith(".xlsx")) {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const workbook = XLSX.read(buffer, { type: "buffer" });
-    const firstSheetName = workbook.SheetNames[0];
-
-    if (!firstSheetName) {
-      return [] as string[][];
-    }
-
-    const worksheet = workbook.Sheets[firstSheetName];
-    const rows = XLSX.utils.sheet_to_json<(string | number | boolean | null)[]>(worksheet, {
-      header: 1,
-      raw: false,
-      blankrows: false,
-      defval: "",
-    });
-
+    const rows = await readSheet(buffer);
     return rows.map((row) => row.map((value) => String(value ?? "")));
   }
 

@@ -7,13 +7,14 @@ import {
   createGrimoireDiscordAccessToken,
   getGrimoireDiscordSettings,
   GRIMOIRE_DISCORD_COOKIE_NAME,
+  isGrimoireDiscordPasswordValid,
 } from "@/lib/grimoire-discord";
 
 export async function unlockGrimoireDiscord(formData: FormData) {
   const enteredPassword = String(formData.get("password") ?? "").trim();
   const settings = await getGrimoireDiscordSettings();
 
-  if (enteredPassword !== settings.password) {
+  if (!isGrimoireDiscordPasswordValid(enteredPassword, settings.password)) {
     redirect("/grimoire-gathering?discord=invalid");
   }
 
