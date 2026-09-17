@@ -2074,6 +2074,33 @@ button.button-small {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.dm-game-creation-page .panel,
+.dm-game-creation-page .list-card,
+.dm-game-creation-page .metric {
+  background: rgba(60, 60, 60, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.grim-tidings-field {
+  align-content: center;
+  text-align: center;
+}
+
+.grim-tidings-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 2.6rem;
+}
+
+.grim-tidings-option input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 main.page-shell:has(.admin-page-header) .list-card {
   background: rgba(60, 60, 60, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.12);

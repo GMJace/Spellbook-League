@@ -558,11 +558,8 @@ export function GameForm({
             <p style={errorTextStyle}>{getFieldError("ticketPrice")}</p>
           ) : null}
         </div>
-        <div className="stack" style={fieldBlockStyle}>
-          <label
-            className="muted ggcon-meta-note"
-            style={{ alignItems: "center", display: "flex", gap: "0.55rem", minHeight: "2.6rem" }}
-          >
+        <div className="stack grim-tidings-field" style={fieldBlockStyle}>
+          <label className="muted ggcon-meta-note grim-tidings-option">
             <input
               checked={isGrimTidingsValue}
               name="isGrimTidings"

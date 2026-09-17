@@ -117,7 +117,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
     : undefined;
 
   return (
-    <main className="stack">
+    <main className="stack dm-game-creation-page">
       <section className="panel stack">
         <p className="eyebrow" style={{ margin: 0 }}>
           {duplicatedGame ? "Duplicate game" : "Register game"}
