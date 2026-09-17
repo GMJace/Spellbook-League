@@ -58,7 +58,7 @@ function buildModulesHref(params: {
   }
 
   const query = searchParams.toString();
-  return query ? `/admin/modules?${query}` : "/admin/modules";
+  return `${query ? `/admin/modules?${query}` : "/admin/modules"}#live-module-catalog`;
 }
 
 export default async function AdminModulesPage({
@@ -375,8 +375,10 @@ export default async function AdminModulesPage({
 
         <section
           className="list-card stack"
+          id="live-module-catalog"
           style={{
             gap: "1.25rem",
+            scrollMarginTop: "1rem",
             padding: "1.5rem",
             border: "1px solid rgba(255, 255, 255, 0.14)",
             borderRadius: "24px",
@@ -436,7 +438,7 @@ export default async function AdminModulesPage({
             >
               Sort modules
             </span>
-            <form action="/admin/modules" method="get" style={{ display: "flex", gap: "0.75rem", flex: "1 1 20rem" }}>
+            <form action="/admin/modules#live-module-catalog" method="get" style={{ display: "flex", gap: "0.75rem", flex: "1 1 20rem" }}>
               <input name="sort" type="hidden" value={sort} />
               <input
                 defaultValue={searchTerm}
