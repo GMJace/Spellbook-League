@@ -54,7 +54,7 @@ export function DmGameCreationSwitcher({
           }}
           type="button"
         >
-          Event game
+          Grimoire Event Game
         </button>
       </div>
 
