@@ -82,15 +82,15 @@ export function DmGameCreationSwitcher({
                 Submit a curated event game for any published Grimoire event. Choose the event,
                 then pick one of its published time slots for admin review.
               </p>
-              <section className="list-card stack">
-                <div>
+              <div className="list-card stack dm-game-section-heading">
                   <p className="eyebrow" style={{ margin: 0 }}>Event Submission</p>
                   <h2 style={{ margin: "0.35rem 0 0" }}>Published Grimoire events</h2>
                   <p className="muted" style={{ margin: "0.5rem 0 0" }}>
                     Choose one of the published events, then select one of that event&apos;s
                     published slots and submit your table for admin review.
                   </p>
-                </div>
+              </div>
+              <section className="list-card stack">
               <GrimoireDmSubmissionForm
                 events={eventOptions}
                 initialEventId={initialEventId}

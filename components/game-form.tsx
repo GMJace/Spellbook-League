@@ -964,8 +964,7 @@ export function GameForm({
         Each line is a bullet point.
       </p>
 
-      <div className="panel stack">
-        <div>
+      <div className="list-card stack dm-game-section-heading">
           <h2>Participants</h2>
           <p className="muted">
             Search league players, then select one of their characters or mark them as TBD before
@@ -974,7 +973,8 @@ export function GameForm({
           {getFieldError("participants") ? (
             <p style={errorTextStyle}>{getFieldError("participants")}</p>
           ) : null}
-        </div>
+      </div>
+      <div className="panel stack">
         <div className="form-grid">
           <label>
             Search players

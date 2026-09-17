@@ -118,7 +118,7 @@ export default async function NewGamePage({ searchParams }: PageProps) {
 
   return (
     <main className="stack dm-game-creation-page">
-      <section className="panel stack">
+      <header className="list-card stack dm-game-section-heading">
         <p className="eyebrow" style={{ margin: 0 }}>
           {duplicatedGame ? "Duplicate game" : "Register game"}
         </p>
@@ -128,6 +128,8 @@ export default async function NewGamePage({ searchParams }: PageProps) {
             players, a fresh signup phase, and a blank date so you can schedule it for a new run.
           </p>
         ) : null}
+      </header>
+      <section className="panel stack">
         <DmGameCreationSwitcher
           dmProfile={{
             discord: user.discordHandle ?? "",

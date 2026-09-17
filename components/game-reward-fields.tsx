@@ -387,7 +387,7 @@ export function GameRewardFields({
 
   return (
     <div className="stack">
-      <div className="stack" style={{ gap: 0 }}>
+      <div className="list-card stack dm-game-section-heading" style={{ gap: 0 }}>
         <img
           alt="Reward selections divider"
           className="ggcon-table-divider"

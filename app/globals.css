@@ -2081,6 +2081,17 @@ button.button-small {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.dm-game-creation-page .dm-game-section-heading {
+  background: rgba(82, 82, 82, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.dm-game-section-heading h2,
+.dm-game-section-heading p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .grim-tidings-field {
   align-content: center;
   text-align: center;
