@@ -16,6 +16,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "Character not found." }, { status: 404 });
   }
   // The saved link is authoritative. Requests cannot supply a different URL or arbitrary character data.
-  const result = await syncDndBeyondCharacter(prisma, id);
+  const result = await syncDndBeyondCharacter(prisma, id, undefined, request.headers.get("x-spellbook-manual-refresh") === "1");
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

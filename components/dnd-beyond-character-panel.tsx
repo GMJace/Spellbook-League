@@ -4,23 +4,28 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DndBeyondCharacterImport } from "@/lib/dnd-beyond-character-import";
 
-export function DndBeyondCharacterPanel({ characterId, link, data, syncedAt, savedError }: {
-  characterId: string; link: string; data: string | null; syncedAt: string | null; savedError: string | null;
+export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, syncedAt, savedError }: {
+  characterId: string; link: string; canEditLink: boolean; data: string | null; syncedAt: string | null; savedError: string | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
+  const [linkInput, setLinkInput] = useState(link);
+  useEffect(() => { setLinkInput(link); }, [link]);
   const [localSyncedAt, setLocalSyncedAt] = useState(syncedAt);
   useEffect(() => { setLocalSyncedAt(syncedAt ? new Date(syncedAt).toLocaleString() : null); }, [syncedAt]);
   const imported = useMemo(() => {
     try { return data ? JSON.parse(data) as DndBeyondCharacterImport : null; } catch { return null; }
   }, [data]);
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (manual = false) => {
+    if (!link) return;
     setBusy(true);
     setMessage("Checking D&D Beyond…");
     try {
-      const response = await fetch(`/api/characters/${encodeURIComponent(characterId)}/dndbeyond-sync`, { method: "POST" });
+      const response = await fetch(`/api/characters/${encodeURIComponent(characterId)}/dndbeyond-sync`, {
+        method: "POST", headers: manual ? { "x-spellbook-manual-refresh": "1" } : undefined,
+      });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not refresh this character.");
       setMessage(result.status === "synced" ? "Character and inventory refreshed." : result.status === "recent" ? "A refresh was requested recently. Please allow 30 seconds between checks." : result.status === "changed" ? "The character was edited during refresh. Your edit was kept; try again shortly." : result.error || "Save a D&D Beyond character link to enable syncing.");
@@ -28,22 +33,45 @@ export function DndBeyondCharacterPanel({ characterId, link, data, syncedAt, sav
     } catch (error) { setMessage(error instanceof Error ? error.message : "Refresh failed. Saved information is still available."); }
     finally { setBusy(false); }
   }, [characterId, router]);
-  useEffect(() => { void refresh(); }, [refresh, link]);
+  useEffect(() => { void refresh(); }, [refresh]);
+  const saveLink = useCallback(async () => {
+    setBusy(true);
+    setMessage("Saving character link…");
+    try {
+      const response = await fetch(`/api/characters/${encodeURIComponent(characterId)}/dndbeyond-link`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ link: linkInput }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not save the character link.");
+      setMessage(result.link ? "Character link saved. Refreshing character information…" : "Character link removed.");
+      router.refresh();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save the character link."); }
+    finally { setBusy(false); }
+  }, [characterId, linkInput, router]);
   const items = imported?.inventory?.filter(item => `${item.name} ${item.originalName} ${item.type} ${item.container}`.toLowerCase().includes(query.toLowerCase())) ?? [];
   return (
     <section className="list-card stack" aria-labelledby="dnd-beyond-heading">
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <div>
-          <h2 id="dnd-beyond-heading" style={{ margin: 0 }}>D&amp;D Beyond inventory</h2>
+          <h2 id="dnd-beyond-heading" style={{ margin: 0 }}>DnDBeyond Sync</h2>
           <p className="muted" style={{ margin: ".4rem 0 0" }}>Refreshes when this log opens. Last synced: {localSyncedAt || "Not yet synced"}.</p>
         </div>
-        <button type="button" className="button-secondary" disabled={busy} onClick={() => void refresh()}>{busy ? "Refreshing…" : "Refresh now"}</button>
+        <button type="button" className="button-secondary" disabled={busy || !link} onClick={() => void refresh(true)}>{busy ? "Refreshing…" : "Refresh now"}</button>
       </div>
       <p role="status" style={{ margin: 0 }}>{message || savedError}</p>
       {savedError ? <p className="muted">Last refresh error: {savedError}</p> : null}
       {imported?.warnings.map(warning => <p key={warning} className="muted" style={{ margin: 0 }}>{warning}</p>)}
       {imported ? <>
-        <p className="muted" style={{ margin: 0 }}>D&amp;D Beyond currency: {Object.entries(imported.currencies).map(([unit, amount]) => `${amount.toLocaleString("en-US")} ${unit.toUpperCase()}`).join(" · ") || "Not supplied"}. SPELLBOOK gold and league item selections are managed separately.</p>
+        <p className="muted" style={{ margin: 0 }}>D&amp;D Beyond currency: {Object.entries(imported.currencies).map(([unit, amount]) => `${amount.toLocaleString("en-US")} ${unit.toUpperCase()}`).join(" · ") || "Not supplied"}.</p>
+        {canEditLink ? <div className="dnd-beyond-link-editor">
+          <label htmlFor="dnd-beyond-link">Character sheet link</label>
+          <div className="dnd-beyond-link-controls">
+            <input id="dnd-beyond-link" type="url" value={linkInput} onChange={event => setLinkInput(event.target.value)} placeholder="https://www.dndbeyond.com/characters/…" />
+            <button type="button" className="button-secondary" disabled={busy || linkInput.trim() === link.trim()} onClick={() => void saveLink()}>Save link</button>
+          </div>
+        </div> : null}
+        <div className="dnd-beyond-inventory-divider" aria-hidden="true" />
+        <h3 style={{ margin: 0 }}>DnDBeyond Inventory</h3>
         <label>Find an inventory item<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Item, type, or container" /></label>
         <p style={{ margin: 0 }}>{items.length} of {imported.inventory.length} inventory entries</p>
         <div style={{ overflowX: "auto", maxHeight: "36rem" }}>
@@ -64,8 +92,23 @@ export function DndBeyondCharacterPanel({ characterId, link, data, syncedAt, sav
           </table>
           {!items.length ? <p>{query ? "No matching items." : "No inventory items on this character."}</p> : null}
         </div>
-        {imported.spells.length ? <details><summary>Spells ({imported.spells.length})</summary><ul>{imported.spells.map(spell => <li key={spell.name}>{spell.name} — {spell.level === 0 ? "Cantrip" : `Level ${spell.level ?? "unknown"}`}</li>)}</ul></details> : null}
-      </> : <p className="muted">Inventory will appear after the first successful refresh. The linked character must be Public on D&amp;D Beyond.</p>}
+        {imported.spells.length ? <>
+          <div className="dnd-beyond-inventory-divider" aria-hidden="true" />
+          <details>
+            <summary className="dnd-beyond-spells-heading">Spells ({imported.spells.length})</summary>
+            <ul>{imported.spells.map(spell => <li key={spell.name}>{spell.name} — {spell.level === 0 ? "Cantrip" : `Level ${spell.level ?? "unknown"}`}</li>)}</ul>
+          </details>
+        </> : null}
+      </> : <>
+        {canEditLink ? <div className="dnd-beyond-link-editor">
+          <label htmlFor="dnd-beyond-link">Character sheet link</label>
+          <div className="dnd-beyond-link-controls">
+            <input id="dnd-beyond-link" type="url" value={linkInput} onChange={event => setLinkInput(event.target.value)} placeholder="https://www.dndbeyond.com/characters/…" />
+            <button type="button" className="button-secondary" disabled={busy || linkInput.trim() === link.trim()} onClick={() => void saveLink()}>Save link</button>
+          </div>
+        </div> : null}
+        <p className="muted">Inventory will appear after the first successful refresh. The linked character must be Public on D&amp;D Beyond.</p>
+      </>}
     </section>
   );
 }

@@ -889,6 +889,8 @@ export default async function CharacterLogsheetPage({
             }}
           />
 
+          <h2 style={{ margin: 0 }}>AL Legal Carried Magic Items</h2>
+
           <div className="section-heading">
             <h3 style={{ margin: 0 }}>Uncommon+ Magic Items</h3>
           </div>
@@ -987,7 +989,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleConsumables.map((item, index) => (
-              <div key={`${character.id}-consumable-${index}`}>
+              <div key={`${character.id}-consumable-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1017,7 +1019,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleBoon ? (
-              <div>
+              <div style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Boon Slot
                 </p>
@@ -1025,7 +1027,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleBlessing ? (
-              <div>
+              <div style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Blessing Slot
                 </p>
@@ -1033,7 +1035,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleCharms.map((item, index) => (
-              <div key={`${character.id}-charm-${index}`}>
+              <div key={`${character.id}-charm-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1112,10 +1114,17 @@ export default async function CharacterLogsheetPage({
           </div>
         </div>
 
-        {isDndBeyondLink(character.characterSheetLink) ? (
+        <img
+          alt=""
+          aria-hidden="true"
+          className="homepage-roster-divider"
+          src="/divider4.png"
+        />
+        {(isOwner || isDndBeyondLink(character.characterSheetLink)) ? (
           <DndBeyondCharacterPanel
             characterId={character.id}
-            link={character.characterSheetLink}
+            link={character.characterSheetLink ?? ""}
+            canEditLink={isOwner}
             data={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondData : null}
             syncedAt={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondSyncedAt?.toISOString() ?? null : null}
             savedError={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondError : null}

@@ -23,12 +23,16 @@ export function characterSyncFields(imported: DndBeyondCharacterImport) {
 export async function syncDndBeyondCharacter(
   db: PrismaClient, characterId: string,
   importer: typeof importCharacterFromDndBeyondLink = importCharacterFromDndBeyondLink,
+  force = false,
 ) {
   const character = await db.character.findUnique({ where: { id: characterId } });
   if (!character || !isDndBeyondLink(character.characterSheetLink)) return { status: "unlinked" as const };
   const link = character.characterSheetLink!;
   const attemptAt = new Date();
-  const cutoff = new Date(attemptAt.getTime() - DND_BEYOND_REFRESH_INTERVAL_MS);
+  // A completed request can be refreshed immediately; an in-flight request is coalesced.
+  const completedAttempt = force && character.dndBeyondAttemptAt && character.dndBeyondSyncedAt &&
+    character.dndBeyondSyncedAt >= character.dndBeyondAttemptAt;
+  const cutoff = new Date(attemptAt.getTime() - (completedAttempt ? -1 : force ? 5_000 : DND_BEYOND_REFRESH_INTERVAL_MS));
   // Database claim coalesces requests across tabs and server processes. Never hold a transaction during a network fetch.
   const claim = await db.character.updateMany({
     where: {

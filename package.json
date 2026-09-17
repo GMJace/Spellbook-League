@@ -11,13 +11,16 @@
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:migrate:ddb-sync": "tsx prisma/migrate-dnd-beyond-sync.ts",
+    "db:migrate:al-authors": "tsx prisma/migrate-al-authors.ts",
+    "db:migrate:module-conflicts": "tsx prisma/migrate-module-conflicts.ts",
     "test:ddb-sync": "tsx --test tests/dnd-beyond-character.test.ts",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:backfill:grimoire": "tsx prisma/backfill-grimoire.ts",
     "db:backfill:ticket-receipts": "tsx prisma/backfill-ticket-receipts.ts",
-    "db:import:adventures": "tsx scripts/import-adventures.ts"
+    "db:import:adventures": "tsx scripts/import-adventures.ts",
+    "db:import:al-authors": "tsx scripts/import-al-adventure-authors.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",

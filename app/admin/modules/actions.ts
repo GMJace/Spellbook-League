@@ -42,6 +42,7 @@ const uncommonPlusMagicItemSchema = z
 const adventureModuleSchema = z.object({
   adventureCode: z.string().trim().min(1).max(80),
   title: z.string().trim().min(1).max(160),
+  author: z.string().trim().max(500).default(""),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
   duration: z.string().trim().max(80).default(""),
   sourceSheet: z.string().trim().max(2000).default(""),
@@ -241,7 +242,7 @@ async function requireAdventureModule(moduleId: string) {
 
   const module = await prisma.adventureCatalog.findUnique({
     where: { id: moduleId },
-    select: { id: true, adventureImagePath: true },
+    select: { id: true, adventureImagePath: true, isActive: true, lookupCode: true },
   });
 
   if (!module) {
@@ -282,6 +283,7 @@ function buildAdventureModuleFormSource(formData: FormData, moduleId = "") {
     moduleId: moduleId ?? "",
     adventureCode: String(formData.get("adventureCode") ?? ""),
     title: String(formData.get("title") ?? ""),
+    author: String(formData.get("author") ?? ""),
     tier: String(formData.get("tier") ?? "TIER_1"),
     duration: String(formData.get("duration") ?? ""),
     sourceSheet: String(formData.get("sourceSheet") ?? ""),
@@ -358,7 +360,9 @@ export async function updateAdventureModule(formData: FormData) {
       data: {
         adventureCode: parsed.data.adventureCode,
         lookupCode,
+        isActive: module.isActive || lookupCode !== module.lookupCode,
         title: parsed.data.title,
+        author: parsed.data.author,
         lookupTitle,
         tier: parsed.data.tier,
         duration: parsed.data.duration,
@@ -445,6 +449,7 @@ export async function updatePendingAdventureModule(formData: FormData) {
       adventureCode: parsed.data.adventureCode,
       lookupCode,
       title: parsed.data.title,
+      author: parsed.data.author,
       lookupTitle,
       tier: parsed.data.tier,
       duration: parsed.data.duration,
@@ -522,6 +527,7 @@ export async function promotePendingAdventureModule(formData: FormData) {
           adventureCode: parsed.data.adventureCode,
           lookupCode,
           title: parsed.data.title,
+          author: parsed.data.author,
           lookupTitle,
           tier: parsed.data.tier,
           duration: parsed.data.duration,
@@ -606,6 +612,7 @@ export async function createAdventureModule(formData: FormData) {
         adventureCode: parsed.data.adventureCode,
         lookupCode,
         title: parsed.data.title,
+        author: parsed.data.author,
         lookupTitle,
         tier: parsed.data.tier,
         duration: parsed.data.duration,
@@ -647,4 +654,36 @@ export async function createAdventureModule(formData: FormData) {
 
   revalidatePath("/admin/modules");
   redirect("/admin/modules?module=created");
+}
+
+export async function resolveModuleConflict(formData: FormData) {
+  await requireAdminUser();
+  const lookupCode = normalizeAdventureLookupValue(String(formData.get("lookupCode") ?? ""));
+  const winnerId = String(formData.get("winnerId") ?? "");
+  if (!lookupCode || !winnerId) {
+    redirect("/admin/modules?module=conflict-invalid");
+  }
+
+  const resolved = await prisma.$transaction(async (tx) => {
+    const candidates = await tx.adventureCatalog.findMany({
+      where: { lookupCode },
+      select: { id: true },
+    });
+    if (candidates.length < 2 || !candidates.some((candidate) => candidate.id === winnerId)) {
+      return false;
+    }
+    await tx.adventureCatalog.updateMany({
+      where: { lookupCode },
+      data: { isActive: false },
+    });
+    await tx.adventureCatalog.update({
+      where: { id: winnerId },
+      data: { isActive: true },
+    });
+    return true;
+  });
+  if (!resolved) redirect("/admin/modules?module=conflict-invalid");
+
+  revalidatePath("/admin/modules");
+  redirect("/admin/modules?module=conflict-resolved#module-conflicts");
 }

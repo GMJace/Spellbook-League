@@ -1,10 +1,10 @@
 import Link from "next/link";
 
-import { createAdventureModule } from "@/app/admin/modules/actions";
+import { createAdventureModule, resolveModuleConflict } from "@/app/admin/modules/actions";
 import { AdminModuleForm } from "@/components/admin-module-form";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { TableActionMenu } from "@/components/table-action-menu";
-import { normalizeAdventureLookupValue } from "@/lib/adventure-catalog";
+import { normalizeAdventureLookupValue, parseAdventureCatalogListJson } from "@/lib/adventure-catalog";
 import { requireAdminUser } from "@/lib/admin";
 import {
   buildUncommonPlusMagicItems,
@@ -88,15 +88,27 @@ export default async function AdminModulesPage({
             : []),
           { adventureCode: { contains: searchTerm } },
           { title: { contains: searchTerm } },
+          { author: { contains: searchTerm } },
           { sourceSheet: { contains: searchTerm } },
         ],
       }
     : undefined;
+  const unresolvedCodes = await prisma.$queryRaw<Array<{ lookupCode: string }>>`
+    SELECT "lookupCode" FROM "AdventureCatalog"
+    WHERE "lookupCode" <> ''
+    GROUP BY "lookupCode"
+    HAVING SUM(CASE WHEN "isActive" = 1 THEN 1 ELSE 0 END) > 1
+  `;
+  const liveWhere = {
+    ...liveModulesWhere,
+    isActive: true,
+    lookupCode: { notIn: unresolvedCodes.map((row) => row.lookupCode) },
+  };
 
   const [totalLiveModules, pendingModules, legalMagicItemOptions, legalMinorPropertyOptions] =
     await Promise.all([
       prisma.adventureCatalog.count({
-        where: liveModulesWhere,
+        where: liveWhere,
       }),
       prisma.pendingAdventureModule.findMany({
         orderBy: [{ lastReportedAt: "desc" }, { adventureCode: "asc" }],
@@ -118,7 +130,7 @@ export default async function AdminModulesPage({
   const totalLivePages = Math.max(1, Math.ceil(totalLiveModules / MODULES_PER_PAGE));
   const clampedCurrentPage = Math.min(currentPage, totalLivePages);
   const modules = await prisma.adventureCatalog.findMany({
-    where: liveModulesWhere,
+    where: liveWhere,
     orderBy:
       sort === "title"
         ? [{ title: "asc" }, { adventureCode: "asc" }, { tier: "asc" }]
@@ -126,6 +138,22 @@ export default async function AdminModulesPage({
     skip: (clampedCurrentPage - 1) * MODULES_PER_PAGE,
     take: MODULES_PER_PAGE,
   });
+  const repeatedCodes = await prisma.$queryRaw<Array<{ lookupCode: string }>>`
+    SELECT "lookupCode" FROM "AdventureCatalog"
+    WHERE "lookupCode" <> ''
+    GROUP BY "lookupCode" HAVING COUNT(*) > 1
+    ORDER BY "lookupCode"
+  `;
+  const conflictRows = repeatedCodes.length
+    ? await prisma.adventureCatalog.findMany({
+        where: { lookupCode: { in: repeatedCodes.map((row) => row.lookupCode) } },
+        orderBy: [{ adventureCode: "asc" }, { title: "asc" }, { tier: "asc" }],
+      })
+    : [];
+  const conflictGroups = repeatedCodes.map((row) => ({
+    lookupCode: row.lookupCode,
+    modules: conflictRows.filter((module) => module.lookupCode === row.lookupCode),
+  }));
   const emptyLiveModuleRows = Math.max(0, 10 - Math.max(modules.length, 1));
   const visibleRangeStart = totalLiveModules ? (clampedCurrentPage - 1) * MODULES_PER_PAGE + 1 : 0;
   const visibleRangeEnd = totalLiveModules
@@ -134,6 +162,8 @@ export default async function AdminModulesPage({
 
   const moduleMessageMap: Record<string, string> = {
     conflict: "A module with that code, title, and tier already exists.",
+    "conflict-invalid": "That conflict selection is no longer valid. Review the candidates and try again.",
+    "conflict-resolved": "Module conflict resolved. The selected record is now the live version.",
     created: "Module created.",
     "image-invalid": "Adventure art must be an image file under 5 MB.",
     invalid:
@@ -173,6 +203,7 @@ export default async function AdminModulesPage({
                 title: "",
                 tier: "TIER_1",
                 duration: "",
+                author: "",
                 sourceSheet: "",
                 gameSummary: "",
                 adventureImagePath: null,
@@ -274,6 +305,72 @@ export default async function AdminModulesPage({
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section className="list-card stack" id="module-conflicts">
+          <img alt="Module conflicts divider" className="ggcon-table-divider" src="/divider4.png" />
+          <div className="stack" style={{ gap: "0.35rem" }}>
+            <h2 style={{ margin: 0 }}>Module conflicts ({conflictGroups.length})</h2>
+            <p className="muted" style={{ margin: 0 }}>
+              Adventure codes used by more than one record. Choose the version to keep live;
+              other versions remain here for review and can be selected later.
+            </p>
+          </div>
+          {conflictGroups.length ? conflictGroups.map((group) => {
+            const activeCount = group.modules.filter((module) => module.isActive).length;
+            return (
+              <div className="stack" key={group.lookupCode} style={{ gap: "0.65rem" }}>
+                <h3 style={{ margin: 0 }}>
+                  {group.modules[0]?.adventureCode} · {activeCount === 1 ? "Resolved" : "Needs selection"}
+                </h3>
+                <div className="table-wrap" style={{ overflowX: "auto" }}>
+                  <table className="ledger-table">
+                    <thead><tr>
+                      <th>Title</th><th>Tier</th><th>Author</th><th>Duration</th>
+                      <th>Source / notes</th><th>Rewards</th><th>Status</th><th>Action</th>
+                    </tr></thead>
+                    <tbody>
+                      {group.modules.map((module) => {
+                        const rewardCount = [
+                          module.commonMagicItemsJson, module.uncommonMagicItemsJson,
+                          module.rareMagicItemsJson, module.veryRareMagicItemsJson,
+                          module.legendaryMagicItemsJson, module.uniqueMagicItemsJson,
+                          module.consumablesJson, module.boonsJson,
+                          module.blessingsJson, module.charmsJson,
+                        ].reduce((count, value) => count + parseAdventureCatalogListJson(value).length, 0);
+                        return (
+                          <tr key={module.id}>
+                            <td><strong>{module.title}</strong></td>
+                            <td>{formatTier(module.tier)}</td>
+                            <td>{module.author || "Unknown"}</td>
+                            <td>{module.duration || "Unspecified"}</td>
+                            <td>
+                              <span>{module.sourceSheet || "Unknown source"}</span>
+                              {module.sourceNotes ? <div className="muted">{module.sourceNotes}</div> : null}
+                            </td>
+                            <td>{rewardCount} items{module.gold ? ` · ${module.gold} gold` : ""}</td>
+                            <td>{module.isActive ? "Live" : "Held"}</td>
+                            <td>
+                              <div className="inline-actions" style={{ flexWrap: "wrap" }}>
+                                <Link className="button button-secondary button-small" href={`/admin/modules/${module.id}/edit`}>Review</Link>
+                                <form action={resolveModuleConflict}>
+                                  <input name="lookupCode" type="hidden" value={group.lookupCode} />
+                                  <input name="winnerId" type="hidden" value={module.id} />
+                                  <button className="button button-small" type="submit" disabled={module.isActive && activeCount === 1}>
+                                    {module.isActive && activeCount === 1 ? "Selected" : "Keep live"}
+                                  </button>
+                                </form>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          }) : <p className="muted" style={{ margin: 0 }}>No repeated adventure codes right now.</p>}
         </section>
 
         <section
@@ -436,6 +533,11 @@ export default async function AdminModulesPage({
                     Title
                   </th>
                   <th
+                    style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.74rem", color: "rgba(255, 255, 255, 0.7)" }}
+                  >
+                    Author
+                  </th>
+                  <th
                     style={{
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
@@ -503,6 +605,7 @@ export default async function AdminModulesPage({
                           ) : null}
                         </div>
                       </td>
+                      <td>{module.author || "Unknown"}</td>
                       <td>{formatTier(module.tier)}</td>
                       <td>{module.duration || "Unspecified"}</td>
                       <td>{module.sourceSheet || "Unknown source"}</td>
@@ -523,7 +626,7 @@ export default async function AdminModulesPage({
                   <tr>
                     <td
                       className="muted"
-                      colSpan={7}
+                      colSpan={8}
                       style={{
                         padding: "2rem 1.25rem",
                         textAlign: "center",
@@ -537,6 +640,7 @@ export default async function AdminModulesPage({
                 )}
                 {Array.from({ length: emptyLiveModuleRows }).map((_, index) => (
                   <tr key={`live-module-empty-${index}`} aria-hidden="true">
+                    <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>

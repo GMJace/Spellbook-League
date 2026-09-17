@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { AdminPageHeader } from "@/components/admin-page-header";
-import { TableActionMenu } from "@/components/table-action-menu";
 import { adminDeleteLeagueGame } from "@/app/admin/league-games/actions";
 import { requireAdminUser } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -68,83 +67,101 @@ export default async function AdminLeagueGamesPage({
             </div>
           </div>
 
-          <div className="table-wrap">
-            <table className="ledger-table">
-              <thead>
-                <tr>
-                  <th>Date &amp; time</th>
-                  <th>Game</th>
-                  <th>Dungeon Master</th>
-                  <th>Tier</th>
-                  <th>Price</th>
-                  <th>Players</th>
-                  <th>Available spots</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {games.length ? (
-                  games.map((game) => {
-                    const signedUpCount = game._count.participants;
-                    const availableSpots = Math.max(game.seatCapacity - signedUpCount, 0);
+          <div className="homepage-open-games-grid">
+            {games.length ? (
+              games.map((game) => {
+                const signedUpCount = game._count.participants;
+                const availableSpots = Math.max(game.seatCapacity - signedUpCount, 0);
 
-                    return (
-                      <tr key={game.id}>
-                        <td>{formatDateTime(game.datePlayed)}</td>
-                        <td>
-                          <div className="stack" style={{ gap: "0.2rem" }}>
-                            <strong>{game.title}</strong>
-                            <span className="muted">{game.adventureCode}</span>
-                          </div>
-                        </td>
-                        <td>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</td>
-                        <td>{formatTier(game.tier)}</td>
-                        <td>
-                          {game.isGrimTidings
-                            ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
-                            : game.ticketPrice}
-                        </td>
-                        <td>{signedUpCount}</td>
-                        <td>
-                          {availableSpots} of {game.seatCapacity}
-                        </td>
-                        <td>
-                          <TableActionMenu>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/league/games/${game.id}`}
-                            >
-                              View
-                            </Link>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/admin/league-games/${game.id}/edit`}
-                            >
-                              Edit
-                            </Link>
-                            <form action={adminDeleteLeagueGame}>
-                              <input name="gameId" type="hidden" value={game.id} />
-                              <ConfirmSubmitButton
-                                className="button-danger button-small"
-                                message={`Delete ${game.title}? This cannot be undone.`}
-                              >
-                                Delete
-                              </ConfirmSubmitButton>
-                            </form>
-                          </TableActionMenu>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={8}>
-                      No current open league games are scheduled right now.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                return (
+                  <article className="homepage-open-game-card" key={game.id}>
+                    {game.adventureImagePath ? (
+                      <img
+                        alt={`${game.title} cover art`}
+                        className="homepage-open-game-card-image"
+                        src={game.adventureImagePath}
+                      />
+                    ) : (
+                      <div className="homepage-open-game-card-image homepage-open-game-card-image-placeholder">
+                        <div className="ggcon-game-hero-placeholder-inner">
+                          <p className="eyebrow" style={{ margin: 0 }}>
+                            Adventure art
+                          </p>
+                          <strong>{game.title}</strong>
+                          <p className="muted" style={{ margin: 0 }}>
+                            Image placeholder
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="stack homepage-open-game-card-copy">
+                      <div className="stack" style={{ gap: "0.25rem" }}>
+                        <strong>{game.title}</strong>
+                        <span className="muted">{game.adventureCode}</span>
+                      </div>
+
+                      <dl className="homepage-open-game-card-details">
+                        <div>
+                          <dt>Date &amp; time</dt>
+                          <dd>{formatDateTime(game.datePlayed)}</dd>
+                        </div>
+                        <div>
+                          <dt>DM</dt>
+                          <dd>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</dd>
+                        </div>
+                        <div>
+                          <dt>Tier</dt>
+                          <dd>{formatTier(game.tier)}</dd>
+                        </div>
+                        <div>
+                          <dt>Price</dt>
+                          <dd>
+                            {game.isGrimTidings
+                              ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
+                              : game.ticketPrice}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Players</dt>
+                          <dd>{signedUpCount}/{game.seatCapacity}</dd>
+                        </div>
+                        <div>
+                          <dt>Available spots</dt>
+                          <dd>{availableSpots}</dd>
+                        </div>
+                      </dl>
+
+                      <div className="homepage-open-game-card-actions">
+                        <Link
+                          className="button button-secondary button-small"
+                          href={`/league/games/${game.id}`}
+                        >
+                          View game
+                        </Link>
+                        <Link
+                          className="button button-secondary button-small"
+                          href={`/admin/league-games/${game.id}/edit`}
+                        >
+                          Edit
+                        </Link>
+                        <form action={adminDeleteLeagueGame}>
+                          <input name="gameId" type="hidden" value={game.id} />
+                          <ConfirmSubmitButton
+                            className="button-danger button-small"
+                            message={`Delete ${game.title}? This cannot be undone.`}
+                          >
+                            Delete
+                          </ConfirmSubmitButton>
+                        </form>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="empty">No current open league games are scheduled right now.</div>
+            )}
           </div>
         </div>
       </section>

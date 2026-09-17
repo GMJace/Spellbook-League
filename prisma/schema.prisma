@@ -493,7 +493,9 @@ model AdventureCatalog {
   id                    String   @id @default(cuid())
   adventureCode         String
   lookupCode            String
+  isActive              Boolean  @default(true)
   title                 String
+  author                String   @default("")
   lookupTitle           String
   tier                  Tier
   duration              String   @default("")
@@ -533,6 +535,7 @@ model PendingAdventureModule {
   adventureCode         String
   lookupCode            String
   title                 String
+  author                String   @default("")
   lookupTitle           String
   tier                  Tier
   duration              String   @default("")

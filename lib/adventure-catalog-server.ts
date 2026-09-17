@@ -59,6 +59,14 @@ export async function findAdventureCatalogAutofill(params: {
     return null;
   }
 
+  // A repeated code needs an admin selection before autofill can choose a record.
+  if (lookupCode) {
+    const activeMatches = await prisma.adventureCatalog.count({
+      where: { lookupCode, isActive: true },
+    });
+    if (activeMatches > 1) return null;
+  }
+
   if (lookupCode && lookupTitle && tier) {
     const exactMatch = await prisma.adventureCatalog.findUnique({
       where: {
@@ -70,7 +78,7 @@ export async function findAdventureCatalogAutofill(params: {
       },
     });
 
-    if (exactMatch) {
+    if (exactMatch?.isActive) {
       return buildAdventureCatalogAutofillPayload(mapAdventureCatalogRow(exactMatch));
     }
   }
@@ -79,6 +87,7 @@ export async function findAdventureCatalogAutofill(params: {
     const byCode = await prisma.adventureCatalog.findFirst({
       where: {
         lookupCode,
+        isActive: true,
       },
       // An adventure code identifies the module. Do not let the form's default
       // tier prevent the module from loading before its saved tier can populate.
@@ -94,15 +103,22 @@ export async function findAdventureCatalogAutofill(params: {
     return null;
   }
 
-  const byTitle = await prisma.adventureCatalog.findFirst({
+  const byTitleCandidates = await prisma.adventureCatalog.findMany({
     where: {
       lookupTitle,
+      isActive: true,
       ...(tier ? { tier } : {}),
     },
     orderBy: [{ title: "asc" }, { adventureCode: "asc" }],
   });
 
-  return byTitle
-    ? buildAdventureCatalogAutofillPayload(mapAdventureCatalogRow(byTitle))
-    : null;
+  for (const candidate of byTitleCandidates) {
+    const activeMatches = await prisma.adventureCatalog.count({
+      where: { lookupCode: candidate.lookupCode, isActive: true },
+    });
+    if (activeMatches === 1) {
+      return buildAdventureCatalogAutofillPayload(mapAdventureCatalogRow(candidate));
+    }
+  }
+  return null;
 }
