@@ -14,6 +14,7 @@
     "db:migrate:al-authors": "tsx prisma/migrate-al-authors.ts",
     "db:migrate:module-conflicts": "tsx prisma/migrate-module-conflicts.ts",
     "test:ddb-sync": "tsx --test tests/dnd-beyond-character.test.ts",
+    "sync:ddb-roster": "tsx scripts/sync-dnd-beyond-roster.ts",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",

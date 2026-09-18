@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh SPELLBOOK D&D Beyond characters hourly
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=5m
+Persistent=true
+Unit=spellbook-dndbeyond-sync.service
+
+[Install]
+WantedBy=timers.target

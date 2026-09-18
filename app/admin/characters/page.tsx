@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { requireAdminUser } from "@/lib/admin";
+import { isDndBeyondLink } from "@/lib/dnd-beyond-character-import";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +77,13 @@ export default async function AdminCharactersPage({
                       {character.user.name} · {character.user.email}
                     </p>
                     <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                      D&D Beyond: {character.characterSheetLink ? "Link saved" : "No link"}
+                      D&amp;D Beyond: {character.dndBeyondError
+                        ? `Sync needs attention: ${character.dndBeyondError}`
+                        : isDndBeyondLink(character.characterSheetLink)
+                          ? character.dndBeyondSyncLink === character.characterSheetLink && character.dndBeyondSyncedAt
+                            ? `Last synced ${character.dndBeyondSyncedAt.toLocaleString("en-US")}`
+                            : "Awaiting first sync"
+                          : "No D&D Beyond link"}
                     </p>
                   </div>
                   <div className="inline-actions" style={{ flexWrap: "wrap" }}>

@@ -1,0 +1,9 @@
+[Unit]
+Description=Refresh saved D&D Beyond character links for SPELLBOOK
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/www/league-app
+Environment=DATABASE_URL=file:/var/lib/spellbook/prod.db
+ExecStart=/usr/bin/npm run sync:ddb-roster
+TimeoutStartSec=1800

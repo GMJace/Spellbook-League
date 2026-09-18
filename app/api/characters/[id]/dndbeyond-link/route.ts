@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { parseDndBeyondLink } from "@/lib/dnd-beyond-character-import";
+import { isDndBeyondLink, parseDndBeyondLink } from "@/lib/dnd-beyond-character-import";
+import { syncDndBeyondCharacter } from "@/lib/dnd-beyond-character-sync";
 import { prisma } from "@/lib/prisma";
 import { isSameOriginRequest } from "@/lib/request-origin";
 
@@ -43,6 +44,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       dndBeyondAttemptAt: null,
       dndBeyondError: null,
     } });
+    if (isDndBeyondLink(link)) await syncDndBeyondCharacter(prisma, id);
   }
   return NextResponse.json({ link }, { headers: { "Cache-Control": "no-store" } });
 }

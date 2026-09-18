@@ -12,6 +12,8 @@ import {
 } from "@/lib/character";
 import { requireRole, requireUser } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin-access";
+import { isDndBeyondLink } from "@/lib/dnd-beyond-character-import";
+import { syncDndBeyondCharacter } from "@/lib/dnd-beyond-character-sync";
 import {
   getLeagueLegalBlessingOptions,
   getLeagueLegalBoonOptions,
@@ -453,6 +455,11 @@ export async function updateCharacter(
       charms: JSON.stringify(parsed.data.charms),
     },
   });
+
+  if (existingCharacter.characterSheetLink !== (parsed.data.characterSheetLink || null) &&
+      isDndBeyondLink(parsed.data.characterSheetLink)) {
+    await syncDndBeyondCharacter(prisma, characterId);
+  }
 
   revalidatePath("/player");
   revalidatePath(`/player/characters/${characterId}`);
