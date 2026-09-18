@@ -11,6 +11,11 @@ const adminNavigationLinks = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/characters",
+    label: "Character roster",
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/league-games",
     label: "League games",
     roles: ["ADMIN"],

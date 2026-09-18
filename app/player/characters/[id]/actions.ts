@@ -10,7 +10,8 @@ import {
   hasBoonSlot,
   serializeMagicItemFlavorDetails,
 } from "@/lib/character";
-import { requireRole } from "@/lib/auth";
+import { requireRole, requireUser } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin-access";
 import {
   getLeagueLegalBlessingOptions,
   getLeagueLegalBoonOptions,
@@ -96,18 +97,25 @@ export async function updateCharacter(
   characterId: string,
   formData: FormData
 ) {
-  const user = await requireRole("PLAYER");
+  const user = await requireUser();
+  if (!isAdminEmail(user.email) && !user.roles.includes("PLAYER")) {
+    redirect("/player");
+  }
 
   const existingCharacter = await prisma.character.findFirst({
     where: {
       id: characterId,
-      userId: user.id,
+      ...(!isAdminEmail(user.email) ? { userId: user.id } : {}),
     },
   });
 
   if (!existingCharacter) {
     redirect("/player");
   }
+  const adminEditing = isAdminEmail(user.email) && existingCharacter.userId !== user.id;
+  const editPath = adminEditing
+    ? `/admin/characters/${characterId}/edit`
+    : `/player/characters/${characterId}/edit`;
 
   const tokenImageFile = getTokenImageUpload(formData.get("tokenImage"));
   const removeTokenImage = formData.get("removeTokenImage") === "1";
@@ -217,7 +225,7 @@ export async function updateCharacter(
 
   if (!parsed.success) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       getCharacterValidationMessage(parsed.error)
     );
   }
@@ -234,7 +242,7 @@ export async function updateCharacter(
 
   if (!characterChoiceValidation.success) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       characterChoiceValidation.message ?? "Review the selected class subclasses and try again."
     );
   }
@@ -249,7 +257,7 @@ export async function updateCharacter(
 
   if (parsed.data.magicItems.length > magicItemLimit) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `Tier ${tier} characters can only have ${magicItemLimit} current build magic item slot${magicItemLimit === 1 ? "" : "s"} filled.`
     );
   }
@@ -264,7 +272,7 @@ export async function updateCharacter(
 
   if (invalidBuildMagicItem) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `"${invalidBuildMagicItem}" is not in the legal Uncommon+ magic items list.`
     );
   }
@@ -276,7 +284,7 @@ export async function updateCharacter(
 
   if (invalidCommonMagicItem) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `"${invalidCommonMagicItem}" is not in the Common legal magic items list.`
     );
   }
@@ -290,7 +298,7 @@ export async function updateCharacter(
 
   if (invalidBuildMinorProperty) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `"${invalidBuildMinorProperty}" is not in the Minor Properties list.`
     );
   }
@@ -301,7 +309,7 @@ export async function updateCharacter(
 
   if (invalidCommonMinorProperty) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `"${invalidCommonMinorProperty}" is not in the Minor Properties list.`
     );
   }
@@ -337,14 +345,14 @@ export async function updateCharacter(
 
   if (invalidConsumable) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `"${invalidConsumable}" is not in the legal consumables list.`
     );
   }
 
   if (parsed.data.consumables.length > consumableItemLimit) {
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `Tier ${tier} characters can only have ${consumableItemLimit} consumable slots filled.`
     );
   }
@@ -352,13 +360,13 @@ export async function updateCharacter(
   if ((parsed.data.boon && !boonAllowed) || parsed.data.charms.length > charmSlotCount) {
     if (parsed.data.boon && !boonAllowed) {
       redirectWithCharacterError(
-        `/player/characters/${characterId}/edit`,
+        editPath,
         "Only tier 4 characters can have a boon slot filled."
       );
     }
 
     redirectWithCharacterError(
-      `/player/characters/${characterId}/edit`,
+      editPath,
       `Tier ${tier} characters can only have ${charmSlotCount} charm slots filled.`
     );
   }
@@ -376,11 +384,11 @@ export async function updateCharacter(
         error instanceof Error &&
         error.message === "Token images must be 5 MB or smaller."
       ) {
-        redirectWithCharacterError(`/player/characters/${characterId}/edit`, error.message);
+        redirectWithCharacterError(editPath, error.message);
       }
 
       redirectWithCharacterError(
-        `/player/characters/${characterId}/edit`,
+        editPath,
         "Upload a PNG, JPG, WEBP, or GIF token image."
       );
     }
@@ -395,6 +403,15 @@ export async function updateCharacter(
       name: parsed.data.name,
       isPubliclyViewable,
       characterSheetLink: parsed.data.characterSheetLink || null,
+      ...(existingCharacter.characterSheetLink !== (parsed.data.characterSheetLink || null)
+        ? {
+            dndBeyondSyncLink: null,
+            dndBeyondData: null,
+            dndBeyondSyncedAt: null,
+            dndBeyondAttemptAt: null,
+            dndBeyondError: null,
+          }
+        : {}),
       blindsightFt: parsed.data.blindsightFt ?? null,
       darkvisionFt: parsed.data.darkvisionFt ?? null,
       tremorsenseFt: parsed.data.tremorsenseFt ?? null,
@@ -439,13 +456,14 @@ export async function updateCharacter(
 
   revalidatePath("/player");
   revalidatePath(`/player/characters/${characterId}`);
-  revalidatePath(`/player/characters/${characterId}/edit`);
+  revalidatePath(editPath);
   revalidatePath("/player/characters/new");
   revalidatePath("/");
   revalidatePath("/dm/players");
   revalidatePath("/dm/achievements");
+  revalidatePath("/admin/characters");
 
-  redirect(`/player/characters/${characterId}?updated=1`);
+  redirect(adminEditing ? `${editPath}?updated=1` : `/player/characters/${characterId}?updated=1`);
 }
 
 export async function deleteCharacter(characterId: string) {
