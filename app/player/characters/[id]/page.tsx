@@ -42,6 +42,7 @@ import {
   isCharacterRosterAdmin,
 } from "@/lib/character-visibility";
 import { requireUser } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin-access";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -1120,11 +1121,11 @@ export default async function CharacterLogsheetPage({
           className="homepage-roster-divider"
           src="/divider4.png"
         />
-        {(isOwner || isDndBeyondLink(character.characterSheetLink)) ? (
+        {(isOwner || isAdminEmail(currentUser.email) || isDndBeyondLink(character.characterSheetLink)) ? (
           <DndBeyondCharacterPanel
             characterId={character.id}
             link={character.characterSheetLink ?? ""}
-            canEditLink={isOwner}
+            canEditLink={isOwner || isAdminEmail(currentUser.email)}
             data={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondData : null}
             syncedAt={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondSyncedAt?.toISOString() ?? null : null}
             savedError={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondError : null}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin-access";
 import { isDndBeyondLink, parseDndBeyondLink } from "@/lib/dnd-beyond-character-import";
 import { syncDndBeyondCharacter } from "@/lib/dnd-beyond-character-sync";
 import { prisma } from "@/lib/prisma";
@@ -33,7 +34,10 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid character link." }, { status: 400 });
     }
   }
-  const character = await prisma.character.findFirst({ where: { id, userId: user.id }, select: { characterSheetLink: true } });
+  const character = await prisma.character.findFirst({
+    where: { id, ...(!isAdminEmail(user.email) ? { userId: user.id } : {}) },
+    select: { characterSheetLink: true },
+  });
   if (!character) return NextResponse.json({ error: "Character not found." }, { status: 404 });
   if (character.characterSheetLink !== (link || null)) {
     await prisma.character.update({ where: { id }, data: {
