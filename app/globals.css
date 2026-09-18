@@ -2074,6 +2074,14 @@ button.button-small {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.dm-workflow-page .card,
+.dm-workflow-page .panel,
+.dm-workflow-page .list-card,
+.dm-workflow-page .metric {
+  background: rgba(60, 60, 60, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .dm-game-creation-page .panel,
 .dm-game-creation-page .list-card,
 .dm-game-creation-page .metric {
