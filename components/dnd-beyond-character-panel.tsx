@@ -58,18 +58,18 @@ export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, 
         </div>
         <button type="button" className="button-secondary" disabled={busy || !link} onClick={() => void refresh(true)}>{busy ? "Refreshing…" : "Refresh now"}</button>
       </div>
+      {canEditLink ? <div className="dnd-beyond-link-editor">
+        <label htmlFor="dnd-beyond-link">D&amp;D Beyond character sheet link</label>
+        <div className="dnd-beyond-link-controls">
+          <input id="dnd-beyond-link" type="url" value={linkInput} onChange={event => setLinkInput(event.target.value)} placeholder="https://www.dndbeyond.com/characters/…" />
+          <button type="button" className="button-secondary" disabled={busy || linkInput.trim() === link.trim()} onClick={() => void saveLink()}>Save link</button>
+        </div>
+      </div> : null}
       <p role="status" style={{ margin: 0 }}>{message || savedError}</p>
       {savedError ? <p className="muted">Last refresh error: {savedError}</p> : null}
       {imported?.warnings.map(warning => <p key={warning} className="muted" style={{ margin: 0 }}>{warning}</p>)}
       {imported ? <>
         <p className="muted" style={{ margin: 0 }}>D&amp;D Beyond currency: {Object.entries(imported.currencies).map(([unit, amount]) => `${amount.toLocaleString("en-US")} ${unit.toUpperCase()}`).join(" · ") || "Not supplied"}.</p>
-        {canEditLink ? <div className="dnd-beyond-link-editor">
-          <label htmlFor="dnd-beyond-link">Character sheet link</label>
-          <div className="dnd-beyond-link-controls">
-            <input id="dnd-beyond-link" type="url" value={linkInput} onChange={event => setLinkInput(event.target.value)} placeholder="https://www.dndbeyond.com/characters/…" />
-            <button type="button" className="button-secondary" disabled={busy || linkInput.trim() === link.trim()} onClick={() => void saveLink()}>Save link</button>
-          </div>
-        </div> : null}
         <div className="dnd-beyond-inventory-divider" aria-hidden="true" />
         <h3 style={{ margin: 0 }}>DnDBeyond Inventory</h3>
         <label>Find an inventory item<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Item, type, or container" /></label>
@@ -100,13 +100,6 @@ export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, 
           </details>
         </> : null}
       </> : <>
-        {canEditLink ? <div className="dnd-beyond-link-editor">
-          <label htmlFor="dnd-beyond-link">Character sheet link</label>
-          <div className="dnd-beyond-link-controls">
-            <input id="dnd-beyond-link" type="url" value={linkInput} onChange={event => setLinkInput(event.target.value)} placeholder="https://www.dndbeyond.com/characters/…" />
-            <button type="button" className="button-secondary" disabled={busy || linkInput.trim() === link.trim()} onClick={() => void saveLink()}>Save link</button>
-          </div>
-        </div> : null}
         <p className="muted">Inventory will appear after the first successful refresh. The linked character must be Public on D&amp;D Beyond.</p>
       </>}
     </section>
