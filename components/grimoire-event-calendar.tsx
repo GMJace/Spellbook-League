@@ -271,6 +271,9 @@ export function GrimoireEventCalendar({
                           >
                             {game.game}
                           </Link>
+                          {game.gameCode?.trim() ? (
+                            <div className="ggcon-calendar-game-code">{game.gameCode}</div>
+                          ) : null}
                           <div className="ggcon-calendar-game-meta">
                             {formatGrimoireTier(game.tier)} · {game.ticketPrice}
                           </div>

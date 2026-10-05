@@ -1,11 +1,14 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { mkdir, writeFile } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import path from "node:path";
 import { z } from "zod";
 
 import { requireGrimoireAdminUser } from "@/lib/admin";
+import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
 import {
   buildStandardGrimoireEventSlots,
   getGrimoireSlotCapacityValidationErrors,
@@ -79,6 +82,7 @@ const discordSettingsSchema = z.object({
 });
 
 const MAX_GRIMOIRE_COVER_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_GRIMOIRE_EVENT_PACK_PDF_SIZE = 20 * 1024 * 1024;
 
 function parseDateOrNull(value: string) {
   const date = new Date(value);
@@ -467,6 +471,83 @@ export async function updateGrimoireDiscordSettings(formData: FormData) {
   redirect(
     buildGrimoireDiscordRedirect({
       status: "updated",
+    }),
+  );
+}
+
+export async function updateGrimoireEventPackPdf(formData: FormData) {
+  await requireGrimoireAdminUser();
+
+  const parsed = deleteEventSchema.safeParse({
+    eventId: formData.get("eventId"),
+  });
+  const eventId = parsed.success ? parsed.data.eventId : undefined;
+
+  if (!parsed.success) {
+    redirect(buildGrimoireEventRedirect({ status: "pdf-invalid" }));
+  }
+
+  const event = await prisma.grimoireEvent.findUnique({
+    where: { id: parsed.data.eventId },
+    select: { id: true },
+  });
+
+  if (!event) {
+    redirect(
+      buildGrimoireEventRedirect({
+        editEventId: eventId,
+        status: "pdf-invalid",
+      }),
+    );
+  }
+
+  const eventPackPdf = formData.get("eventPackPdf");
+
+  if (!isUploadedFile(eventPackPdf) || eventPackPdf.size <= 0) {
+    redirect(
+      buildGrimoireEventRedirect({
+        details: "Choose a PDF file before updating the event pack.",
+        editEventId: event.id,
+        status: "pdf-invalid",
+      }),
+    );
+  }
+
+  const isPdf =
+    eventPackPdf.type === "application/pdf" ||
+    eventPackPdf.name.toLowerCase().endsWith(".pdf");
+
+  if (!isPdf) {
+    redirect(
+      buildGrimoireEventRedirect({
+        details: "Event pack must be a PDF file.",
+        editEventId: event.id,
+        status: "pdf-invalid",
+      }),
+    );
+  }
+
+  if (eventPackPdf.size > MAX_GRIMOIRE_EVENT_PACK_PDF_SIZE) {
+    redirect(
+      buildGrimoireEventRedirect({
+        details: "Event pack PDF must be 20 MB or smaller.",
+        editEventId: event.id,
+        status: "pdf-invalid",
+      }),
+    );
+  }
+
+  const publicPath = getGrimoireEventPackPdfPath(event.id);
+  const outputPath = path.join(process.cwd(), "public", ...publicPath.split("/").filter(Boolean));
+
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, Buffer.from(await eventPackPdf.arrayBuffer()));
+
+  revalidateGrimoirePaths({ eventId: event.id });
+  redirect(
+    buildGrimoireEventRedirect({
+      editEventId: event.id,
+      status: "pdf-updated",
     }),
   );
 }

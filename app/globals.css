@@ -1521,10 +1521,16 @@ button.button-small {
 }
 
 .ggcon-calendar-day-header span,
+.ggcon-calendar-game-code,
 .ggcon-calendar-game-meta,
 .ggcon-calendar-game-time {
   color: #cfdcc7;
   font-size: 0.82rem;
+}
+
+.ggcon-calendar-game-code {
+  color: #f5ffe9;
+  font-weight: 700;
 }
 
 .ggcon-calendar-hour {

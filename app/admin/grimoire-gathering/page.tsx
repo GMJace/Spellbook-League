@@ -12,9 +12,11 @@ import {
   moderateGrimoireDmSubmission,
   updateGrimoireDiscordSettings,
   updateGrimoireEvent,
+  updateGrimoireEventPackPdf,
 } from "@/app/admin/grimoire-gathering/actions";
 import { requireGrimoireAdminUser } from "@/lib/admin";
 import { getGrimoireDiscordSettings } from "@/lib/grimoire-discord";
+import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
 import { formatGrimoireTier } from "@/lib/grimoire";
 import {
   STANDARD_GRIMOIRE_TIME_SLOTS,
@@ -615,6 +617,8 @@ export default async function AdminGrimoireGatheringPage({
       "The event could not be saved because one or more fields are invalid. Shorten the text or check the required fields and try again.",
     "invalid-save":
       "The requested Grimoire event change could not be completed because the event could not be saved.",
+    "pdf-invalid": "The event pack PDF could not be updated.",
+    "pdf-updated": "Event pack PDF updated.",
   };
   const discordMessageMap: Record<string, string> = {
     invalid: "The Grimoire Discord settings could not be saved.",
@@ -1000,6 +1004,45 @@ export default async function AdminGrimoireGatheringPage({
               >
                 Delete event
               </ConfirmSubmitButton>
+            </form>
+          </section>
+        ) : null}
+
+        {selectedEvent ? (
+          <section className="list-card stack" id="event-pack-pdf">
+            <div className="section-heading">
+              <div>
+                <h2 style={{ margin: 0 }}>Event PDF</h2>
+                <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                  Upload or replace the downloadable event pack for{" "}
+                  <strong>{selectedEvent.subtitle}</strong>.
+                </p>
+              </div>
+              <a
+                className="button secondary"
+                download
+                href={getGrimoireEventPackPdfPath(selectedEvent.id)}
+              >
+                Download current PDF
+              </a>
+            </div>
+
+            <form
+              action={updateGrimoireEventPackPdf}
+              className="form-stack"
+              encType="multipart/form-data"
+            >
+              <input name="eventId" type="hidden" value={selectedEvent.id} />
+              <label>
+                Event pack PDF
+                <input accept="application/pdf,.pdf" name="eventPackPdf" required type="file" />
+              </label>
+              <p className="muted" style={{ margin: 0 }}>
+                Upload a PDF up to 20 MB. This replaces the public download for this event.
+              </p>
+              <button className="button-secondary" type="submit">
+                Update event PDF
+              </button>
             </form>
           </section>
         ) : null}

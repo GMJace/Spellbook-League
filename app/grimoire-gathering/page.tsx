@@ -22,6 +22,7 @@ import {
   getMergedGamesForEvent,
   getSeasonSchedule,
 } from "@/lib/grimoire-server";
+import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
 
 export const dynamic = "force-dynamic";
 const contactAdminSubject = encodeURIComponent(
@@ -150,18 +151,16 @@ export default async function GrimoireGatheringPage({
           </p>
           <div className="inline-actions" style={{ flexWrap: "wrap" }}>
             {buildBadgeCartLink()}
-            <Link className="button secondary" href="/grimoire-gathering/cart">
-              Open cart
-            </Link>
             <Link className="button secondary" href="/grimoire-gathering/dm">
               Become a Grimoire DM
             </Link>
-            <Link
+            <a
               className="button secondary"
-              href={`/grimoire-gathering/events/${nextEvent.id}`}
+              download
+              href={getGrimoireEventPackPdfPath(nextEvent.id)}
             >
-              Event pack
-            </Link>
+              Download Event Pack
+            </a>
           </div>
         </section>
 
@@ -258,9 +257,13 @@ export default async function GrimoireGatheringPage({
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
                 {grimoireEventTicketNotice}
               </p>
-              <Link className="button secondary ggcon-schedule-button" href={`/grimoire-gathering/events/${event.id}`}>
-                Event pack
-              </Link>
+              <a
+                className="button secondary ggcon-schedule-button"
+                download
+                href={getGrimoireEventPackPdfPath(event.id)}
+              >
+                Download Event Pack
+              </a>
             </article>
           ))}
         </div>

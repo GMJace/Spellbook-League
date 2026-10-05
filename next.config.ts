@@ -32,7 +32,7 @@ export default function nextConfig(phase: string): NextConfig {
     },
     experimental: {
       serverActions: {
-        bodySizeLimit: "4mb",
+        bodySizeLimit: "20mb",
       },
     },
   };
