@@ -275,9 +275,17 @@ export function GrimoireEventCalendar({
                             {formatGrimoireTier(game.tier)} · {game.ticketPrice}
                           </div>
                           {game.ticketPriceUsd > 0 && !game.isSubmission ? (
-                            <Link className="ggcon-calendar-dm-link" href={getCartHref(game)}>
-                              DM {game.dm}
-                            </Link>
+                            <>
+                              <Link className="ggcon-calendar-dm-link" href={getCartHref(game)}>
+                                DM {game.dm}
+                              </Link>
+                              <Link
+                                className="button secondary ggcon-calendar-cart-button"
+                                href={getCartHref(game)}
+                              >
+                                Add to cart
+                              </Link>
+                            </>
                           ) : (
                             <span className="ggcon-calendar-dm-muted">DM {game.dm}</span>
                           )}

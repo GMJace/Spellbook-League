@@ -1459,6 +1459,13 @@ button.button-small {
   overflow: hidden;
 }
 
+.ggcon-section-divider {
+  width: 100%;
+  margin: 0.2rem 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.82);
+}
+
 .ggcon-calendar-wrap {
   overflow-x: auto;
   padding-bottom: 0.35rem;
@@ -1564,6 +1571,14 @@ button.button-small {
 .ggcon-calendar-dm-muted {
   color: #d8e8d2;
   font-weight: 700;
+}
+
+.ggcon-calendar-cart-button {
+  width: 100%;
+  margin-top: 0.25rem;
+  justify-content: center;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.82rem;
 }
 
 .ggcon-calendar-locked {

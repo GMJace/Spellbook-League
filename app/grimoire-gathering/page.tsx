@@ -158,15 +158,6 @@ export default async function GrimoireGatheringPage({
         />
       </section>
 
-      <GrimoireEventCalendar
-        canViewGames={gameAccess.canViewGames}
-        event={nextEvent}
-        games={gameAccess.canViewGames ? displayedGames : []}
-        nextAccessAt={gameAccess.nextAccessAt}
-        publicOpensAt={gameAccess.publicOpensAt}
-        tomeKeyOpensAt={gameAccess.tomeKeyOpensAt}
-      />
-
       <section className="ggcon-hero">
         <section className="card ledger-panel stack ggcon-ticket-card">
           <div className="stack" style={{ gap: "0.45rem" }}>
@@ -216,6 +207,17 @@ export default async function GrimoireGatheringPage({
           />
         </div>
       </section>
+
+      <hr className="ggcon-section-divider" />
+
+      <GrimoireEventCalendar
+        canViewGames={gameAccess.canViewGames}
+        event={nextEvent}
+        games={gameAccess.canViewGames ? displayedGames : []}
+        nextAccessAt={gameAccess.nextAccessAt}
+        publicOpensAt={gameAccess.publicOpensAt}
+        tomeKeyOpensAt={gameAccess.tomeKeyOpensAt}
+      />
 
       <FlyingCarpetSection />
 
