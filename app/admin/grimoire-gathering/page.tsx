@@ -839,6 +839,8 @@ export default async function AdminGrimoireGatheringPage({
                   </label>
                 </div>
 
+                <hr className="ggcon-form-divider" />
+
                 <label>
                   Event badge/logo
                   <input accept="image/*" name="eventBadge" type="file" />
@@ -847,7 +849,9 @@ export default async function AdminGrimoireGatheringPage({
                   Optional. Upload a PNG, JPG, WEBP, or GIF logo up to 10 MB.
                 </p>
 
-                <label className="ggcon-checkbox-row">
+                <hr className="ggcon-form-divider" />
+
+                <label className="ggcon-checkbox-row ggcon-template-checkbox-row">
                   <input
                     className="ggcon-template-toggle"
                     defaultChecked
@@ -856,6 +860,8 @@ export default async function AdminGrimoireGatheringPage({
                   />
                   <span>Use event time slot template</span>
                 </label>
+
+                <hr className="ggcon-form-divider" />
 
                 <div className="stack ggcon-standard-slot-section" style={{ gap: "0.75rem" }}>
                   <div>
@@ -878,24 +884,31 @@ export default async function AdminGrimoireGatheringPage({
                     </p>
                   </div>
                   {[0, 1, 2, 3, 4, 5].map((index) => (
-                    <div className="form-grid" key={index}>
-                      <DatePickerField
-                        label={`Slot ${index + 1} date`}
-                        name="customSlotDate"
-                        type="date"
-                      />
-                      <label>
-                        Start time
-                        <input name="customSlotStartTime" type="time" />
-                      </label>
-                      <label>
-                        Duration hours
-                        <input min="0.5" name="customSlotDurationHours" step="0.5" type="number" />
-                      </label>
-                      <label>
-                        Spaces
-                        <input min="0" name="customSlotCount" step="1" type="number" />
-                      </label>
+                    <div className="ggcon-custom-slot-row" key={index}>
+                      <div className="form-grid">
+                        <DatePickerField
+                          label={`Slot ${index + 1} date`}
+                          name="customSlotDate"
+                          type="date"
+                        />
+                        <label>
+                          Start time
+                          <input name="customSlotStartTime" type="time" />
+                        </label>
+                        <label>
+                          Duration hours
+                          <input
+                            min="0.5"
+                            name="customSlotDurationHours"
+                            step="0.5"
+                            type="number"
+                          />
+                        </label>
+                        <label>
+                          Spaces
+                          <input min="0" name="customSlotCount" step="1" type="number" />
+                        </label>
+                      </div>
                     </div>
                   ))}
                 </div>

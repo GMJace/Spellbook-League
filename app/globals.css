@@ -1596,6 +1596,27 @@ button.button-small {
   display: none;
 }
 
+.ggcon-form-divider {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.78);
+  margin: 0.25rem 0;
+}
+
+.ggcon-template-checkbox-row {
+  justify-content: flex-start;
+  width: fit-content;
+}
+
+.ggcon-template-checkbox-row input {
+  flex: 0 0 auto;
+}
+
+.ggcon-custom-slot-row + .ggcon-custom-slot-row {
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.78);
+}
+
 .form-stack:has(.ggcon-template-toggle:not(:checked)) .ggcon-standard-slot-section {
   display: none;
 }
