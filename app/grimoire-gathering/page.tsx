@@ -23,6 +23,7 @@ import {
   getSeasonSchedule,
 } from "@/lib/grimoire-server";
 import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
+import { getGrimoireEventBadgePathIfExists } from "@/lib/grimoire-event-badge";
 
 export const dynamic = "force-dynamic";
 const contactAdminSubject = encodeURIComponent(
@@ -97,6 +98,15 @@ export default async function GrimoireGatheringPage({
 
   const nextEventHeader = nextEvent.subtitle.replace(/^Season Kickoff\s*:\s*/i, "").trim();
   const featuredSeasonSchedule = seasonSchedule.slice(0, 4);
+  const nextEventBadgePath = await getGrimoireEventBadgePathIfExists(nextEvent.id);
+  const featuredEventBadgePaths = Object.fromEntries(
+    await Promise.all(
+      featuredSeasonSchedule.map(async (event) => [
+        event.id,
+        await getGrimoireEventBadgePathIfExists(event.id),
+      ] as const),
+    ),
+  );
   const nextEventGames = await getMergedGamesForEvent(nextEvent.id);
   const displayedGames =
     nextEventGames.length > 0
@@ -168,7 +178,7 @@ export default async function GrimoireGatheringPage({
           <img
             alt="Grimoire Gathering logo"
             className="ggcon-logo"
-            src="/grimoire-gathering-banner.png"
+            src={nextEventBadgePath ?? "/grimoire-gathering-banner.png"}
           />
         </div>
       </section>
@@ -244,9 +254,9 @@ export default async function GrimoireGatheringPage({
               className={`ggcon-schedule-card${event.finale ? " finale" : ""}`}
             >
               <img
-                alt="Grimoire Gathering banner"
+                alt={`${event.subtitle} badge`}
                 className="ggcon-schedule-card-image"
-                src="/grimoire-gathering-banner.png"
+                src={featuredEventBadgePaths[event.id] ?? "/grimoire-gathering-banner.png"}
               />
               <p className="ggcon-schedule-month">{event.label}</p>
               {event.finale ? <span className="pill ggcon-event-pill">GGCON Event</span> : null}
@@ -257,13 +267,6 @@ export default async function GrimoireGatheringPage({
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
                 {grimoireEventTicketNotice}
               </p>
-              <a
-                className="button secondary ggcon-schedule-button"
-                download
-                href={getGrimoireEventPackPdfPath(event.id)}
-              >
-                Download Event Pack
-              </a>
             </article>
           ))}
         </div>

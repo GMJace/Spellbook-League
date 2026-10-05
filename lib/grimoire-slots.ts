@@ -136,6 +136,25 @@ function parseEventDateInput(value: string) {
   };
 }
 
+function slugifySlotKey(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_{2,}/g, "_");
+}
+
+function formatCustomSlotLabel(startAt: Date, durationHours: number) {
+  const label = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: GRIMOIRE_EVENT_TIME_ZONE,
+  }).format(startAt);
+
+  return `${label} (${durationHours}h)`;
+}
+
 export function getGrimoireEventDateFieldName(slotKey: GrimoireTimeSlotKey) {
   return `slotCount_${slotKey}`;
 }
@@ -158,6 +177,10 @@ export function readStandardGrimoireSlotCountsFromFormData(formData: FormData) {
   }
 
   return counts;
+}
+
+export function eventUsesStandardGrimoireSlotTemplate(formData: FormData) {
+  return formData.get("useEventTimeSlotTemplate") === "on";
 }
 
 export function buildStandardGrimoireEventSlots(
@@ -193,6 +216,87 @@ export function buildStandardGrimoireEventSlots(
       gameSlotCount: slotCounts[slot.key] ?? 0,
     };
   });
+}
+
+export function buildCustomGrimoireEventSlots(formData: FormData) {
+  const dates = formData.getAll("customSlotDate").map((value) => String(value).trim());
+  const startTimes = formData.getAll("customSlotStartTime").map((value) => String(value).trim());
+  const durations = formData.getAll("customSlotDurationHours").map((value) => String(value).trim());
+  const counts = formData.getAll("customSlotCount").map((value) => String(value).trim());
+  const maxLength = Math.max(dates.length, startTimes.length, durations.length, counts.length);
+  const slots: Array<{
+    slotKey: string;
+    label: string;
+    startAt: Date;
+    endAt: Date;
+    gameSlotCount: number;
+  }> = [];
+  const errors: string[] = [];
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const dateInput = dates[index] ?? "";
+    const startTimeInput = startTimes[index] ?? "";
+    const durationInput = durations[index] ?? "";
+    const countInput = counts[index] ?? "";
+    const hasAnyValue = Boolean(dateInput || startTimeInput || durationInput || countInput);
+
+    if (!hasAnyValue) {
+      continue;
+    }
+
+    const rowLabel = `Custom slot ${index + 1}`;
+    const dateParts = parseEventDateInput(dateInput);
+    const timeMatch = startTimeInput.match(/^(\d{2}):(\d{2})$/);
+    const durationHours = Number(durationInput);
+    const gameSlotCount = Number(countInput);
+
+    if (!dateParts) {
+      errors.push(`${rowLabel}: Choose a valid date.`);
+      continue;
+    }
+
+    if (!timeMatch) {
+      errors.push(`${rowLabel}: Choose a valid start time.`);
+      continue;
+    }
+
+    if (!Number.isFinite(durationHours) || durationHours <= 0 || durationHours > 24) {
+      errors.push(`${rowLabel}: Enter a duration between 0.5 and 24 hours.`);
+      continue;
+    }
+
+    if (!Number.isInteger(gameSlotCount) || gameSlotCount < 0 || gameSlotCount > 99) {
+      errors.push(`${rowLabel}: Enter a whole number of spaces between 0 and 99.`);
+      continue;
+    }
+
+    const startAt = createDateInTimeZone(
+      dateParts.year,
+      dateParts.month,
+      dateParts.day,
+      Number(timeMatch[1]),
+      Number(timeMatch[2]),
+    );
+    const slotKeyBase = slugifySlotKey(`${dateInput}_${startTimeInput}`);
+    const durationMs = Math.round(durationHours * 60 * 60 * 1000);
+
+    slots.push({
+      slotKey: `custom_${slotKeyBase || index + 1}`,
+      label: formatCustomSlotLabel(startAt, durationHours),
+      startAt,
+      endAt: new Date(startAt.getTime() + durationMs),
+      gameSlotCount,
+    });
+  }
+
+  if (!slots.length && !errors.length) {
+    errors.push("Create at least one custom event time slot.");
+  }
+
+  return {
+    errors,
+    slots,
+  };
 }
 
 export function getStandardGrimoireSlotLabel(slotKey: string) {

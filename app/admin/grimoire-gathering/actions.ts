@@ -9,8 +9,11 @@ import { z } from "zod";
 
 import { requireGrimoireAdminUser } from "@/lib/admin";
 import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
+import { saveGrimoireEventBadgeUpload } from "@/lib/grimoire-event-badge";
 import {
+  buildCustomGrimoireEventSlots,
   buildStandardGrimoireEventSlots,
+  eventUsesStandardGrimoireSlotTemplate,
   getGrimoireSlotCapacityValidationErrors,
   readStandardGrimoireSlotCountsFromFormData,
 } from "@/lib/grimoire-slots";
@@ -345,9 +348,17 @@ export async function createGrimoireEvent(formData: FormData) {
     );
   }
 
-  const slotCounts = readStandardGrimoireSlotCountsFromFormData(formData);
-  const slotCapacityErrors = getGrimoireSlotCapacityValidationErrors(slotCounts);
-  const slots = buildStandardGrimoireEventSlots(parsed.data.date, slotCounts);
+  const useStandardSlotTemplate = eventUsesStandardGrimoireSlotTemplate(formData);
+  const standardSlotCounts = readStandardGrimoireSlotCountsFromFormData(formData);
+  const customSlotResult = useStandardSlotTemplate
+    ? null
+    : buildCustomGrimoireEventSlots(formData);
+  const slotCapacityErrors = useStandardSlotTemplate
+    ? getGrimoireSlotCapacityValidationErrors(standardSlotCounts)
+    : customSlotResult?.errors ?? [];
+  const slots = useStandardSlotTemplate
+    ? buildStandardGrimoireEventSlots(parsed.data.date, standardSlotCounts)
+    : customSlotResult?.slots ?? null;
   const generatedEventId = buildGrimoireEventIdFromTitle(parsed.data.subtitle);
 
   if (!generatedEventId) {
@@ -384,6 +395,21 @@ export async function createGrimoireEvent(formData: FormData) {
 
   if (existingEvent) {
     redirect(buildGrimoireEventRedirect({ status: "duplicate-id" }));
+  }
+
+  const eventBadgeFile = formData.get("eventBadge");
+
+  if (isUploadedFile(eventBadgeFile) && eventBadgeFile.size > 0) {
+    const badgeUploadResult = await saveGrimoireEventBadgeUpload(generatedEventId, eventBadgeFile);
+
+    if ("error" in badgeUploadResult) {
+      redirect(
+        buildGrimoireEventRedirect({
+          details: `Event badge: ${badgeUploadResult.error}`,
+          status: "invalid-fields",
+        }),
+      );
+    }
   }
 
   try {

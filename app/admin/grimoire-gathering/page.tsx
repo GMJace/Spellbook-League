@@ -839,7 +839,25 @@ export default async function AdminGrimoireGatheringPage({
                   </label>
                 </div>
 
-                <div className="stack" style={{ gap: "0.75rem" }}>
+                <label>
+                  Event badge/logo
+                  <input accept="image/*" name="eventBadge" type="file" />
+                </label>
+                <p className="muted" style={{ margin: 0 }}>
+                  Optional. Upload a PNG, JPG, WEBP, or GIF logo up to 10 MB.
+                </p>
+
+                <label className="ggcon-checkbox-row">
+                  <input
+                    className="ggcon-template-toggle"
+                    defaultChecked
+                    name="useEventTimeSlotTemplate"
+                    type="checkbox"
+                  />
+                  <span>Use event time slot template</span>
+                </label>
+
+                <div className="stack ggcon-standard-slot-section" style={{ gap: "0.75rem" }}>
                   <div>
                     <strong>Open game slots by time slot</strong>
                     <p className="muted" style={{ margin: "0.35rem 0 0" }}>
@@ -848,9 +866,39 @@ export default async function AdminGrimoireGatheringPage({
                   </div>
                   <EventSlotCapacityFields />
                 </div>
-                <p className="muted" style={{ margin: 0 }}>
+                <p className="muted ggcon-standard-slot-section" style={{ margin: 0 }}>
                   Set how many tables DMs can fill in each standard event time slot.
                 </p>
+
+                <div className="stack ggcon-custom-slot-section" style={{ gap: "0.75rem" }}>
+                  <div>
+                    <strong>Create custom time slots</strong>
+                    <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                      Add custom Mountain-time slots with their own duration and available spaces.
+                    </p>
+                  </div>
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <div className="form-grid" key={index}>
+                      <DatePickerField
+                        label={`Slot ${index + 1} date`}
+                        name="customSlotDate"
+                        type="date"
+                      />
+                      <label>
+                        Start time
+                        <input name="customSlotStartTime" type="time" />
+                      </label>
+                      <label>
+                        Duration hours
+                        <input min="0.5" name="customSlotDurationHours" step="0.5" type="number" />
+                      </label>
+                      <label>
+                        Spaces
+                        <input min="0" name="customSlotCount" step="1" type="number" />
+                      </label>
+                    </div>
+                  ))}
+                </div>
 
                 <button className="button-secondary" type="submit">
                   Create event

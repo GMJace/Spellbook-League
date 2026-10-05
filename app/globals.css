@@ -1592,6 +1592,18 @@ button.button-small {
   background: rgba(6, 255, 0, 0.08);
 }
 
+.ggcon-custom-slot-section {
+  display: none;
+}
+
+.form-stack:has(.ggcon-template-toggle:not(:checked)) .ggcon-standard-slot-section {
+  display: none;
+}
+
+.form-stack:has(.ggcon-template-toggle:not(:checked)) .ggcon-custom-slot-section {
+  display: grid;
+}
+
 .ggcon-event-game-card {
   display: grid;
   gap: 1rem;

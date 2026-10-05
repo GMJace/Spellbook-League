@@ -137,6 +137,25 @@ function formatLocalHour(date: Date, timeZone?: string) {
   }).format(date);
 }
 
+function formatDuration(durationMinutes?: number) {
+  if (!durationMinutes) {
+    return "";
+  }
+
+  const hours = Math.floor(durationMinutes / 60);
+  const minutes = durationMinutes % 60;
+
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+
+  return `${minutes}m`;
+}
+
 function formatAccessTime(isoString: string, timeZone?: string) {
   return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
@@ -264,6 +283,9 @@ export function GrimoireEventCalendar({
                         <article className="ggcon-calendar-game" key={game.slug}>
                           <div className="ggcon-calendar-game-time">
                             {formatLocalHour(new Date(game.startAt), userTimeZone)}
+                            {formatDuration(game.durationMinutes)
+                              ? ` · ${formatDuration(game.durationMinutes)}`
+                              : ""}
                           </div>
                           <Link
                             className="ggcon-calendar-game-title"

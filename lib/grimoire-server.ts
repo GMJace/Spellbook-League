@@ -258,6 +258,27 @@ function mapSubmissionToGame(submission: GrimoireSubmissionRecord): GrimoireGame
   };
 }
 
+async function addEventSlotDurationsToGames(eventId: string, games: GrimoireGame[]) {
+  const slots = await prisma.grimoireEventSlot.findMany({
+    where: { eventId },
+    select: {
+      endAt: true,
+      startAt: true,
+    },
+  });
+  const durationByStartAt = new Map(
+    slots.map((slot) => [
+      slot.startAt.toISOString(),
+      Math.max(Math.round((slot.endAt.getTime() - slot.startAt.getTime()) / 60000), 0),
+    ]),
+  );
+
+  return games.map((game) => ({
+    ...game,
+    durationMinutes: durationByStartAt.get(game.startAt),
+  }));
+}
+
 export async function getSeasonSchedule() {
   const events = (await prisma.grimoireEvent.findMany({
     orderBy: { date: "asc" },
@@ -394,9 +415,11 @@ export async function getMergedGamesForEvent(eventId: string) {
     orderBy: [{ slotStartAt: "asc" }, { createdAt: "asc" }],
   })) as GrimoireSubmissionRecord[];
 
-  return [...curatedGames, ...submissions.map(mapSubmissionToGame)].sort(
+  const games = [...curatedGames, ...submissions.map(mapSubmissionToGame)].sort(
     (left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime(),
   );
+
+  return addEventSlotDurationsToGames(eventId, games);
 }
 
 export async function getMergedGrimoireGameBySlug(slug: string) {
