@@ -6,7 +6,7 @@ import {
   type GrimoireTier,
   type SeasonEvent,
 } from "@/lib/grimoire";
-import { Prisma } from "@prisma/client";
+import { CheckoutStatus, CheckoutType, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
@@ -63,6 +63,12 @@ type GrimoireSubmissionRecord = {
   tier: SubmissionTier;
   seats: number;
   summary: string;
+};
+
+type SerializedGrimoireCheckoutData = {
+  badgeQuantity?: number;
+  badgeType?: string;
+  eventId?: string;
 };
 
 function parseStringArray(value: string) {
@@ -157,6 +163,79 @@ function formatSubmissionGameDetails(submission: GrimoireSubmissionRecord) {
 
 function buildSubmissionSlug(submissionId: string) {
   return `submission-${submissionId}`;
+}
+
+function subtractHours(isoString: string, hours: number) {
+  return new Date(new Date(isoString).getTime() - hours * 60 * 60 * 1000);
+}
+
+function subtractMonths(isoString: string, months: number) {
+  const date = new Date(isoString);
+  date.setUTCMonth(date.getUTCMonth() - months);
+  return date;
+}
+
+function parseGrimoireCheckoutData(value: string) {
+  try {
+    const parsed = JSON.parse(value) as SerializedGrimoireCheckoutData;
+
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function hasTomeKeyBadgeForEvent(userId: string | null | undefined, eventId: string) {
+  if (!userId) {
+    return false;
+  }
+
+  const orders = await prisma.checkoutOrder.findMany({
+    where: {
+      checkoutType: CheckoutType.GRIMOIRE,
+      status: CheckoutStatus.COMPLETED,
+      userId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      itemDataJson: true,
+    },
+  });
+
+  return orders.some((order) => {
+    const parsed = parseGrimoireCheckoutData(order.itemDataJson);
+
+    return (
+      parsed?.eventId === eventId &&
+      parsed.badgeType === "FLYING_CARPET" &&
+      typeof parsed.badgeQuantity === "number" &&
+      parsed.badgeQuantity > 0
+    );
+  });
+}
+
+export async function getGrimoireGameAccessForEvent(
+  event: Pick<SeasonEvent, "date" | "id">,
+  userId?: string | null,
+) {
+  const now = new Date();
+  const publicOpensAt = subtractMonths(event.date, 1);
+  const tomeKeyOpensAt = subtractHours(publicOpensAt.toISOString(), 48);
+  const hasTomeKeyBadge = await hasTomeKeyBadgeForEvent(userId, event.id);
+  const isPublicOpen = now >= publicOpensAt;
+  const isTomeKeyOpen = hasTomeKeyBadge && now >= tomeKeyOpensAt;
+
+  return {
+    canViewGames: isPublicOpen || isTomeKeyOpen,
+    hasTomeKeyBadge,
+    isPublicOpen,
+    isTomeKeyOpen,
+    nextAccessAt: hasTomeKeyBadge ? tomeKeyOpensAt.toISOString() : publicOpensAt.toISOString(),
+    publicOpensAt: publicOpensAt.toISOString(),
+    tomeKeyOpensAt: tomeKeyOpensAt.toISOString(),
+  };
 }
 
 function mapSubmissionToGame(submission: GrimoireSubmissionRecord): GrimoireGame {

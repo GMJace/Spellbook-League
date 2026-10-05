@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 
+import { auth } from "@/auth";
 import { unlockGrimoireDiscord } from "@/app/grimoire-gathering/actions";
 import { FlyingCarpetSection } from "@/components/flying-carpet-section";
+import { GrimoireEventCalendar } from "@/components/grimoire-event-calendar";
 import { GrimoireEventGamesGrid } from "@/components/grimoire-event-games-grid";
 import { GrimoireGatheringText } from "@/components/grimoire-gathering-text";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
@@ -16,7 +18,11 @@ import {
   getGrimoireDiscordSettings,
   GRIMOIRE_DISCORD_COOKIE_NAME,
 } from "@/lib/grimoire-discord";
-import { getMergedGamesForEvent, getSeasonSchedule } from "@/lib/grimoire-server";
+import {
+  getGrimoireGameAccessForEvent,
+  getMergedGamesForEvent,
+  getSeasonSchedule,
+} from "@/lib/grimoire-server";
 
 export const dynamic = "force-dynamic";
 const contactAdminSubject = encodeURIComponent(
@@ -71,11 +77,12 @@ export default async function GrimoireGatheringPage({
     discord?: string;
   }>;
 }) {
-  const [cookieStore, discordSettings, params, seasonSchedule] = await Promise.all([
+  const [cookieStore, discordSettings, params, seasonSchedule, session] = await Promise.all([
     cookies(),
     getGrimoireDiscordSettings(),
     searchParams,
     getSeasonSchedule(),
+    auth(),
   ]);
   const nextEvent = getNextEvent(seasonSchedule);
   const discordStatusMessageMap: Record<string, string> = {
@@ -128,6 +135,7 @@ export default async function GrimoireGatheringPage({
     nextEventGames.length > 0
       ? nextEventGames
       : await getMergedGamesForEvent(seasonSchedule[0]?.id ?? nextEvent.id);
+  const gameAccess = await getGrimoireGameAccessForEvent(nextEvent, session?.user?.id);
 
   return (
     <main className="stack ggcon-page">
@@ -149,6 +157,15 @@ export default async function GrimoireGatheringPage({
           src="/divider4.png"
         />
       </section>
+
+      <GrimoireEventCalendar
+        canViewGames={gameAccess.canViewGames}
+        event={nextEvent}
+        games={gameAccess.canViewGames ? displayedGames : []}
+        nextAccessAt={gameAccess.nextAccessAt}
+        publicOpensAt={gameAccess.publicOpensAt}
+        tomeKeyOpensAt={gameAccess.tomeKeyOpensAt}
+      />
 
       <section className="ggcon-hero">
         <section className="card ledger-panel stack ggcon-ticket-card">
@@ -221,10 +238,22 @@ export default async function GrimoireGatheringPage({
             View cart
           </Link>
         </div>
-        <GrimoireEventGamesGrid
-          emptyMessage="No games have been posted for this event yet."
-          games={displayedGames}
-        />
+        {gameAccess.canViewGames ? (
+          <GrimoireEventGamesGrid
+            emptyMessage="No games have been posted for this event yet."
+            games={displayedGames}
+          />
+        ) : (
+          <div className="empty">
+            Game listings open to Tome Key Badge holders on{" "}
+            {new Intl.DateTimeFormat("en-US", {
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "America/Edmonton",
+            }).format(new Date(gameAccess.tomeKeyOpensAt))}{" "}
+            Mountain, then to the public 48 hours later.
+          </div>
+        )}
       </section>
 
       <section className="card ledger-panel stack">

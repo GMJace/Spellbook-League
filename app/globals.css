@@ -1455,6 +1455,122 @@ button.button-small {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.ggcon-calendar-section {
+  overflow: hidden;
+}
+
+.ggcon-calendar-wrap {
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.ggcon-calendar-grid {
+  display: grid;
+  grid-template-columns: 96px repeat(3, minmax(220px, 1fr));
+  min-width: 820px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 22, 14, 0.9);
+}
+
+.ggcon-calendar-corner,
+.ggcon-calendar-day-header,
+.ggcon-calendar-hour,
+.ggcon-calendar-cell {
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ggcon-calendar-corner,
+.ggcon-calendar-day-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 68px;
+  padding: 0.8rem;
+  background: #050905;
+}
+
+.ggcon-calendar-corner {
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  color: #caf3b7;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ggcon-calendar-day-header {
+  display: grid;
+  align-content: center;
+  gap: 0.2rem;
+}
+
+.ggcon-calendar-day-header strong {
+  color: #f5ffe9;
+  font-size: 1rem;
+}
+
+.ggcon-calendar-day-header span,
+.ggcon-calendar-game-meta,
+.ggcon-calendar-game-time {
+  color: #cfdcc7;
+  font-size: 0.82rem;
+}
+
+.ggcon-calendar-hour {
+  display: flex;
+  align-items: start;
+  justify-content: flex-end;
+  min-height: 116px;
+  padding: 0.85rem 0.7rem;
+  background: #030603;
+  color: #eef8ea;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.ggcon-calendar-cell {
+  min-height: 116px;
+  padding: 0.55rem;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.ggcon-calendar-game {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.65rem;
+  border: 1px solid rgba(6, 255, 0, 0.25);
+  background: rgba(6, 255, 0, 0.08);
+}
+
+.ggcon-calendar-game + .ggcon-calendar-game {
+  margin-top: 0.5rem;
+}
+
+.ggcon-calendar-game-title,
+.ggcon-calendar-dm-link {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.ggcon-calendar-dm-link {
+  width: fit-content;
+  color: #06ff00;
+}
+
+.ggcon-calendar-dm-muted {
+  color: #d8e8d2;
+  font-weight: 700;
+}
+
+.ggcon-calendar-locked {
+  padding: 1rem;
+  background: rgba(6, 255, 0, 0.08);
+}
+
 .ggcon-event-game-card {
   display: grid;
   gap: 1rem;

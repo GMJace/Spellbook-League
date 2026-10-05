@@ -4,7 +4,11 @@ import {
   getCombinedSalesTaxRatePct,
   normalizeTicketSalesRateSettings,
 } from "@/lib/checkout-pricing";
-import { getCuratedGamesForEvent, getNextGrimoireEvent } from "@/lib/grimoire-server";
+import {
+  getCuratedGamesForEvent,
+  getGrimoireGameAccessForEvent,
+  getNextGrimoireEvent,
+} from "@/lib/grimoire-server";
 import { getPayPalClientId } from "@/lib/paypal";
 import { prisma } from "@/lib/prisma";
 
@@ -83,11 +87,29 @@ export default async function GrimoireCartPage({ searchParams }: PageProps) {
     );
   }
 
-  const nextEventGames = await getCuratedGamesForEvent(nextEvent.id);
+  const gameAccess = await getGrimoireGameAccessForEvent(nextEvent, session?.user?.id);
+  const nextEventGames = gameAccess.canViewGames
+    ? await getCuratedGamesForEvent(nextEvent.id)
+    : [];
 
   return (
     <main className="page-shell">
       <section className="stack">
+        {!gameAccess.canViewGames ? (
+          <section className="card ledger-panel stack">
+            <p className="eyebrow">Game Ticket Access</p>
+            <h1 style={{ margin: 0 }}>Tome Key early access</h1>
+            <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+              Game tickets open to Tome Key Badge holders on{" "}
+              {new Intl.DateTimeFormat("en-US", {
+                dateStyle: "medium",
+                timeStyle: "short",
+                timeZone: "America/Edmonton",
+              }).format(new Date(gameAccess.tomeKeyOpensAt))}{" "}
+              Mountain, then to the public 48 hours later. You can still buy badges now.
+            </p>
+          </section>
+        ) : null}
         <GrimoireCartBuilder
           availableStoreCreditUsd={
             checkoutUser
