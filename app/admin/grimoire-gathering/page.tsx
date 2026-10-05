@@ -306,6 +306,153 @@ function SubmissionTable({
   );
 }
 
+function CuratedGameCreateForm({
+  eventRowsLength,
+  gameDetails,
+  gameMessage,
+  selectedEvent,
+  slotOptions,
+}: {
+  eventRowsLength: number;
+  gameDetails: string;
+  gameMessage: string;
+  selectedEvent?: EventRow | null;
+  slotOptions: EventSlotOption[];
+}) {
+  const noOpenSlotsMessage = selectedEvent
+    ? `All time slots for ${selectedEvent.subtitle} are full. Increase a slot's open game count before adding another curated game.`
+    : "All event time slots are full. Increase a slot's open game count before adding another curated game.";
+
+  return (
+    <section className="list-card stack" id="create-curated-game">
+      <div>
+        <h2 style={{ margin: 0 }}>Create curated game</h2>
+        <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+          {selectedEvent
+            ? `Add a ticketed game directly to ${selectedEvent.subtitle}.`
+            : "Add a ticketed game directly to one of the current Grimoire events."}
+        </p>
+      </div>
+
+      {gameMessage ? (
+        <div className="stack" style={{ gap: "0.35rem" }}>
+          <p style={{ color: "#ffffff", margin: 0 }}>{gameMessage}</p>
+          {gameDetails ? (
+            <p style={{ color: "#d7d7d7", margin: 0 }}>{gameDetails}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <form
+        action="/admin/grimoire-gathering/curated-games/create"
+        className="form-stack"
+        encType="multipart/form-data"
+        method="post"
+      >
+        <div className="form-grid">
+          <label>
+            Event time slot
+            <select
+              defaultValue={slotOptions[0]?.slot.id ?? ""}
+              name="eventSlotId"
+              required
+            >
+              {slotOptions.map((option) => (
+                <option key={option.slot.id} value={option.slot.id}>
+                  {formatEventSlotOptionLabel(option)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p className="muted" style={{ margin: 0 }}>
+          Curated games also consume one four-hour game slot from the selected event time.
+        </p>
+
+        <label>
+          Adventure cover
+          <input accept="image/*" name="adventureImage" type="file" />
+        </label>
+        <p className="muted" style={{ margin: 0 }}>
+          Optional. Upload a portrait-style cover image up to 5 MB.
+        </p>
+
+        <label>
+          Game title
+          <input name="title" required type="text" />
+        </label>
+
+        <label>
+          Summary
+          <textarea name="summary" required />
+        </label>
+
+        <label>
+          Game details (Each line is a bullet point)
+          <textarea
+            name="details"
+            placeholder="One player-facing bullet per line."
+            required
+          />
+        </label>
+
+        <div className="form-grid">
+          <label>
+            Dungeon Master
+            <input name="dm" required type="text" />
+          </label>
+          <label>
+            Tier
+            <select defaultValue="TIER_1" name="tier">
+              <option value="TIER_1">Tier 1</option>
+              <option value="TIER_2">Tier 2</option>
+              <option value="TIER_3">Tier 3</option>
+              <option value="TIER_4">Tier 4</option>
+            </select>
+          </label>
+          <label>
+            Seats
+            <input defaultValue="6" max="12" min="1" name="seatCapacity" type="number" />
+          </label>
+        </div>
+
+        <div className="form-grid">
+          <label>
+            Ticket display price
+            <input name="ticketPrice" placeholder="$10 USD" required type="text" />
+          </label>
+          <label>
+            Ticket price USD
+            <input min="0" name="ticketPriceUsd" required step="0.01" type="number" />
+          </label>
+          <label>
+            Game code
+            <input name="gameCode" type="text" />
+          </label>
+        </div>
+
+        {!eventRowsLength ? (
+          <p className="muted" style={{ margin: 0 }}>
+            Create an event first to unlock curated game creation.
+          </p>
+        ) : !slotOptions.length ? (
+          <p className="muted" style={{ margin: 0 }}>
+            {noOpenSlotsMessage}
+          </p>
+        ) : null}
+
+        <button
+          className="button-secondary"
+          disabled={!slotOptions.length}
+          type="submit"
+        >
+          Create game
+        </button>
+      </form>
+    </section>
+  );
+}
+
 export default async function AdminGrimoireGatheringPage({
   searchParams,
 }: {
@@ -438,6 +585,14 @@ export default async function AdminGrimoireGatheringPage({
         ({ slot }) => !slot.isFull || slot.id === selectedGameEventSlotId,
       )
     : [];
+  const createGameSlotOptions = selectedEvent
+    ? selectedEvent.slots
+        .filter((slot) => !slot.isFull)
+        .map((slot) => ({
+          event: selectedEvent,
+          slot,
+        }))
+    : availableEventSlotOptions;
 
   const pendingSubmissions = submissionRows.filter(
     (submission) => submission.status === "PENDING",
@@ -705,131 +860,12 @@ export default async function AdminGrimoireGatheringPage({
               src="/divider4.png"
             />
 
-            <section className="list-card stack" id="create-curated-game">
-              <div>
-                <h2 style={{ margin: 0 }}>Create curated game</h2>
-                <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                  Add a ticketed game directly to one of the current Grimoire events.
-                </p>
-              </div>
-
-              {gameMessage ? (
-                <div className="stack" style={{ gap: "0.35rem" }}>
-                  <p style={{ color: "#ffffff", margin: 0 }}>{gameMessage}</p>
-                  {gameDetails ? (
-                    <p style={{ color: "#d7d7d7", margin: 0 }}>{gameDetails}</p>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <form
-                action="/admin/grimoire-gathering/curated-games/create"
-                className="form-stack"
-                encType="multipart/form-data"
-                method="post"
-              >
-                <div className="form-grid">
-                  <label>
-                    Event time slot
-                    <select
-                      defaultValue={availableEventSlotOptions[0]?.slot.id ?? ""}
-                      name="eventSlotId"
-                      required
-                    >
-                      {availableEventSlotOptions.map((option) => (
-                        <option key={option.slot.id} value={option.slot.id}>
-                          {formatEventSlotOptionLabel(option)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <p className="muted" style={{ margin: 0 }}>
-                  Curated games also consume one four-hour game slot from the selected event time.
-                </p>
-
-                <label>
-                  Adventure cover
-                  <input accept="image/*" name="adventureImage" type="file" />
-                </label>
-                <p className="muted" style={{ margin: 0 }}>
-                  Optional. Upload a portrait-style cover image up to 5 MB.
-                </p>
-
-                <label>
-                  Game title
-                  <input name="title" required type="text" />
-                </label>
-
-                <label>
-                  Summary
-                  <textarea name="summary" required />
-                </label>
-
-                <label>
-                  Game details (Each line is a bullet point)
-                  <textarea
-                    name="details"
-                    placeholder="One player-facing bullet per line."
-                    required
-                  />
-                </label>
-
-                <div className="form-grid">
-                  <label>
-                    Dungeon Master
-                    <input name="dm" required type="text" />
-                  </label>
-                  <label>
-                    Tier
-                    <select defaultValue="TIER_1" name="tier">
-                      <option value="TIER_1">Tier 1</option>
-                      <option value="TIER_2">Tier 2</option>
-                      <option value="TIER_3">Tier 3</option>
-                      <option value="TIER_4">Tier 4</option>
-                    </select>
-                  </label>
-                  <label>
-                    Seats
-                    <input defaultValue="6" max="12" min="1" name="seatCapacity" type="number" />
-                  </label>
-                </div>
-
-                <div className="form-grid">
-                  <label>
-                    Ticket display price
-                    <input name="ticketPrice" placeholder="$10 USD" required type="text" />
-                  </label>
-                  <label>
-                    Ticket price USD
-                    <input min="0" name="ticketPriceUsd" required step="0.01" type="number" />
-                  </label>
-                  <label>
-                    Game code
-                    <input name="gameCode" type="text" />
-                  </label>
-                </div>
-
-                {!eventRows.length ? (
-                  <p className="muted" style={{ margin: 0 }}>
-                    Create an event first to unlock curated game creation.
-                  </p>
-                ) : !availableEventSlotOptions.length ? (
-                  <p className="muted" style={{ margin: 0 }}>
-                    All event time slots are full. Increase a slot's open game count before adding
-                    another curated game.
-                  </p>
-                ) : null}
-
-                <button
-                  className="button-secondary"
-                  disabled={!availableEventSlotOptions.length}
-                  type="submit"
-                >
-                  Create game
-                </button>
-              </form>
-            </section>
+            <CuratedGameCreateForm
+              eventRowsLength={eventRows.length}
+              gameDetails={gameDetails}
+              gameMessage={gameMessage}
+              slotOptions={createGameSlotOptions}
+            />
           </div>
         ) : null}
 
@@ -966,6 +1002,16 @@ export default async function AdminGrimoireGatheringPage({
               </ConfirmSubmitButton>
             </form>
           </section>
+        ) : null}
+
+        {selectedEvent ? (
+          <CuratedGameCreateForm
+            eventRowsLength={eventRows.length}
+            gameDetails={gameDetails}
+            gameMessage={gameMessage}
+            selectedEvent={selectedEvent}
+            slotOptions={createGameSlotOptions}
+          />
         ) : null}
 
         {selectedGame ? (

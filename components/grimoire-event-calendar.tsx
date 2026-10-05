@@ -26,8 +26,8 @@ type DateParts = {
 
 const EVENT_TIME_ZONE = "America/Edmonton";
 const EVENT_DAYS = ["Friday", "Saturday", "Sunday"] as const;
-const HOUR_START = 8;
-const HOUR_END = 22;
+const DEFAULT_HOUR_START = 8;
+const DEFAULT_HOUR_END = 22;
 
 function getTimeZoneDateParts(date: Date, timeZone: string): DateParts {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -107,8 +107,9 @@ function getEventCalendarDays(eventStartIso: string) {
 
   return EVENT_DAYS.map((label, index) => {
     const dateParts = addDays(friday, index);
-    const start = zonedTimeToDate({ ...dateParts, hour: HOUR_START }, EVENT_TIME_ZONE);
-    const end = zonedTimeToDate({ ...dateParts, hour: HOUR_END }, EVENT_TIME_ZONE);
+    const start = zonedTimeToDate({ ...dateParts, hour: 0 }, EVENT_TIME_ZONE);
+    const endDateParts = addDays(dateParts, 1);
+    const end = zonedTimeToDate({ ...endDateParts, hour: 0 }, EVENT_TIME_ZONE);
 
     return {
       end,
@@ -167,10 +168,27 @@ export function GrimoireEventCalendar({
 }: GrimoireEventCalendarProps) {
   const [userTimeZone, setUserTimeZone] = useState<string>(EVENT_TIME_ZONE);
   const calendarDays = useMemo(() => getEventCalendarDays(event.date), [event.date]);
-  const hourRows = useMemo(
-    () => Array.from({ length: HOUR_END - HOUR_START }, (_, index) => HOUR_START + index),
-    [],
-  );
+  const hourRows = useMemo(() => {
+    const hours = new Set(
+      Array.from(
+        { length: DEFAULT_HOUR_END - DEFAULT_HOUR_START + 1 },
+        (_, index) => DEFAULT_HOUR_START + index,
+      ),
+    );
+
+    for (const game of games) {
+      const startDate = new Date(game.startAt);
+      const isEventWeekendGame = calendarDays.some(
+        (day) => startDate >= day.start && startDate < day.end,
+      );
+
+      if (isEventWeekendGame) {
+        hours.add(getTimeZoneDateParts(startDate, EVENT_TIME_ZONE).hour);
+      }
+    }
+
+    return [...hours].sort((left, right) => left - right);
+  }, [calendarDays, games]);
 
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
