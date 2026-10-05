@@ -273,6 +273,20 @@ export async function getNextGrimoireEvent() {
   return events.find((event) => new Date(event.date).getTime() >= now) ?? events[0] ?? null;
 }
 
+export async function getNextGrimoirePlanningEvent() {
+  const events = await getSeasonSchedule();
+  const now = new Date();
+
+  return (
+    events.find((event) => {
+      const eventDate = new Date(event.date);
+      const publicOpensAt = subtractMonths(event.date, 1);
+
+      return eventDate.getTime() >= now.getTime() && now < publicOpensAt;
+    }) ?? null
+  );
+}
+
 export async function getGrimoireEventById(eventId: string) {
   const event = (await prisma.grimoireEvent.findUnique({
     where: { id: eventId },

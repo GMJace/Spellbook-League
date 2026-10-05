@@ -126,7 +126,7 @@ export function GrimoireDmSubmissionForm({
 
       <div className="form-grid">
         <label>
-          Published event
+          Planned event
           <select
             name="eventId"
             onChange={(event) => {
@@ -177,7 +177,7 @@ export function GrimoireDmSubmissionForm({
 
       {eventSlots.length ? null : (
         <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-          No published time slots are available for the selected event yet.
+          No planned time slots are available for the selected event yet.
         </p>
       )}
       {eventSlots.length && !openSlots.length ? (

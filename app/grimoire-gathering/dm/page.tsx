@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { GrimoireDmSubmissionForm } from "@/components/grimoire-dm-submission-form";
 import { LocalizedEventTime } from "@/components/localized-event-time";
-import { formatGrimoireTier } from "@/lib/grimoire";
 import {
   getCharacterBuildMagicItemOptions,
   getLeagueLegalBlessingOptions,
@@ -12,7 +11,7 @@ import {
   getLeagueLegalMagicItemOptions,
   getLeagueLegalMinorPropertyOptions,
 } from "@/lib/league-legal-choices";
-import { getNextGrimoireEvent, getSeasonSchedule, getSlotsForEvent } from "@/lib/grimoire-server";
+import { getNextGrimoirePlanningEvent, getSlotsForEvent } from "@/lib/grimoire-server";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +32,7 @@ type SubmissionRow = {
 
 export default async function GrimoireDmPage() {
   const [
-    nextEvent,
-    seasonSchedule,
+    planningEvent,
     legalMagicItemOptions,
     legalConsumableOptions,
     legalBoonOptions,
@@ -42,8 +40,7 @@ export default async function GrimoireDmPage() {
     legalCharmOptions,
     legalMinorPropertyOptions,
   ] = await Promise.all([
-    getNextGrimoireEvent(),
-    getSeasonSchedule(),
+    getNextGrimoirePlanningEvent(),
     getLeagueLegalMagicItemOptions(),
     getLeagueLegalConsumableOptions(),
     getLeagueLegalBoonOptions(),
@@ -51,11 +48,8 @@ export default async function GrimoireDmPage() {
     getLeagueLegalCharmOptions(),
     getLeagueLegalMinorPropertyOptions(),
   ]);
-  const publishedEvents = seasonSchedule.filter(
-    (event) => new Date(event.date).getTime() >= Date.now()
-  );
 
-  if (!nextEvent || !publishedEvents.length) {
+  if (!planningEvent) {
     return (
       <main className="page-shell">
         <section className="stack">
@@ -64,7 +58,7 @@ export default async function GrimoireDmPage() {
               <p className="eyebrow">Run A Table</p>
               <h1 style={{ margin: "0.35rem 0 0" }}>Become a Grimoire DM</h1>
               <p className="muted ggcon-meta-note" style={{ margin: "0.5rem 0 0" }}>
-                There is no upcoming Grimoire event scheduled yet.
+                There is no upcoming Grimoire event open for advance DM submissions yet.
               </p>
             </div>
 
@@ -79,10 +73,10 @@ export default async function GrimoireDmPage() {
     );
   }
 
-  const slotPairs = await Promise.all(
-    publishedEvents.map(async (event) => [event.id, await getSlotsForEvent(event.id)] as const)
-  );
-  const slotsByEvent = Object.fromEntries(slotPairs);
+  const slots = await getSlotsForEvent(planningEvent.id);
+  const slotsByEvent = {
+    [planningEvent.id]: slots,
+  };
   const legalRewardsJson = JSON.stringify({
     legalBuildMagicItemOptions: getCharacterBuildMagicItemOptions(legalMagicItemOptions),
     legalCommonMagicItemOptions: legalMagicItemOptions.Common,
@@ -92,10 +86,9 @@ export default async function GrimoireDmPage() {
     legalCharmOptions,
     legalMinorPropertyOptions,
   });
-  const slots = slotsByEvent[nextEvent.id] ?? [];
   const submissions = (await prisma.grimoireDmSubmission.findMany({
     where: {
-      eventId: nextEvent.id,
+      eventId: planningEvent.id,
       status: "APPROVED",
     },
     orderBy: [{ slotStartAt: "asc" }, { createdAt: "asc" }],
@@ -109,8 +102,8 @@ export default async function GrimoireDmPage() {
             <p className="eyebrow">Run A Table</p>
             <h1 style={{ margin: "0.35rem 0 0" }}>Become a Grimoire DM</h1>
             <p className="muted ggcon-meta-note" style={{ margin: "0.5rem 0 0" }}>
-              Submit a game for {nextEvent.subtitle} and choose the time slot you want
-              to run during {nextEvent.displayDate}.
+              Submit a game for {planningEvent.subtitle} before the public schedule opens.
+              Choose the time slot you want to run during {planningEvent.displayDate}.
             </p>
           </div>
 
@@ -131,12 +124,12 @@ export default async function GrimoireDmPage() {
               <h2 style={{ margin: 0 }}>Submit your game for review</h2>
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
                 Use this form to claim a slot, share your game pitch, and give staff
-                the details needed to review and publish your table.
+                the details needed to review your table before the lineup goes public.
               </p>
             </div>
             <GrimoireDmSubmissionForm
-              events={publishedEvents}
-              initialEventId={nextEvent.id}
+              events={[planningEvent]}
+              initialEventId={planningEvent.id}
               legalRewardsJson={legalRewardsJson}
               slotsByEvent={slotsByEvent}
             />
@@ -144,11 +137,11 @@ export default async function GrimoireDmPage() {
 
           <section className="card ledger-panel stack">
             <div className="stack" style={{ gap: "0.45rem" }}>
-              <p className="eyebrow">Published Board</p>
-              <h2 style={{ margin: 0 }}>Approved event schedule</h2>
+              <p className="eyebrow">Planning Board</p>
+              <h2 style={{ margin: 0 }}>Event slot availability</h2>
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-                Only approved submissions appear here. Pending and rejected tables stay
-                in the admin review queue.
+                The game lineup stays private until the schedule opens. This view only shows
+                submission capacity for each planned slot.
               </p>
             </div>
 
@@ -170,48 +163,13 @@ export default async function GrimoireDmPage() {
                         </p>
                       </div>
                       <span className="pill">
-                        {slotSubmissions.length} submission
-                        {slotSubmissions.length === 1 ? "" : "s"}
+                        {slot.availableGameSlots} of {slot.gameSlotCount} open
                       </span>
                     </div>
-
-                    {slotSubmissions.length ? (
-                      <div className="stack">
-                        {slotSubmissions.map((submission) => (
-                          <article className="ggcon-slot-entry" key={submission.id}>
-                            <div className="section-heading">
-                              <div>
-                                <strong>{submission.title}</strong>
-                                {submission.gameCode ? (
-                                  <p
-                                    className="muted ggcon-meta-note"
-                                    style={{ margin: "0.35rem 0 0" }}
-                                  >
-                                    {submission.gameCode}
-                                  </p>
-                                ) : null}
-                                <p
-                                  className="muted ggcon-meta-note"
-                                  style={{ margin: "0.35rem 0 0" }}
-                                >
-                                  {[submission.name, submission.discord]
-                                    .filter(Boolean)
-                                    .join(" · ")}{" "}
-                                  · {formatGrimoireTier(submission.tier)} · {submission.seats} seats
-                                </p>
-                              </div>
-                            </div>
-                            <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-                              {submission.summary}
-                            </p>
-                          </article>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-                        No approved games have been posted for this slot yet.
-                      </p>
-                    )}
+                    <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                      {slotSubmissions.length} approved submission
+                      {slotSubmissions.length === 1 ? "" : "s"} already held for staff planning.
+                    </p>
                   </section>
                 );
               })}

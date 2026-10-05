@@ -11,7 +11,6 @@ import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import {
   getNextEvent,
   grimoireEventTicketNotice,
-  type SeasonEvent,
 } from "@/lib/grimoire";
 import {
   createGrimoireDiscordAccessToken,
@@ -29,43 +28,10 @@ const contactAdminSubject = encodeURIComponent(
   "Grimoire Gathering - Contact Admin"
 );
 
-function buildPaypalWidget(nextEvent: SeasonEvent) {
-  const paypalLink = process.env.GG_PAYPAL_LINK?.trim();
-  const hostedButtonId = process.env.GG_PAYPAL_HOSTED_BUTTON_ID?.trim();
-
-  if (hostedButtonId) {
-    return (
-      <form
-        action="https://www.paypal.com/cgi-bin/webscr"
-        className="ggcon-paypal-form stack"
-        method="post"
-        target="_blank"
-      >
-        <input type="hidden" name="cmd" value="_s-xclick" />
-        <input type="hidden" name="hosted_button_id" value={hostedButtonId} />
-        <button className="ggcon-buy-badge-button" type="submit">
-          Buy {nextEvent.ticketLabel} with PayPal
-        </button>
-      </form>
-    );
-  }
-
-  if (paypalLink) {
-    return (
-      <a
-        className="button ggcon-buy-badge-button"
-        href={paypalLink}
-        rel="noreferrer"
-        target="_blank"
-      >
-        Buy {nextEvent.ticketLabel} with PayPal
-      </a>
-    );
-  }
-
+function buildBadgeCartLink() {
   return (
     <Link className="button ggcon-buy-badge-button" href="/grimoire-gathering/cart?badges=1">
-      Buy {nextEvent.ticketLabel}
+      Add Badge to Cart
     </Link>
   );
 }
@@ -183,12 +149,12 @@ export default async function GrimoireGatheringPage({
             {grimoireEventTicketNotice}
           </p>
           <div className="inline-actions" style={{ flexWrap: "wrap" }}>
-            {buildPaypalWidget(nextEvent)}
+            {buildBadgeCartLink()}
             <Link className="button secondary" href="/grimoire-gathering/cart">
               Open cart
             </Link>
             <Link className="button secondary" href="/grimoire-gathering/dm">
-              Become a DM
+              Become a Grimoire DM
             </Link>
             <Link
               className="button secondary"
