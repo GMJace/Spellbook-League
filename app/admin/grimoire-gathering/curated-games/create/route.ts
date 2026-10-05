@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { createCuratedGameRedirectPath } from "@/app/admin/grimoire-gathering/curated-game-mutations";
 import { isAdminEmail } from "@/lib/admin-access";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const session = await auth();
 
