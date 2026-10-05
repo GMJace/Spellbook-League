@@ -63,7 +63,7 @@ function zonedTimeToDate(
   },
   timeZone: string,
 ) {
-  let utcTime = Date.UTC(
+  const targetUtcTime = Date.UTC(
     parts.year,
     parts.month - 1,
     parts.day,
@@ -71,6 +71,7 @@ function zonedTimeToDate(
     parts.minute ?? 0,
     0,
   );
+  let utcTime = targetUtcTime;
 
   for (let index = 0; index < 2; index += 1) {
     const zoneParts = getTimeZoneDateParts(new Date(utcTime), timeZone);
@@ -82,7 +83,7 @@ function zonedTimeToDate(
       zoneParts.minute,
       zoneParts.second,
     );
-    utcTime -= zoneAsUtc - utcTime;
+    utcTime = targetUtcTime - (zoneAsUtc - utcTime);
   }
 
   return new Date(utcTime);
