@@ -181,6 +181,7 @@ model User {
   playerTidingAwards TidingAward[] @relation("PlayerTidingAwards")
   dmTidingAwards TidingAward[] @relation("DmTidingAwards")
   tidingSpends TidingSpend[] @relation("UserTidingSpends")
+  dmServiceLogs DmServiceLog[] @relation("DmServiceLogUser")
 }
 
 model UserRole {
@@ -446,6 +447,27 @@ model GameParticipant {
   user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([gameId, characterId])
+}
+
+model DmServiceLog {
+  id                 String   @id @default(cuid())
+  userId             String
+  activityType       String
+  activityLabel      String
+  title              String
+  adventureCode      String   @default("")
+  activityDate       DateTime
+  sessionHours       Float    @default(0)
+  safetyToolSessions Int      @default(0)
+  newAlPlayerCount   Int      @default(0)
+  achievementHours   Float    @default(0)
+  totalHours         Float    @default(0)
+  notes              String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation("DmServiceLogUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, activityDate(sort: Desc)])
 }
 
 model TidingAward {

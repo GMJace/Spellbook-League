@@ -1617,6 +1617,16 @@ button.button-small {
   border-top: 1px solid rgba(255, 255, 255, 0.78);
 }
 
+.ggcon-admin-event-badge-preview {
+  width: min(220px, 100%);
+  max-height: 180px;
+  object-fit: contain;
+  justify-self: start;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 .form-stack:has(.ggcon-template-toggle:not(:checked)) .ggcon-standard-slot-section {
   display: none;
 }
@@ -2268,6 +2278,13 @@ button.button-small {
 .dm-game-section-heading p {
   margin-top: 0;
   margin-bottom: 0;
+}
+
+.dm-service-cheat-sheet {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 1.25rem;
 }
 
 .grim-tidings-field {

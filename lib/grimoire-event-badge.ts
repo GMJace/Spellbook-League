@@ -1,4 +1,4 @@
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const GRIMOIRE_EVENT_BADGE_UPLOAD_DIRECTORY = path.join(
@@ -48,6 +48,16 @@ export async function saveGrimoireEventBadgeUpload(eventId: string, file: File) 
   }
 
   await mkdir(GRIMOIRE_EVENT_BADGE_UPLOAD_DIRECTORY, { recursive: true });
+
+  await Promise.all(
+    Object.values(grimoireEventBadgeExtensions).map(async (knownExtension) => {
+      try {
+        await unlink(getEventBadgeOutputPath(eventId, knownExtension));
+      } catch {
+        // No existing badge with this extension.
+      }
+    }),
+  );
 
   const outputPath = getEventBadgeOutputPath(eventId, extension);
   await writeFile(outputPath, Buffer.from(await file.arrayBuffer()));

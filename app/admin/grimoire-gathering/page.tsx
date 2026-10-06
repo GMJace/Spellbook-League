@@ -16,6 +16,7 @@ import {
 } from "@/app/admin/grimoire-gathering/actions";
 import { requireGrimoireAdminUser } from "@/lib/admin";
 import { getGrimoireDiscordSettings } from "@/lib/grimoire-discord";
+import { getGrimoireEventBadgePathIfExists } from "@/lib/grimoire-event-badge";
 import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
 import { formatGrimoireTier } from "@/lib/grimoire";
 import {
@@ -575,6 +576,9 @@ export default async function AdminGrimoireGatheringPage({
   const selectedEventThemeDetails = selectedEvent
     ? parseStringArray(selectedEvent.themeDetails).join("\n")
     : "";
+  const selectedEventBadgePath = selectedEvent
+    ? await getGrimoireEventBadgePathIfExists(selectedEvent.id)
+    : null;
   const selectedGameEventSlotId = selectedGame
     ? eventSlotOptions.find(
         ({ event, slot }) =>
@@ -945,7 +949,7 @@ export default async function AdminGrimoireGatheringPage({
               </div>
             </div>
 
-            <form action={updateGrimoireEvent} className="form-stack">
+            <form action={updateGrimoireEvent} className="form-stack" encType="multipart/form-data">
               <input name="eventId" type="hidden" value={selectedEvent.id} />
 
               <label>
@@ -1049,6 +1053,32 @@ export default async function AdminGrimoireGatheringPage({
               <p className="muted" style={{ margin: 0 }}>
                 Each number is the total number of tables available for that event time slot.
               </p>
+
+              <hr className="ggcon-form-divider" />
+
+              <div className="stack" style={{ gap: "0.75rem" }}>
+                <div>
+                  <strong>Event badge/logo</strong>
+                  <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                    Upload a replacement logo for this event. PNG, JPG, WEBP, or GIF up to 10 MB.
+                  </p>
+                </div>
+                {selectedEventBadgePath ? (
+                  <img
+                    alt={`${selectedEvent.subtitle} badge`}
+                    className="ggcon-admin-event-badge-preview"
+                    src={selectedEventBadgePath}
+                  />
+                ) : (
+                  <p className="muted" style={{ margin: 0 }}>
+                    No event-specific badge/logo has been uploaded yet.
+                  </p>
+                )}
+                <label>
+                  Replace event badge/logo
+                  <input accept="image/*" name="eventBadge" type="file" />
+                </label>
+              </div>
 
               <div className="inline-actions" style={{ flexWrap: "wrap" }}>
                 <button className="button-secondary" type="submit">

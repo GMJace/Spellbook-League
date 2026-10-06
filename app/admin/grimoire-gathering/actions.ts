@@ -716,6 +716,22 @@ export async function updateGrimoireEvent(formData: FormData) {
   }
 
   try {
+    const eventBadgeFile = formData.get("eventBadge");
+
+    if (isUploadedFile(eventBadgeFile) && eventBadgeFile.size > 0) {
+      const badgeUploadResult = await saveGrimoireEventBadgeUpload(existingEvent.id, eventBadgeFile);
+
+      if ("error" in badgeUploadResult) {
+        redirect(
+          buildGrimoireEventRedirect({
+            details: `Event badge: ${badgeUploadResult.error}`,
+            editEventId: parsed.data.eventId,
+            status: "invalid-fields",
+          }),
+        );
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.grimoireEvent.update({
         where: { id: existingEvent.id },
