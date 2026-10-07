@@ -2,27 +2,11 @@ import { Fragment, type ReactNode } from "react";
 
 const spellbookSpectrum = [
   "#FF0000",
-  "#D100D8",
-  "#8F34E8",
-  "#8B2BE2",
-  "#9700E8",
-  "#5616FF",
-  "#003BFF",
-  "#005CFF",
-  "#00A6E8",
-  "#00E5E5",
-  "#00D7C7",
-  "#00E8B8",
-  "#00D82F",
-  "#00D814",
-  "#A8E000",
-  "#F3F000",
-  "#D7B52C",
-  "#E1AF22",
-  "#DD9B00",
-  "#E29B00",
-  "#C3492E",
-  "#F00000",
+  "#FF8C00",
+  "#FFEE00",
+  "#4DE94C",
+  "#3783FF",
+  "#4815AA",
 ] as const;
 
 const spellbookLetters = "SPELLBOOK".split("");

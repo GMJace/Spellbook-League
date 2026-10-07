@@ -1,18 +1,30 @@
-@import url("https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap");
 
 :root {
-  --bg: #000000;
-  --surface: #000000;
-  --surface-strong: #000000;
-  --text: #ffffff;
-  --muted: #cfcfcf;
-  --line: rgba(255, 255, 255, 0.18);
-  --accent: #000000;
-  --accent-alt: #ffffff;
-  --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-  --radius: 24px;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+  --text: #000000;
+  --muted: #000000;
+  --line: #000000;
+  --accent: #FF0000;
+  --accent-alt: #3783FF;
+  --comic-yellow: #FFEE00;
+  --comic-blue: #3783FF;
+  --comic-red: #FF0000;
+  --comic-orange: #FF8C00;
+  --comic-green: #4DE94C;
+  --comic-purple: #4815AA;
+  --comic-pink: #FF0000;
+  --comic-ink: #000000;
+  --comic-paper: #ffffff;
+  --shadow: 12px 12px 0 #000000;
+  --soft-shadow: 6px 6px 0 #000000;
+  --radius: 14px;
   --max-width: 1120px;
-  --font-roboto: "Trebuchet MS", "Segoe UI", Verdana, sans-serif;
+  --font-comic-display: "Bangers", "Impact", "Arial Black", sans-serif;
+  --font-comic-body: "Comic Neue", "Trebuchet MS", "Segoe UI", Verdana, sans-serif;
+  --font-roboto: var(--font-comic-body);
 }
 
 * {
@@ -23,10 +35,14 @@ body {
   min-height: 100vh;
   margin: 0;
   color: var(--text);
-  background: #000000;
-  font-family: "Amatic SC", "Segoe Print", "Bradley Hand", "Trebuchet MS", cursive;
-  font-size: 1.35rem;
-  line-height: 1.25;
+  background: var(--bg);
+  font-family: var(--font-comic-body);
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.35;
+  background-image: none;
+  background-size: auto;
+  background-attachment: fixed;
 }
 
 a {
@@ -47,25 +63,36 @@ button,
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: 1px solid #ffffff;
+  border: 3px solid var(--comic-ink);
   border-radius: 999px;
-  background: #000000;
-  color: #ffffff;
+  background: var(--comic-paper);
+  color: var(--comic-red);
   padding: 0.8rem 1.2rem;
   cursor: pointer;
-  font-family: var(--font-roboto), sans-serif;
-  font-size: 0.95rem;
+  font-family: var(--font-comic-display);
+  font-size: 1.18rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  box-shadow: var(--soft-shadow);
+  transform: rotate(-0.35deg);
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+button:hover,
+.button:hover {
+  background: var(--comic-paper);
+  color: var(--comic-blue);
+  box-shadow: 2px 2px 0 var(--comic-ink);
+  transform: translate(2px, 2px) rotate(-0.35deg);
 }
 
 .button.secondary,
 .button-secondary,
 button.secondary,
 button.button-secondary {
-  background: #000000;
-  color: #ffffff;
+  background: var(--comic-paper);
+  color: var(--comic-purple);
 }
 
 .button-small,
@@ -3362,6 +3389,416 @@ textarea {
   gap: 0.4rem;
 }
 
+body .site-header,
+body .settings-dropdown,
+body .notification-dropdown,
+body .terms-dialog-card {
+  background: var(--comic-paper);
+  border: 5px solid var(--comic-ink);
+  box-shadow: var(--shadow);
+  color: var(--comic-ink);
+}
+
+body .site-header {
+  border-radius: 0 0 14px 14px;
+}
+
+body .homepage-discord-logo,
+body .store-publishing-button-logo,
+body .homepage-spellbook-icon,
+body .homepage-ggcon-icon,
+body .homepage-character-log-icon,
+body .handbook-link-logo {
+  filter: drop-shadow(2px 2px 0 var(--comic-ink));
+}
+
+body .social-icon {
+  filter: none;
+}
+
+body .brand-logo {
+  filter: none;
+}
+
+body .card,
+body .panel,
+body .hero-panel,
+body .table-wrap,
+body .metric,
+body .list-card,
+body .homepage-banner-art,
+body .homepage-open-game-card,
+body .homepage-character-roster-card,
+body .homepage-dm-roster-card,
+body .handbook-link-card,
+body .discord-link-card,
+body .store-card,
+body .character-import-card,
+body .notification-card,
+body .admin-removal-panel,
+body .admin-removal-summary,
+body .table-action-menu-panel,
+body .mercane-grid-shell,
+body .mercane-listing-card {
+  background: var(--comic-paper);
+  border: 5px solid var(--comic-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+
+body .card:nth-of-type(3n),
+body .panel:nth-of-type(3n),
+body .homepage-open-game-card:nth-child(3n + 1),
+body .homepage-character-roster-card:nth-child(3n + 1),
+body .homepage-dm-roster-card:nth-child(3n + 1),
+body .handbook-link-card:nth-child(3n + 1),
+body .store-card:nth-child(3n + 1) {
+  background: var(--comic-paper);
+}
+
+body .card:nth-of-type(3n + 2),
+body .panel:nth-of-type(3n + 2),
+body .homepage-open-game-card:nth-child(3n + 2),
+body .homepage-character-roster-card:nth-child(3n + 2),
+body .homepage-dm-roster-card:nth-child(3n + 2),
+body .handbook-link-card:nth-child(3n + 2),
+body .store-card:nth-child(3n + 2) {
+  background: var(--comic-paper);
+}
+
+body .card:nth-of-type(3n + 1),
+body .panel:nth-of-type(3n + 1),
+body .homepage-open-game-card:nth-child(3n),
+body .homepage-character-roster-card:nth-child(3n),
+body .homepage-dm-roster-card:nth-child(3n),
+body .handbook-link-card:nth-child(3n),
+body .store-card:nth-child(3n) {
+  background: var(--comic-paper);
+}
+
+body .homepage-banner-art,
+body .homepage-open-game-card-image,
+body .homepage-character-roster-token,
+body .homepage-dm-roster-image,
+body .store-league-card-image,
+body .homepage-mercane-image,
+body .ggcon-admin-cover-image {
+  border: 5px solid var(--comic-ink);
+  box-shadow: var(--soft-shadow);
+}
+
+body .homepage-banner-art {
+  border: 0;
+  border-bottom: 5px solid var(--comic-ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body h1,
+body h2,
+body h3,
+body .homepage-tv-heading,
+body .store-grimoire-card-title,
+body .ggcon-ticket-title {
+  font-family: var(--font-comic-display);
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  text-shadow:
+    2px 2px 0 var(--comic-ink),
+    2px 2px 0 var(--comic-paper);
+}
+
+body h1,
+body .store-grimoire-card-title,
+body .ggcon-ticket-title {
+  color: var(--comic-red);
+}
+
+body h2,
+body .homepage-tv-heading {
+  color: var(--comic-red);
+}
+
+body h3 {
+  color: var(--comic-red);
+}
+
+body .homepage-magic-heading h1 {
+  color: var(--comic-red);
+  font-family: var(--font-comic-display);
+  letter-spacing: 0.065em;
+  text-shadow:
+    3px 3px 0 var(--comic-ink),
+    4px 4px 0 var(--comic-paper);
+}
+
+body .eyebrow,
+body .admin-page-menu-label,
+body .notification-mark-all,
+body .notification-mark-read,
+body .notification-link {
+  width: fit-content;
+  padding: 0.06rem 0.35rem;
+  background: var(--comic-paper);
+  color: var(--comic-orange);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+body .muted,
+body .settings-header,
+body .notification-details dt,
+body .homepage-open-game-card-details dt,
+body .homepage-character-roster-details dt {
+  color: var(--muted);
+}
+
+body input,
+body select,
+body textarea {
+  background: var(--comic-paper);
+  border: 3px solid var(--comic-ink);
+  color: var(--comic-ink);
+  box-shadow: 3px 3px 0 var(--comic-ink);
+}
+
+body input:focus,
+body select:focus,
+body textarea:focus,
+body button:focus-visible,
+body .button:focus-visible,
+body a:focus-visible {
+  outline: 4px solid var(--comic-blue);
+  outline-offset: 3px;
+}
+
+body .site-role-link,
+body .social-link,
+body .notification-trigger,
+body .settings-trigger,
+body .tab-button,
+body .empty,
+body .tool-matrix-group,
+body .language-matrix-group,
+body .feat-matrix-group,
+body .skill-matrix-columns,
+body .admin-page-menu-details {
+  background: var(--comic-paper);
+  border: 4px solid var(--comic-ink);
+  color: var(--comic-ink);
+  box-shadow: var(--soft-shadow);
+  font-family: var(--font-comic-display);
+  letter-spacing: 0.04em;
+}
+
+body .site-role-link-active,
+body .tab-button.active,
+body .admin-step-pill-active,
+body .game-signups-button {
+  background: var(--comic-paper);
+  border-color: var(--comic-ink);
+  color: var(--comic-red);
+}
+
+body .button-danger {
+  background: var(--comic-paper);
+  border-color: var(--comic-ink);
+  color: var(--comic-red);
+}
+
+body table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+body th {
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+}
+
+body th,
+body td {
+  border-color: var(--comic-ink);
+}
+
+body .site-footer {
+  background: var(--comic-paper);
+  border: 5px solid var(--comic-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+
+body .homepage-roster-divider,
+body .homepage-banner-divider,
+body .store-section-divider {
+  filter: drop-shadow(3px 3px 0 var(--comic-ink));
+}
+
+body .homepage-roster-divider,
+body .homepage-banner-divider,
+body .store-section-divider,
+body .ggcon-table-divider,
+body .ggcon-flying-carpet-divider {
+  display: none !important;
+}
+
+body,
+body * {
+  background-image: none !important;
+}
+
+body .discord-link-card.button,
+body .handbook-link-card.homepage-tv-card-youtube,
+body .handbook-link-card.homepage-tv-card-twitch,
+body .admin-page-menu-link-active,
+body .store-card,
+body .metric,
+body .list-card {
+  background-color: var(--comic-paper);
+  background: var(--comic-paper);
+}
+
+body .handbook-link-card.homepage-tv-card-youtube {
+  border-color: var(--comic-ink);
+  color: var(--comic-red);
+}
+
+body .handbook-link-card.homepage-tv-card-twitch {
+  border-color: var(--comic-ink);
+  color: var(--comic-purple);
+}
+
+body *,
+body *::before,
+body *::after {
+  min-width: 0;
+}
+
+body p,
+body li,
+body dt,
+body dd,
+body label,
+body span,
+body strong,
+body small,
+body a,
+body button,
+body input,
+body select,
+body textarea,
+body th,
+body td {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  max-width: 100%;
+  line-height: 0.98;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+body button,
+body .button,
+body .site-role-link,
+body .tab-button,
+body .settings-item,
+body .notification-link,
+body .notification-mark-all,
+body .notification-mark-read,
+body .ggcon-table-button,
+body .pill {
+  min-height: 2.6rem;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.05;
+  font-family: var(--font-comic-body);
+  font-size: clamp(0.86rem, 0.82rem + 0.35vw, 1.05rem);
+  letter-spacing: 0.02em;
+}
+
+body input,
+body select,
+body textarea {
+  max-width: 100%;
+  min-width: 0;
+  font-family: var(--font-comic-body);
+  font-size: clamp(0.9rem, 0.84rem + 0.35vw, 1rem);
+  line-height: 1.25;
+}
+
+body input,
+body select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body textarea {
+  overflow-wrap: anywhere;
+}
+
+body .card,
+body .panel,
+body .hero-panel,
+body .table-wrap,
+body .metric,
+body .list-card,
+body .homepage-open-game-card,
+body .homepage-character-roster-card,
+body .homepage-dm-roster-card,
+body .handbook-link-card,
+body .discord-link-card,
+body .store-card,
+body .notification-card,
+body .table-action-menu-panel,
+body .site-footer {
+  overflow-wrap: anywhere;
+}
+
+body table {
+  table-layout: fixed;
+  max-width: 100%;
+  min-width: 0;
+}
+
+body .ledger-table table {
+  min-width: 0;
+}
+
+body th,
+body td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+body .search-row,
+body .inline-actions,
+body .site-actions,
+body .site-nav,
+body .notification-actions-row,
+body .homepage-open-game-card-actions,
+body .homepage-character-roster-actions,
+body .mercane-filter-actions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+body .search-row .button {
+  flex: 1 1 auto;
+  white-space: normal;
+}
+
 @media (max-width: 860px) {
   .mercane-filter-grid,
   .mercane-pagination,
@@ -3712,4 +4149,118 @@ textarea {
   .spellbook-expense-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+body :is(button, .button, .site-role-link, .tab-button, .settings-item, .notification-link, .notification-mark-all, .notification-mark-read, .ggcon-table-button, .pill) {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.05;
+  font-family: var(--font-comic-body) !important;
+  font-size: clamp(0.86rem, 0.82rem + 0.35vw, 1.05rem);
+  letter-spacing: 0.02em;
+}
+
+body :is(input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+  font-family: var(--font-comic-body) !important;
+  font-size: clamp(0.9rem, 0.84rem + 0.35vw, 1rem);
+}
+
+body,
+body :is(
+  header,
+  main,
+  footer,
+  section,
+  article,
+  aside,
+  nav,
+  form,
+  fieldset,
+  dialog,
+  table,
+  thead,
+  tbody,
+  tfoot,
+  tr,
+  th,
+  td,
+  button,
+  input,
+  select,
+  textarea,
+  .button,
+  .card,
+  .panel,
+  .hero-panel,
+  .table-wrap,
+  .metric,
+  .list-card,
+  .site-header,
+  .site-footer,
+  .site-actions,
+  .site-nav,
+  .site-role-link,
+  .social-link,
+  .settings-dropdown,
+  .settings-item,
+  .notification-dropdown,
+  .notification-trigger,
+  .notification-card,
+  .homepage-banner-art,
+  .homepage-open-game-card,
+  .homepage-character-roster-card,
+  .homepage-dm-roster-card,
+  .handbook-link-card,
+  .discord-link-card,
+  .store-card,
+  .character-import-card,
+  .character-record-card,
+  .character-record-grid,
+  .character-record-token-panel,
+  .character-record-column,
+  .character-record-row,
+  .character-record-token-stat,
+  .character-record-token-image,
+  .character-record-token-placeholder,
+  .admin-removal-panel,
+  .admin-removal-summary,
+  .table-action-menu-panel,
+  .mercane-grid-shell,
+  .mercane-listing-card,
+  .empty,
+  .pill,
+  .tab-button,
+  .tool-matrix-group,
+  .language-matrix-group,
+  .feat-matrix-group,
+  .skill-matrix-columns,
+  .ggcon-calendar-grid,
+  .ggcon-calendar-corner,
+  .ggcon-calendar-day-header,
+  .ggcon-calendar-hour,
+  .ggcon-calendar-cell,
+  .ggcon-calendar-game,
+  .ggcon-calendar-locked,
+  .character-import-card
+) {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+body :is(
+  .character-record-card,
+  .character-record-grid,
+  .character-record-token-panel,
+  .character-record-column,
+  .character-record-row,
+  .character-record-token-stat,
+  .character-record-token-image,
+  .character-record-token-placeholder
+) {
+  border-color: #000000 !important;
 }
