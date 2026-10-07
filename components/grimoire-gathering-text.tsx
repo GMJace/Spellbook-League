@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 
-const grimoireGatheringColor = "#0cff00";
+const grimoireGatheringColor = "#4DE94C";
 const grimoireGatheringSingular = "Grimoire Gathering";
 const grimoireGatheringPlural = "Grimoire Gatherings";
 
