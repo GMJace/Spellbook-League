@@ -2287,6 +2287,44 @@ button.button-small {
   padding-left: 1.25rem;
 }
 
+.dm-service-metrics {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.dm-service-workspace {
+  align-items: start;
+}
+
+.dm-service-award-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.dm-service-award-group {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dm-service-award-group h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.dm-service-activity-rows {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.dm-service-activity-row {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.18);
+}
+
 .grim-tidings-field {
   align-content: center;
   text-align: center;
@@ -3357,6 +3395,7 @@ textarea {
   .ggcon-hero,
   .hero,
   .grid.two,
+  .dm-service-metrics,
   .form-grid,
   .character-build-grid,
   .logsheet-grid,
