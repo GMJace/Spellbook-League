@@ -121,9 +121,17 @@ export default async function RootLayout({
                     adminHref={isFullAdmin ? "/admin/users" : "/admin/league-choices"}
                   />
                   <Link
-                    className="game-signups-button"
+                    className="game-signups-button nav-store-button"
                     href="/store"
                   >
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="nav-store-button-icon"
+                      height="20"
+                      src="/Spellbook-icon.png"
+                      width="20"
+                    />
                     STORE
                   </Link>
                 </>

@@ -329,6 +329,7 @@ button.button-small {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
   padding: 0.8rem 1.1rem;
   border-radius: 999px;
   background: #5865f2;
@@ -339,6 +340,20 @@ button.button-small {
 
 .game-signups-button:hover {
   background: #4c58d8;
+}
+
+.nav-store-button:hover,
+.nav-store-button:focus-visible {
+  background: var(--comic-ink);
+  border-color: var(--comic-ink);
+  color: var(--comic-paper);
+}
+
+.nav-store-button-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .settings-menu {
@@ -3599,6 +3614,13 @@ body .game-signups-button {
   background: var(--comic-paper);
   border-color: var(--comic-ink);
   color: var(--comic-red);
+}
+
+body .nav-store-button:hover,
+body .nav-store-button:focus-visible {
+  background: var(--comic-ink);
+  border-color: var(--comic-ink);
+  color: var(--comic-paper);
 }
 
 body .button-danger {
