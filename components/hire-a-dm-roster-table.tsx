@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { SearchIcon } from "@/components/search-icon";
 import { formatStarRating } from "@/lib/utils";
 
 export type HireDmRosterRow = {
@@ -35,6 +36,7 @@ function filterRoster(rows: HireDmRosterRow[], query: string) {
 
 export function HireDmRosterTable({ roster }: { roster: HireDmRosterRow[] }) {
   const [search, setSearch] = useState("");
+  const [searchDraft, setSearchDraft] = useState("");
   const filteredRoster = useMemo(() => filterRoster(roster, search), [roster, search]);
 
   return (
@@ -43,14 +45,25 @@ export function HireDmRosterTable({ roster }: { roster: HireDmRosterRow[] }) {
         <strong>
           <RainbowSpellbook /> DMs
         </strong>
-        <input
-          aria-label="Search dungeon masters"
-          className="input"
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search by DM name or specialty"
-          type="search"
-          value={search}
-        />
+        <form
+          className="search-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setSearch(searchDraft);
+          }}
+        >
+          <input
+            aria-label="Search dungeon masters"
+            className="input"
+            onChange={(event) => setSearchDraft(event.target.value)}
+            placeholder="Search by DM name or specialty"
+            type="search"
+            value={searchDraft}
+          />
+          <button className="button secondary search-icon-button" type="submit" aria-label="Search dungeon masters">
+            <SearchIcon />
+          </button>
+        </form>
       </div>
 
       <div className="table-wrap">

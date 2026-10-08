@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { SearchIcon } from "@/components/search-icon";
 import type { DndBeyondCharacterImport } from "@/lib/dnd-beyond-character-import";
 
 export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, syncedAt, savedError }: {
@@ -11,6 +12,7 @@ export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
+  const [queryDraft, setQueryDraft] = useState("");
   const [linkInput, setLinkInput] = useState(link);
   useEffect(() => { setLinkInput(link); }, [link]);
   const [localSyncedAt, setLocalSyncedAt] = useState(syncedAt);
@@ -72,7 +74,15 @@ export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, 
         <p className="muted" style={{ margin: 0 }}>D&amp;D Beyond currency: {Object.entries(imported.currencies).map(([unit, amount]) => `${amount.toLocaleString("en-US")} ${unit.toUpperCase()}`).join(" · ") || "Not supplied"}.</p>
         <div className="dnd-beyond-inventory-divider" aria-hidden="true" />
         <h3 style={{ margin: 0 }}>DnDBeyond Inventory</h3>
-        <label>Find an inventory item<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Item, type, or container" /></label>
+        <div className="stack" style={{ gap: "0.35rem" }}>
+          <label htmlFor="dnd-beyond-inventory-search">Find an inventory item</label>
+          <form className="search-row" onSubmit={event => { event.preventDefault(); setQuery(queryDraft); }}>
+            <input id="dnd-beyond-inventory-search" type="search" value={queryDraft} onChange={event => setQueryDraft(event.target.value)} placeholder="Item, type, or container" />
+            <button className="button secondary search-icon-button" type="submit" aria-label="Search inventory">
+              <SearchIcon />
+            </button>
+          </form>
+        </div>
         <p style={{ margin: 0 }}>{items.length} of {imported.inventory.length} inventory entries</p>
         <div style={{ overflowX: "auto", maxHeight: "36rem" }}>
           <table style={{ width: "100%", textAlign: "left" }}>

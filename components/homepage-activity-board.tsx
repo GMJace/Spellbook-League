@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { SearchIcon } from "@/components/search-icon";
 import { TwoRowScrollableGrid } from "@/components/two-row-scrollable-grid";
 
 import {
@@ -96,6 +97,7 @@ export function CharacterRosterGrid({
   visibleRows?: number;
 }) {
   const [playerSearch, setPlayerSearch] = useState("");
+  const [playerSearchDraft, setPlayerSearchDraft] = useState("");
 
   const filteredPlayers = useMemo(
     () => filterPlayerRows(playerRoster, playerSearch),
@@ -104,16 +106,25 @@ export function CharacterRosterGrid({
 
   return (
     <div className="list-card stack">
-      <div className="stack" style={{ gap: "0.55rem" }}>
+      <form
+        className="search-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setPlayerSearch(playerSearchDraft);
+        }}
+      >
         <input
           aria-label="Search character roster"
           className="input"
-          onChange={(event) => setPlayerSearch(event.target.value)}
+          onChange={(event) => setPlayerSearchDraft(event.target.value)}
           placeholder="Search players, characters, or builds"
           type="search"
-          value={playerSearch}
+          value={playerSearchDraft}
         />
-      </div>
+        <button className="button secondary search-icon-button" type="submit" aria-label="Search character roster">
+          <SearchIcon />
+        </button>
+      </form>
 
       {scrollable ? (
         <TwoRowScrollableGrid
@@ -243,6 +254,7 @@ export function HomepageDmActivityCard({
   dmRoster: DmRow[];
 }) {
   const [dmSearch, setDmSearch] = useState("");
+  const [dmSearchDraft, setDmSearchDraft] = useState("");
 
   const filteredDms = useMemo(
     () => filterDmRows(dmRoster, dmSearch),
@@ -256,16 +268,25 @@ export function HomepageDmActivityCard({
       </div>
 
       <div className="list-card stack">
-        <div className="stack" style={{ gap: "0.55rem" }}>
+        <form
+          className="search-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setDmSearch(dmSearchDraft);
+          }}
+        >
           <input
             aria-label="Search DM roster"
             className="input"
-            onChange={(event) => setDmSearch(event.target.value)}
+            onChange={(event) => setDmSearchDraft(event.target.value)}
             placeholder="Search dungeon masters"
             type="search"
-            value={dmSearch}
+            value={dmSearchDraft}
           />
-        </div>
+          <button className="button secondary search-icon-button" type="submit" aria-label="Search DM roster">
+            <SearchIcon />
+          </button>
+        </form>
 
         <div className="homepage-dm-roster-grid">
           {filteredDms.length ? (

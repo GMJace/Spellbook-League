@@ -73,13 +73,14 @@ export default async function HomePage() {
           <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-yellow" />
           <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-red" />
           <span className="homepage-intro-bubble-copy">
-            <span>Adventure from the comfort of your own home with a welcoming online</span>
-            <span>community and top-tier Dungeon Masters running official</span>
+            <span>Adventure from the comfort of your own home with a</span>
+            <span>welcoming online community and top-tier Dungeon Masters</span>
             <span>
+              running official{" "}
               <strong>
                 <RainbowSpellbook />
               </strong>{" "}
-              Adventurers&apos; League games on Roll20.
+              QUESTS on Roll20.
             </span>
           </span>
         </p>

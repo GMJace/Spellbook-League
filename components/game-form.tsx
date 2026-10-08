@@ -6,6 +6,7 @@ import { lookupAdventureCatalogAutofill } from "@/lib/adventure-catalog-client";
 import { BulletTextarea } from "@/components/bullet-textarea";
 import { DatePickerField } from "@/components/date-picker-field";
 import { GameRewardFields } from "@/components/game-reward-fields";
+import { SearchIcon } from "@/components/search-icon";
 import { parseStoredGameSummary, serializeGameSummarySections } from "@/lib/game-summary";
 import {
   TBD_CHARACTER_LABEL,
@@ -205,6 +206,7 @@ export function GameForm({
     [initialValues?.gameSummary]
   );
   const [search, setSearch] = useState("");
+  const [searchDraft, setSearchDraft] = useState("");
   const [titleValue, setTitleValue] = useState(initialValues?.title ?? "");
   const [adventureCodeValue, setAdventureCodeValue] = useState(initialValues?.adventureCode ?? "");
   const [sourceValue, setSourceValue] = useState(initialValues?.source ?? "");
@@ -982,18 +984,28 @@ export function GameForm({
       </div>
       <div className="panel stack">
         <div className="form-grid">
-          <label>
-            Search players
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                clearFieldError("participants");
-              }}
-              placeholder="Search by player name"
-            />
-          </label>
+          <div className="stack" style={fieldBlockStyle}>
+            <span>Search players</span>
+            <div className="search-row">
+              <input
+                type="search"
+                value={searchDraft}
+                onChange={(event) => {
+                  setSearchDraft(event.target.value);
+                  clearFieldError("participants");
+                }}
+                placeholder="Search by player name"
+              />
+              <button
+                aria-label="Search players"
+                className="button secondary search-icon-button"
+                onClick={() => setSearch(searchDraft)}
+                type="button"
+              >
+                <SearchIcon />
+              </button>
+            </div>
+          </div>
           <label>
             Player
             <select

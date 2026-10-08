@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 
 import { AdminPageHeader } from "@/components/admin-page-header";
+import { SearchIcon } from "@/components/search-icon";
 import { requireAdminUser } from "@/lib/admin";
 import { isDndBeyondLink } from "@/lib/dnd-beyond-character-import";
 import { prisma } from "@/lib/prisma";
@@ -56,12 +57,14 @@ export default async function AdminCharactersPage({
         description="Find player characters, edit their logsheets, and maintain D&D Beyond character sheet links."
       />
       <section className="list-card stack">
-        <form action="/admin/characters" method="get" className="inline-actions" style={{ flexWrap: "wrap" }}>
-          <label style={{ flex: "1 1 18rem" }}>
-            Search characters or players
+        <form action="/admin/characters" method="get" className="stack" style={{ gap: "0.45rem" }}>
+          <span>Search characters or players</span>
+          <div className="search-row">
             <input name="q" type="search" defaultValue={query} placeholder="Character, player, or email" />
-          </label>
-          <button type="submit">Search</button>
+            <button className="button secondary search-icon-button" type="submit" aria-label="Search characters or players">
+              <SearchIcon />
+            </button>
+          </div>
         </form>
         <p className="muted" style={{ margin: 0 }}>
           {total} character{total === 1 ? "" : "s"} found

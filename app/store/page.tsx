@@ -177,7 +177,7 @@ export default async function StorePage() {
             Open league cart
           </Link>
           <a
-            className="game-signups-button store-publishing-button"
+            className="button secondary store-publishing-button"
             href={publishingStoreUrl}
             rel="noreferrer"
             target="_blank"

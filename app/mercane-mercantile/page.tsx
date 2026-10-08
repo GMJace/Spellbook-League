@@ -7,6 +7,7 @@ import {
   createGuestTradingPostListing,
   createGuestTradingPostProposal,
 } from "@/app/player/characters/[id]/trading-post/actions";
+import { SearchIcon } from "@/components/search-icon";
 import { TableActionMenu } from "@/components/table-action-menu";
 import {
   formatTradingPostItemName,
@@ -555,8 +556,8 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
               </select>
             </label>
             <div className="mercane-filter-actions">
-              <button className="button" type="submit">
-                Search listings
+              <button className="button search-icon-button" type="submit" aria-label="Search listings">
+                <SearchIcon />
               </button>
               <Link className="button button-secondary" href="/mercane-mercantile">
                 Clear filters

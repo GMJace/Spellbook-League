@@ -2,6 +2,7 @@
 import Link from "next/link";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { SearchIcon } from "@/components/search-icon";
 import { TableActionMenu } from "@/components/table-action-menu";
 import { requireRole } from "@/lib/auth";
 import { canViewPrivateCharacterRoster } from "@/lib/character-visibility";
@@ -239,8 +240,8 @@ export default async function DmAchievementsPage({ searchParams }: PageProps) {
               placeholder="Search players, characters, or classes"
               type="search"
             />
-            <button className="button secondary" type="submit">
-              Search
+            <button className="button secondary search-icon-button" type="submit" aria-label="Search players">
+              <SearchIcon />
             </button>
           </form>
 

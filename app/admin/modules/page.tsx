@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createAdventureModule, resolveModuleConflict } from "@/app/admin/modules/actions";
 import { AdminModuleForm } from "@/components/admin-module-form";
 import { AdminPageHeader } from "@/components/admin-page-header";
+import { SearchIcon } from "@/components/search-icon";
 import { TableActionMenu } from "@/components/table-action-menu";
 import { normalizeAdventureLookupValue, parseAdventureCatalogListJson } from "@/lib/adventure-catalog";
 import { requireAdminUser } from "@/lib/admin";
@@ -438,17 +439,16 @@ export default async function AdminModulesPage({
             >
               Sort modules
             </span>
-            <form action="/admin/modules#live-module-catalog" method="get" style={{ display: "flex", gap: "0.75rem", flex: "1 1 20rem" }}>
+            <form action="/admin/modules#live-module-catalog" className="search-row" method="get" style={{ flex: "1 1 20rem" }}>
               <input name="sort" type="hidden" value={sort} />
               <input
                 defaultValue={searchTerm}
                 name="search"
                 placeholder="Search code, title, or source"
-                style={{ flex: 1 }}
-                type="text"
+                type="search"
               />
-              <button className="button secondary" type="submit">
-                Search
+              <button className="button secondary search-icon-button" type="submit" aria-label="Search modules">
+                <SearchIcon />
               </button>
             </form>
             <Link

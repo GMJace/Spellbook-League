@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
-import { TableActionMenu } from "@/components/table-action-menu";
+import { SearchIcon } from "@/components/search-icon";
 import { TwoRowScrollableGrid } from "@/components/two-row-scrollable-grid";
 import { requireRole } from "@/lib/auth";
 import { getProDmRosterEntry } from "@/lib/pro-dm-roster";
@@ -58,7 +58,7 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
 
   return (
     <main className="stack dm-dashboard-page">
-      <section className="card ledger-panel stack">
+      <section className="card ledger-panel stack dm-dashboard-account-shell">
         <div
           style={{
             display: "flex",
@@ -157,19 +157,13 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
         </div>
       </section>
 
-      <img
-        alt="DM dashboard divider"
-        className="ggcon-table-divider"
-        src="/divider4.png"
-      />
-
-      <section className="card ledger-panel stack">
+      <section className="card ledger-panel stack dm-dashboard-games-shell">
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
           <div>
             <p className="eyebrow">DM dashboard</p>
             <h1>Your games</h1>
           </div>
-          <TableActionMenu label="DM actions" summarySmall={false}>
+          <div className="inline-actions dm-dashboard-actions">
             <Link href="/dm/players" className="button button-secondary button-small">
               Player roster
             </Link>
@@ -185,10 +179,10 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
             <Link href="/dm/games/new" className="button button-small">
               Create/Log Game
             </Link>
-          </TableActionMenu>
+          </div>
         </div>
 
-        <form className="search-row" method="get" style={{ marginTop: "1rem" }}>
+        <form className="search-row dm-dashboard-search-row" method="get" style={{ marginTop: "1rem" }}>
           <input
             aria-label="Search games"
             className="input"
@@ -197,13 +191,17 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
             placeholder="Search by game title or adventure code"
             type="search"
           />
-          <button className="button secondary" type="submit">
-            Search
+          <button
+            aria-label="Search games"
+            className="button secondary search-icon-button dm-dashboard-search-button"
+            type="submit"
+          >
+            <SearchIcon className="search-icon dm-dashboard-search-icon" />
           </button>
         </form>
-      </section>
 
-      <section className="card ledger-panel stack">
+        <div className="dm-dashboard-games-divider" />
+
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
           <h2 style={{ margin: 0 }}>Current DM games</h2>
         </div>

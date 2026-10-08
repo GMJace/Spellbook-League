@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { SearchIcon } from "@/components/search-icon";
 import { TableActionMenu } from "@/components/table-action-menu";
 import { formatClassSummary } from "@/lib/character";
 
@@ -75,6 +76,7 @@ export function DmPlayerRosterTable({
   rows: DmPlayerRosterRow[];
 }) {
   const [globalSearch, setGlobalSearch] = useState(initialSearch);
+  const [globalSearchDraft, setGlobalSearchDraft] = useState(initialSearch);
   const [filters, setFilters] = useState<ColumnFilters>({
     player: "",
     discord: "",
@@ -97,16 +99,25 @@ export function DmPlayerRosterTable({
 
   return (
     <div className="stack" style={{ gap: "0.8rem" }}>
-      <div className="search-row">
+      <form
+        className="search-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setGlobalSearch(globalSearchDraft);
+        }}
+      >
         <input
           aria-label="Search players"
           className="input"
-          onChange={(event) => setGlobalSearch(event.target.value)}
+          onChange={(event) => setGlobalSearchDraft(event.target.value)}
           placeholder="Search players, characters, classes, or game counts"
           type="search"
-          value={globalSearch}
+          value={globalSearchDraft}
         />
-      </div>
+        <button className="button secondary search-icon-button" type="submit" aria-label="Search players">
+          <SearchIcon />
+        </button>
+      </form>
 
       <div className="table-wrap dm-player-roster-table-wrap">
         <table className="ledger-table">
