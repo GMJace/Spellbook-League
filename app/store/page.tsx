@@ -163,7 +163,6 @@ export default async function StorePage() {
   return (
     <main className="stack store-page">
       <section className="card ledger-panel stack store-hero">
-        <p className="eyebrow">Storefront</p>
         <h1 style={{ margin: 0 }}>Explore the <RainbowSpellbook /> Store</h1>
         <p className="muted store-hero-copy" style={{ margin: 0, maxWidth: "68ch" }}>
           Find upcoming <GrimoireGatheringsText /> event access, paid league tables,
@@ -210,7 +209,7 @@ export default async function StorePage() {
         </div>
 
         {upcomingEvents.length ? (
-          <div className="store-card-grid">
+          <div className="store-card-grid store-grimoire-card-grid">
             {upcomingEventCards.map((event) => (
               <article key={event.id} className="store-card store-grimoire-card">
                 <div className="store-grimoire-card-content stack">
@@ -241,7 +240,7 @@ export default async function StorePage() {
                   </div>
                   <div className="store-grimoire-event-meta">
                     <div className="store-grimoire-event-stat">
-                      <strong>Game slots</strong>
+                      <strong className="store-grimoire-slot-heading">Game slots</strong>
                       {event.slots.length ? (
                         <div className="store-grimoire-slot-list">
                           {event.slots.map((slot) => (

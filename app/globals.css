@@ -1547,7 +1547,7 @@ button.button-small {
 
 .ggcon-flying-carpet-body {
   max-width: 36rem;
-  color: #eef8ea;
+  color: var(--comic-ink);
   line-height: 1.7;
 }
 
@@ -1587,16 +1587,14 @@ button.button-small {
 
 .ggcon-flying-carpet-benefit .ggcon-meta-note,
 .ggcon-flying-carpet-benefit p {
+  color: var(--comic-ink);
   font-size: 1.02rem;
   line-height: 1.65;
 }
 
-.pill.ggcon-flying-carpet-pill {
-  width: fit-content;
-  border: none;
-  background: rgba(141, 255, 112, 0.16);
-  color: #dfffd2;
-  font-size: 1rem;
+.ggcon-flying-carpet-benefit-title {
+  margin: 0;
+  font-size: clamp(1.45rem, 3vw, 2.05rem);
 }
 
 .ggcon-paypal-form {
@@ -3143,6 +3141,7 @@ textarea {
 }
 
 .store-hero-copy {
+  color: var(--comic-ink);
   font-size: 1.02rem;
   line-height: 1.7;
 }
@@ -3183,6 +3182,10 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.store-grimoire-card-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .store-card-grid-league {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -3197,7 +3200,7 @@ textarea {
 .store-grimoire-card {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
   align-items: stretch;
 }
 
@@ -3230,14 +3233,38 @@ textarea {
 
 .store-grimoire-slot-list {
   display: grid;
-  gap: 0.5rem 0.85rem;
+  gap: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 3px solid var(--comic-ink);
 }
 
 .store-grimoire-slot-item {
   display: grid;
-  gap: 0.1rem;
+  gap: 0.2rem;
   align-content: start;
+  padding: 0.65rem 0.75rem;
+  border-right: 3px solid var(--comic-ink);
+  border-bottom: 3px solid var(--comic-ink);
+  color: var(--comic-ink);
+}
+
+.store-grimoire-slot-item:nth-child(2n) {
+  border-right: 0;
+}
+
+.store-grimoire-slot-item:last-child,
+.store-grimoire-slot-item:nth-last-child(2):nth-child(odd) {
+  border-bottom: 0;
+}
+
+.store-grimoire-slot-heading {
+  font-family: var(--font-comic-display);
+  color: var(--comic-red);
+  font-size: 1.45rem;
+  letter-spacing: 0.055em;
+  text-shadow:
+    1px 1px 0 var(--comic-ink),
+    1px 1px 0 var(--comic-paper);
 }
 
 .store-grimoire-card-logo-wrap {
@@ -4125,6 +4152,14 @@ body .search-row .button {
 
   .store-grimoire-slot-list {
     grid-template-columns: 1fr;
+  }
+
+  .store-grimoire-slot-item {
+    border-right: 0;
+  }
+
+  .store-grimoire-slot-item:nth-last-child(2):nth-child(odd) {
+    border-bottom: 3px solid var(--comic-ink);
   }
 
   .store-grimoire-card-logo {

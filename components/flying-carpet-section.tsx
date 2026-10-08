@@ -35,7 +35,7 @@ export function FlyingCarpetSection() {
           <div className="ggcon-flying-carpet-aside">
             <div className="ggcon-flying-carpet-benefits">
               <div className="ggcon-flying-carpet-benefit">
-                <span className="pill ggcon-flying-carpet-pill">Total Tome</span>
+                <h3 className="ggcon-flying-carpet-benefit-title">Total Tome</h3>
                 <p style={{ margin: 0 }}>
                   Reserve tickets for event games two weeks before registration opens to
                   the general public, giving you the best chance to play the adventures
@@ -43,14 +43,14 @@ export function FlyingCarpetSection() {
                 </p>
               </div>
               <div className="ggcon-flying-carpet-benefit">
-                <span className="pill ggcon-flying-carpet-pill">Three Wishes Draw</span>
+                <h3 className="ggcon-flying-carpet-benefit-title">Three Wishes Draw</h3>
                 <p style={{ margin: 0 }}>
                   Receive one entry into a draw for free badges to the next three
                   Grimoire events you attend. Each draw offers a 1-in-30 chance to win.
                 </p>
               </div>
               <div className="ggcon-flying-carpet-benefit">
-                <span className="pill ggcon-flying-carpet-pill">Libram Arcanum Channel</span>
+                <h3 className="ggcon-flying-carpet-benefit-title">Libram Arcanum Channel</h3>
                 <p style={{ margin: 0 }}>
                   Gain access to the event&apos;s exclusive Libram Arcanum Channel, where
                   players can coordinate their parties, prepare their characters, and
