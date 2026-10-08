@@ -328,7 +328,7 @@ button.button-small {
   margin-right: auto;
   white-space: nowrap;
   font-family: var(--font-comic-display);
-  font-size: 1.2rem;
+  font-size: 1.37rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--comic-red);
@@ -401,12 +401,13 @@ button.button-small {
   position: absolute;
   top: calc(100% + 0.55rem);
   right: 0;
-  width: min(420px, calc(100vw - 2rem));
-  max-height: min(70vh, 560px);
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: min(72vh, 36rem);
   padding: 0.75rem;
   border-radius: 20px;
   border: 1px solid var(--line);
-  background: #000000;
+  background: var(--comic-paper);
+  color: var(--comic-ink);
   box-shadow: var(--shadow);
   display: grid;
   gap: 0.75rem;
@@ -462,13 +463,14 @@ button.button-small {
   overflow: hidden;
   padding: 0.85rem 0.9rem;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 3px solid var(--comic-ink);
+  background: var(--comic-paper);
+  color: var(--comic-ink);
 }
 
 .notification-card.unread {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--comic-ink);
+  background: var(--comic-yellow);
 }
 
 .notification-card-header {
@@ -495,7 +497,7 @@ button.button-small {
 
 .notification-body {
   margin: 0;
-  color: #f0f0f0;
+  color: var(--comic-ink);
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -523,7 +525,7 @@ button.button-small {
 }
 
 .notification-details dt {
-  color: var(--muted);
+  color: var(--comic-ink);
 }
 
 .notification-details dd {
@@ -3616,6 +3618,12 @@ body .hero-panel,
 body .table-wrap,
 body .metric,
 body .list-card,
+body .ledger-panel,
+body .activity-card,
+body .settings-card,
+body .profile-card,
+body .guide-card,
+body .admin-card,
 body .homepage-banner-art,
 body .homepage-open-game-card,
 body .homepage-character-roster-card,
@@ -3726,12 +3734,20 @@ body .homepage-magic-heading h1 {
 body .eyebrow,
 body .admin-page-menu-label,
 body .notification-mark-all,
-body .notification-mark-read,
+body .notification-mark-read {
+  width: fit-content;
+  padding: 0.06rem 0.35rem;
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
 body .notification-link {
   width: fit-content;
   padding: 0.06rem 0.35rem;
   background: var(--comic-paper);
-  color: var(--comic-orange);
+  color: var(--comic-blue);
   font-weight: 900;
   letter-spacing: 0.14em;
 }
@@ -3746,9 +3762,30 @@ body .homepage-character-roster-details dt {
 
 body .site-welcome {
   color: var(--comic-red);
+  font-size: 1.37rem;
   text-shadow:
     2px 2px 0 var(--comic-ink),
     2px 2px 0 var(--comic-paper);
+}
+
+body .notification-dropdown,
+body .notification-dropdown .muted,
+body .notification-header,
+body .notification-card,
+body .notification-card-header strong,
+body .notification-card-header .muted,
+body .notification-body,
+body .notification-details,
+body .notification-details dt,
+body .notification-details dd,
+body .notification-mark-all,
+body .notification-mark-read,
+body .notification-dropdown .empty {
+  color: var(--comic-ink);
+}
+
+body .notification-link {
+  color: var(--comic-blue);
 }
 
 body input,
@@ -4084,7 +4121,7 @@ body .search-row .button {
     order: 3;
     text-align: center;
     white-space: normal;
-    font-size: 1rem;
+    font-size: 1.15rem;
   }
 
   .site-role-links {
@@ -4297,11 +4334,29 @@ body .search-row .button {
 
   .notification-dropdown {
     position: fixed;
-    top: 5.35rem;
-    left: 1rem;
-    right: 1rem;
+    top: max(0.75rem, env(safe-area-inset-top));
+    left: max(0.75rem, env(safe-area-inset-left));
+    right: max(0.75rem, env(safe-area-inset-right));
     width: auto;
-    max-height: calc(100dvh - 6.5rem);
+    max-height: calc(100dvh - 1.5rem);
+    padding: 0.65rem;
+    border-width: 4px;
+  }
+
+  .notification-header,
+  .notification-actions-row,
+  .notification-details div {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-header,
+  .notification-actions-row {
+    align-items: stretch;
+  }
+
+  .notification-details dd,
+  .notification-card-header .muted {
+    text-align: left;
   }
 
   .site-role-links {

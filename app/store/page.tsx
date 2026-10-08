@@ -271,9 +271,9 @@ export default async function StorePage() {
                 </div>
                 <div className="store-grimoire-card-logo-wrap">
                   <img
-                    alt="Grimoire Gathering logo"
+                    alt={`${event.subtitle} event logo`}
                     className="store-grimoire-card-logo"
-                    src="/grimoire-gathering-banner.png"
+                    src={event.badgeImagePath ?? "/grimoire-gathering-banner.png"}
                   />
                 </div>
               </article>
