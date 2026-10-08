@@ -133,6 +133,7 @@ export default async function PendingAdminModulePage({ params, searchParams }: P
                 title: pendingModule.title,
                 tier: pendingModule.tier,
                 duration: pendingModule.duration,
+                author: pendingModule.author,
                 sourceSheet: pendingModule.sourceSheet,
                 gameSummary: pendingModule.gameSummary,
                 adventureImagePath: pendingModule.adventureImagePath,

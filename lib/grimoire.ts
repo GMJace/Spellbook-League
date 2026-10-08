@@ -28,6 +28,7 @@ export type GrimoireGame = {
   details: string[];
   adventureImagePath?: string | null;
   startAt: string;
+  durationMinutes?: number;
   dm: string;
   tier: GrimoireTier;
   ticketPrice: string;

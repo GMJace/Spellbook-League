@@ -69,21 +69,19 @@ export default async function HomePage() {
             src="/wizard.svg"
           />
         </div>
-        <p
-          style={{
-            margin: "1rem auto 0",
-            maxWidth: "52rem",
-            textAlign: "center",
-            fontSize: "32pt",
-            lineHeight: 1.7,
-          }}
-        >
-          Adventure from the comfort of your own home with a welcoming online
-          community and top-tier Dungeon Masters running official{" "}
-          <strong>
-            <RainbowSpellbook />
-          </strong>{" "}
-          Adventurers&apos; League games on Roll20.
+        <p className="homepage-intro-bubble">
+          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-yellow" />
+          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-red" />
+          <span className="homepage-intro-bubble-copy">
+            <span>Adventure from the comfort of your own home with a welcoming online</span>
+            <span>community and top-tier Dungeon Masters running official</span>
+            <span>
+              <strong>
+                <RainbowSpellbook />
+              </strong>{" "}
+              Adventurers&apos; League games on Roll20.
+            </span>
+          </span>
         </p>
         <img
           alt="Rainbow jewel border"
@@ -117,9 +115,9 @@ export default async function HomePage() {
             className="handbook-link-card homepage-encounter-link homepage-ggcon-link"
           >
             <img
-              alt="GGCON icon"
+              alt="Grimoire Gathering banner"
               className="homepage-ggcon-icon"
-              src="/grimoire-gathering-logo.jpg"
+              src="/grimoire-gathering-banner.png"
             />
             <strong>
               <GrimoireGatheringsText />
@@ -162,7 +160,7 @@ export default async function HomePage() {
             <img
               alt="Adventurers League logo"
               className="handbook-link-logo"
-              src="/al-logo-white.png"
+              src="/al-logo-black.png"
             />
             <strong>Player&apos;s Guide</strong>
           </a>
@@ -176,7 +174,7 @@ export default async function HomePage() {
             <img
               alt="Adventurers League logo"
               className="handbook-link-logo"
-              src="/al-logo-white.png"
+              src="/al-logo-black.png"
             />
             <strong>DM&apos;s Guide</strong>
           </a>
@@ -190,7 +188,7 @@ export default async function HomePage() {
             <img
               alt="Adventurers League logo"
               className="handbook-link-logo"
-              src="/al-logo-white.png"
+              src="/al-logo-black.png"
             />
             <strong>DM Service Awards</strong>
           </a>
@@ -206,7 +204,7 @@ export default async function HomePage() {
             <img
               alt="Adventurers League logo"
               className="handbook-link-logo"
-              src="/al-logo-white.png"
+              src="/al-logo-black.png"
             />
             <strong>Adaptation Guide</strong>
           </a>
@@ -220,7 +218,7 @@ export default async function HomePage() {
             <img
               alt="Adventurers League logo"
               className="handbook-link-logo"
-              src="/al-logo-white.png"
+              src="/al-logo-black.png"
             />
             <strong>Organizer&apos;s Guide</strong>
           </a>
@@ -234,7 +232,7 @@ export default async function HomePage() {
             <img
               alt="Adventurers League logo"
               className="handbook-link-logo"
-              src="/al-logo-white.png"
+              src="/al-logo-black.png"
             />
             <strong>Dungeoncraft</strong>
           </a>
@@ -390,20 +388,20 @@ export default async function HomePage() {
         />
 
         <div className="homepage-mercane-grid">
-          <div className="stack homepage-mercane-copy" style={{ gap: "1rem" }}>
-            <div className="stack" style={{ gap: "0.35rem" }}>
+          <div className="stack homepage-mercane-copy">
+            <div className="stack homepage-mercane-copy-inner">
               <p className="eyebrow" style={{ margin: 0 }}>
                 Community marketplace
               </p>
-              <h2 style={{ margin: 0 }}>Mercane Mercantile</h2>
-              <p className="muted" style={{ margin: 0 }}>
-                <strong>Mercane Mercantile</strong> is the SPELLBOOK League marketplace for
+              <h2 className="homepage-mercane-heading">Mercane Mercantile</h2>
+              <p className="muted homepage-mercane-description">
+                <strong>Mercane Mercantile</strong> is the <RainbowSpellbook /> League marketplace for
                 adventurers looking to trade magic items. Browse what other players have listed,
                 discover rare and useful treasures, and post your own magic items for trade with the
                 community.
               </p>
             </div>
-            <div>
+            <div className="homepage-mercane-actions">
               <Link className="button button-secondary" href="/mercane-mercantile">
                 Browse Mercane Mercantile
               </Link>

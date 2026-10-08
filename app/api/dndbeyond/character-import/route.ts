@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth";
 import { importCharacterFromDndBeyondPdf } from "@/lib/dnd-beyond-character-pdf-import";
+import { importCharacterFromDndBeyondLink } from "@/lib/dnd-beyond-character-import";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -20,6 +21,15 @@ export async function POST(request: Request) {
   }
 
   const file = formData.get("characterPdfFile");
+  const link = formData.get("characterSheetLink");
+
+  if (typeof link === "string" && link.trim()) {
+    try {
+      return NextResponse.json({ character: await importCharacterFromDndBeyondLink(link) });
+    } catch (error) {
+      return jsonError(error instanceof Error ? error.message : "The character link could not be imported.", 400);
+    }
+  }
 
   if (!(file instanceof File)) {
     return jsonError("Choose a D&D Beyond exported PDF first.", 400);

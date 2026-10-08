@@ -1,4 +1,5 @@
 import { getProDmRosterEntry } from "@/lib/pro-dm-roster";
+import { isAdminEmail } from "@/lib/admin-access";
 
 const ADMIN_ROLES = new Set(["LEAGUE_ADMIN", "EVENT_ADMIN"]);
 
@@ -9,8 +10,9 @@ export function isCharacterRosterAdmin(roles: string[]) {
 export async function canViewPrivateCharacterRoster(user: {
   id: string;
   roles: string[];
+  email?: string;
 }) {
-  if (isCharacterRosterAdmin(user.roles)) {
+  if (isCharacterRosterAdmin(user.roles) || (user.email && isAdminEmail(user.email))) {
     return true;
   }
 
@@ -21,10 +23,11 @@ export async function canViewPrivateCharacterRoster(user: {
   return (await getProDmRosterEntry(user.id)) !== null;
 }
 
-export function canViewPublicCharacterRoster(user: { roles: string[] }) {
+export function canViewPublicCharacterRoster(user: { roles: string[]; email?: string }) {
   return (
     user.roles.includes("PLAYER") ||
     user.roles.includes("DM") ||
-    isCharacterRosterAdmin(user.roles)
+    isCharacterRosterAdmin(user.roles) ||
+    Boolean(user.email && isAdminEmail(user.email))
   );
 }

@@ -4,7 +4,11 @@ import type { CheckoutType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getNextGrimoireEvent, getCuratedGamesForEvent } from "@/lib/grimoire-server";
+import {
+  getCuratedGamesForEvent,
+  getGrimoireGameAccessForEvent,
+  getNextGrimoireEvent,
+} from "@/lib/grimoire-server";
 import {
   getParticipantCharacterLabel,
   normalizeParticipantCharacterId,
@@ -395,7 +399,7 @@ async function buildGrimoireCheckout(
   payload: Extract<PayPalCheckoutPayload, { checkoutType: "GRIMOIRE" }>,
   salesTaxRatePct: number,
 ): Promise<CanonicalCheckout> {
-  const nextEvent = await getNextGrimoireEvent();
+  const [nextEvent, session] = await Promise.all([getNextGrimoireEvent(), auth()]);
 
   if (!nextEvent) {
     throw new Error("No Grimoire event is currently available for checkout.");
@@ -407,6 +411,14 @@ async function buildGrimoireCheckout(
 
   if (payload.items.length > 0 && payload.badgeQuantity < 1) {
     throw new Error("A Grimoire badge is required before purchasing game tickets.");
+  }
+
+  if (payload.items.length > 0) {
+    const gameAccess = await getGrimoireGameAccessForEvent(nextEvent, session?.user?.id);
+
+    if (!gameAccess.canViewGames) {
+      throw new Error("Grimoire game tickets are not open for your account yet.");
+    }
   }
 
   const curatedGames = await getCuratedGamesForEvent(nextEvent.id);

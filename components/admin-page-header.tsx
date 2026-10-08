@@ -11,6 +11,11 @@ const adminNavigationLinks = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/characters",
+    label: "Character roster",
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/league-games",
     label: "League games",
     roles: ["ADMIN"],
@@ -86,7 +91,7 @@ export async function AdminPageHeader({
   const visibleLinks = await getVisibleAdminNavigationLinks();
 
   return (
-    <div className="list-card stack">
+    <div className="admin-page-header list-card stack">
       <AdminPageMenu currentTitle={title} links={visibleLinks} />
 
       <div>

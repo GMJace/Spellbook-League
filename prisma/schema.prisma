@@ -181,6 +181,7 @@ model User {
   playerTidingAwards TidingAward[] @relation("PlayerTidingAwards")
   dmTidingAwards TidingAward[] @relation("DmTidingAwards")
   tidingSpends TidingSpend[] @relation("UserTidingSpends")
+  dmServiceLogs DmServiceLog[] @relation("DmServiceLogUser")
 }
 
 model UserRole {
@@ -199,6 +200,11 @@ model Character {
   name         String
   isPubliclyViewable Boolean     @default(true)
   characterSheetLink String?
+  dndBeyondData String?
+  dndBeyondSyncedAt DateTime?
+  dndBeyondAttemptAt DateTime?
+  dndBeyondSyncLink String?
+  dndBeyondError String?
   blindsightFt Int?
   darkvisionFt Int?
   tremorsenseFt Int?
@@ -443,6 +449,27 @@ model GameParticipant {
   @@unique([gameId, characterId])
 }
 
+model DmServiceLog {
+  id                 String   @id @default(cuid())
+  userId             String
+  activityType       String
+  activityLabel      String
+  title              String
+  adventureCode      String   @default("")
+  activityDate       DateTime
+  sessionHours       Float    @default(0)
+  safetyToolSessions Int      @default(0)
+  newAlPlayerCount   Int      @default(0)
+  achievementHours   Float    @default(0)
+  totalHours         Float    @default(0)
+  notes              String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation("DmServiceLogUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, activityDate(sort: Desc)])
+}
+
 model TidingAward {
   id            String           @id @default(cuid())
   sessionKey    String
@@ -488,7 +515,9 @@ model AdventureCatalog {
   id                    String   @id @default(cuid())
   adventureCode         String
   lookupCode            String
+  isActive              Boolean  @default(true)
   title                 String
+  author                String   @default("")
   lookupTitle           String
   tier                  Tier
   duration              String   @default("")
@@ -528,6 +557,7 @@ model PendingAdventureModule {
   adventureCode         String
   lookupCode            String
   title                 String
+  author                String   @default("")
   lookupTitle           String
   tier                  Tier
   duration              String   @default("")

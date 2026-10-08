@@ -13,6 +13,8 @@ import {
   deleteCharacterTrade,
 } from "@/app/player/characters/[id]/trades/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
+import { DndBeyondCharacterPanel } from "@/components/dnd-beyond-character-panel";
+import { isDndBeyondLink, type DndBeyondCharacterImport } from "@/lib/dnd-beyond-character-import";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
   CopyMusterInfoButton,
@@ -40,6 +42,7 @@ import {
   isCharacterRosterAdmin,
 } from "@/lib/character-visibility";
 import { requireUser } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin-access";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -226,7 +229,7 @@ const sectionItemHeaderStyle = {
 const whiteLineDividerStyle = {
   width: "100%",
   height: "1px",
-  background: "rgba(255, 255, 255, 0.85)",
+  background: "#000000",
 } as const;
 
 const detailCardStyle = {
@@ -234,8 +237,8 @@ const detailCardStyle = {
   gap: "0.75rem",
   padding: "1rem",
   borderRadius: "18px",
-  border: "1px solid rgba(255, 255, 255, 0.08)",
-  background: "rgba(255, 255, 255, 0.02)",
+  border: "1px solid #000000",
+  background: "#ffffff",
   alignContent: "start",
 } as const;
 
@@ -346,6 +349,10 @@ export default async function CharacterLogsheetPage({
   }
 
   const totalLevel = getTotalLevel(character);
+  let dndBeyond: DndBeyondCharacterImport | null = null;
+  if (character.dndBeyondSyncLink === character.characterSheetLink && character.dndBeyondData) {
+    try { dndBeyond = JSON.parse(character.dndBeyondData); } catch { /* Old or incomplete snapshots are refreshed on opening the log. */ }
+  }
   const tier = getCharacterTier(totalLevel);
   const tierLabel = getTierLabel(tier);
   const magicItemSlots = getMagicItemLimit(tier);
@@ -403,7 +410,7 @@ export default async function CharacterLogsheetPage({
   const visibleCharms = getVisibleSlottedItems(charms, [], [], [], getCharmLabel);
   const visibleBoon = boonSlotEnabled ? character.boon.trim() : "";
   const visibleBlessing = character.blessing.trim();
-  const visibleFeats = formatFeatSelections(character.feats)
+  const visibleFeats = (dndBeyond?.featNames?.join("\n") ?? formatFeatSelections(character.feats))
     .split("\n")
     .map((value) => value.trim())
     .filter(Boolean);
@@ -727,55 +734,19 @@ export default async function CharacterLogsheetPage({
                     <span>No token uploaded</span>
                   </div>
                 )}
-              </div>
-
-              <div className="character-record-column">
-                <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Character HP
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {character.hitPoints ?? "Not added"}
-                  </p>
-                </div>
-                <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Character AC
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {character.armorClass ?? "Not added"}
-                  </p>
-                </div>
-                <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Spell Save DC
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {character.spellSaveDc ?? "Not added"}
-                  </p>
+                <div className="character-record-token-stat">
+                  <p className="muted" style={sectionItemHeaderStyle}>Games played</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{visibleGameLog.length}</p>
                 </div>
               </div>
 
               <div className="character-record-column">
                 <div className="character-record-row">
                   <p className="muted" style={sectionItemHeaderStyle}>
-                    Senses
+                    Species
                   </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {visibleVision.length ? visibleVision.join(", ") : "Not added"}
-                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{dndBeyond?.species || "Not added"}</p>
                 </div>
-                <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Passive Perception
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>
-                    {character.passivePerception ?? "Not added"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="character-record-column">
                 <div className="character-record-row">
                   <p className="muted" style={sectionItemHeaderStyle}>
                     Build
@@ -794,16 +765,59 @@ export default async function CharacterLogsheetPage({
                   <p style={{ margin: "0.35rem 0 0" }}>{tierLabel}</p>
                 </div>
                 <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>
-                    Gold
-                  </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>{character.totalGold ?? 0}</p>
+                  <p className="muted" style={sectionItemHeaderStyle}>Background</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{dndBeyond?.background || "Not added"}</p>
+                </div>
+              </div>
+
+              <div className="character-record-column">
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>Character HP</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{character.hitPoints ?? "Not added"}</p>
+                  {dndBeyond?.currentHitPoints != null ? <p className="muted" style={{ margin: "0.2rem 0 0" }}>Current: {dndBeyond.currentHitPoints}{dndBeyond.temporaryHitPoints ? ` · Temporary: ${dndBeyond.temporaryHitPoints}` : ""}</p> : null}
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>Character AC</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{character.armorClass ?? "Not added"}</p>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>Spell Save DC</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{character.spellSaveDc ?? "Not added"}</p>
+                  {new Set(dndBeyond?.spellSaveDcs?.map(c => c.dc)).size > 1 ? <p className="muted" style={{ margin: "0.2rem 0 0" }}>{dndBeyond?.spellSaveDcs.map(c => `${c.name}: ${c.dc}`).join(" · ")}</p> : null}
                 </div>
                 <div className="character-record-row">
                   <p className="muted" style={sectionItemHeaderStyle}>
-                    Games played
+                    Senses
                   </p>
-                  <p style={{ margin: "0.35rem 0 0" }}>{visibleGameLog.length}</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {visibleVision.length ? visibleVision.join(", ") : dndBeyond?.darkvisionFt !== undefined ? "No special senses" : "Not added"}
+                  </p>
+                  {dndBeyond?.senseNotes?.map(note => <p key={note} className="muted" style={{ margin: "0.2rem 0 0" }}>{note}</p>)}
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>
+                    Passive Perception
+                  </p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {character.passivePerception ?? "Not added"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="character-record-column">
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>Gold</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>
+                    {dndBeyond?.currencies?.gp != null
+                      ? `${dndBeyond.currencies.gp.toLocaleString()} GP`
+                      : isDndBeyondLink(character.characterSheetLink)
+                        ? "Not yet synced"
+                        : "Not linked"}
+                  </p>
+                </div>
+                <div className="character-record-row">
+                  <p className="muted" style={sectionItemHeaderStyle}>Downtime</p>
+                  <p style={{ margin: "0.35rem 0 0" }}>{remainingDowntimeDays} days</p>
                 </div>
               </div>
             </div>
@@ -875,6 +889,8 @@ export default async function CharacterLogsheetPage({
               background: "rgba(255, 255, 255, 0.85)",
             }}
           />
+
+          <h2 style={{ margin: 0 }}>AL Legal Carried Magic Items</h2>
 
           <div className="section-heading">
             <h3 style={{ margin: 0 }}>Uncommon+ Magic Items</h3>
@@ -974,7 +990,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleConsumables.map((item, index) => (
-              <div key={`${character.id}-consumable-${index}`}>
+              <div key={`${character.id}-consumable-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1004,7 +1020,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleBoon ? (
-              <div>
+              <div style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Boon Slot
                 </p>
@@ -1012,7 +1028,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleBlessing ? (
-              <div>
+              <div style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Blessing Slot
                 </p>
@@ -1020,7 +1036,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleCharms.map((item, index) => (
-              <div key={`${character.id}-charm-${index}`}>
+              <div key={`${character.id}-charm-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1052,7 +1068,7 @@ export default async function CharacterLogsheetPage({
                 Feats
               </p>
               <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                {formatCharacterNotes(formatFeatSelections(character.feats))}
+                {formatCharacterNotes(visibleFeats.join("\n"))}
               </p>
             </div>
             <div style={detailCardStyle}>
@@ -1062,13 +1078,14 @@ export default async function CharacterLogsheetPage({
               <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
                 {formatCharacterNotes(formatSkillSelections(character.proficiencies))}
               </p>
+              {dndBeyond?.customSkills?.map(skill => <p key={skill.name} style={{ margin: "0.35rem 0 0" }}>{skill.name} ({skill.rank})</p>)}
             </div>
             <div style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Tools
               </p>
               <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                {formatCharacterNotes(formatToolSelections(character.tools))}
+                {formatCharacterNotes(dndBeyond?.toolNames?.join("\n") ?? formatToolSelections(character.tools))}
               </p>
             </div>
             <div style={detailCardStyle}>
@@ -1076,7 +1093,7 @@ export default async function CharacterLogsheetPage({
                 Languages
               </p>
               <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                {formatCharacterNotes(formatLanguageSelections(character.languages))}
+                {formatCharacterNotes(dndBeyond?.languageNames?.join("\n") ?? formatLanguageSelections(character.languages))}
               </p>
             </div>
             <div style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
@@ -1098,6 +1115,22 @@ export default async function CharacterLogsheetPage({
           </div>
         </div>
 
+        <img
+          alt=""
+          aria-hidden="true"
+          className="homepage-roster-divider"
+          src="/divider4.png"
+        />
+        {(isOwner || isAdminEmail(currentUser.email) || isDndBeyondLink(character.characterSheetLink)) ? (
+          <DndBeyondCharacterPanel
+            characterId={character.id}
+            link={character.characterSheetLink ?? ""}
+            canEditLink={isOwner || isAdminEmail(currentUser.email)}
+            data={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondData : null}
+            syncedAt={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondSyncedAt?.toISOString() ?? null : null}
+            savedError={character.dndBeyondSyncLink === character.characterSheetLink ? character.dndBeyondError : null}
+          />
+        ) : null}
         <div className="list-card stack">
           <img
             alt="Trade log divider"

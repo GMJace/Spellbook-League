@@ -933,10 +933,13 @@ export function CharacterForm({
         Character sheet link
         <input
           name="characterSheetLink"
+          aria-label="Character sheet link"
+          aria-describedby="character-sheet-link-help"
           type="url"
           placeholder="https://..."
           defaultValue={initialValues?.characterSheetLink ?? ""}
         />
+        <span id="character-sheet-link-help" className="muted">A public D&amp;D Beyond link refreshes character details and the full inventory when the log opens. League rewards, gold, trades, and notes stay in SPELLBOOK.</span>
       </label>
 
       <label className="checkbox-row compact-checkbox-row">
@@ -1054,6 +1057,7 @@ export function CharacterForm({
                 height: "96px",
                 objectFit: "cover",
                 borderRadius: "999px",
+                background: "#ffffff",
                 border: "1px solid rgba(255, 255, 255, 0.18)",
               }}
             />

@@ -49,7 +49,7 @@ export default async function GrimoireEventPackPage({ params }: PageProps) {
               Back to Grimoire
             </Link>
             <Link className="button secondary" href="/grimoire-gathering/dm">
-              Become a DM
+              Become a Grimoire DM
             </Link>
             <Link className="button" href="/grimoire-gathering/cart">
               Open cart

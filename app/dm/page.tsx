@@ -178,6 +178,9 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
             <Link href="/dm/achievements" className="button button-secondary button-small">
               Achievements
             </Link>
+            <Link href="/dm/service-awards" className="button button-secondary button-small">
+              Service awards
+            </Link>
             <Link href="/dm/games/new" className="button button-small">
               Create/Log Game
             </Link>

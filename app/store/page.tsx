@@ -187,7 +187,7 @@ export default async function StorePage() {
               alt=""
               aria-hidden="true"
               className="store-publishing-button-logo"
-              src="/SB_Logo.png"
+              src="/grim-book.png"
             />
             Visit SPELLBOOK Publishing
           </a>

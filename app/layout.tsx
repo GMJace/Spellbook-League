@@ -41,7 +41,7 @@ const socialLinks = [
     icon: (
       <>
         <path d="M21.6 7.2a3 3 0 0 0-2.1-2.1C17.6 4.5 12 4.5 12 4.5s-5.6 0-7.5.6A3 3 0 0 0 2.4 7.2 31.8 31.8 0 0 0 1.9 12c0 1.6.2 3.2.5 4.8a3 3 0 0 0 2.1 2.1c1.9.5 7.5.6 7.5.6s5.6 0 7.5-.6a3 3 0 0 0 2.1-2.1c.4-1.6.5-3.2.5-4.8s-.1-3.2-.5-4.8Z" />
-        <path d="m10 15.5 5.2-3.5L10 8.5v7Z" fill="#000000" />
+        <path d="m10 15.5 5.2-3.5L10 8.5v7Z" fill="#ffffff" />
       </>
     ),
   },
@@ -121,9 +121,15 @@ export default async function RootLayout({
                     adminHref={isFullAdmin ? "/admin/users" : "/admin/league-choices"}
                   />
                   <Link
-                    className="game-signups-button"
+                    className="game-signups-button site-store-button"
                     href="/store"
                   >
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="site-store-button-icon"
+                      src="/grim-book.png"
+                    />
                     STORE
                   </Link>
                 </>

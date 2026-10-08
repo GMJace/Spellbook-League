@@ -247,7 +247,7 @@ export function GameForm({
   const resolvedTicketPrice = initialValues?.ticketPrice ?? "Free";
   const [selectedTicketPrice, setSelectedTicketPrice] = useState(resolvedTicketPrice);
   const [isGrimTidingsValue, setIsGrimTidingsValue] = useState(
-    Boolean(initialValues?.isGrimTidings),
+    Boolean(initialValues?.isGrimTidings) && resolvedTicketPrice === "Free",
   );
   const [adventureImagePreviewPath, setAdventureImagePreviewPath] = useState(
     initialValues?.adventureImagePath ?? null
@@ -464,28 +464,7 @@ export function GameForm({
       <div className="form-grid">
         <div className="stack" style={fieldBlockStyle}>
           <label>
-            Game title
-            <input
-              aria-invalid={Boolean(getFieldError("title"))}
-              value={titleValue}
-              name="title"
-              onBlur={() => {
-                void autofillAdventureDetails();
-              }}
-              onChange={(event) => {
-                setTitleValue(event.target.value);
-                clearFieldError("title");
-                setAutofillMessage("");
-              }}
-              type="text"
-              required
-            />
-          </label>
-          {getFieldError("title") ? <p style={errorTextStyle}>{getFieldError("title")}</p> : null}
-        </div>
-        <div className="stack" style={fieldBlockStyle}>
-          <label>
-            Adventure code
+            <span>Adventure code <small className="muted">populates from module catalog</small></span>
             <input
               aria-invalid={Boolean(getFieldError("adventureCode"))}
               value={adventureCodeValue}
@@ -509,6 +488,27 @@ export function GameForm({
         </div>
         <div className="stack" style={fieldBlockStyle}>
           <label>
+            Game title
+            <input
+              aria-invalid={Boolean(getFieldError("title"))}
+              value={titleValue}
+              name="title"
+              onBlur={() => {
+                void autofillAdventureDetails();
+              }}
+              onChange={(event) => {
+                setTitleValue(event.target.value);
+                clearFieldError("title");
+                setAutofillMessage("");
+              }}
+              type="text"
+              required
+            />
+          </label>
+          {getFieldError("title") ? <p style={errorTextStyle}>{getFieldError("title")}</p> : null}
+        </div>
+        <div className="stack" style={fieldBlockStyle}>
+          <label>
             Source (DM's Guild link)
             <input
               aria-invalid={Boolean(getFieldError("source"))}
@@ -528,11 +528,15 @@ export function GameForm({
             Price
             <select
               aria-invalid={Boolean(getFieldError("ticketPrice"))}
-              disabled={isGrimTidingsValue}
               name="ticketPrice"
-              value={isGrimTidingsValue ? "Free" : selectedTicketPrice}
+              value={selectedTicketPrice}
               onChange={(event) => {
                 setSelectedTicketPrice(event.target.value);
+                if (event.target.value !== "Free") {
+                  setIsGrimTidingsValue(false);
+                  clearFieldError("isGrimTidings");
+                  clearFieldError("grimTidingCost");
+                }
                 clearFieldError("ticketPrice");
                 clearFieldError("ticketAccessCode");
               }}
@@ -558,38 +562,37 @@ export function GameForm({
             <p style={errorTextStyle}>{getFieldError("ticketPrice")}</p>
           ) : null}
         </div>
-        <div className="stack" style={fieldBlockStyle}>
-          <label
-            className="muted ggcon-meta-note"
-            style={{ alignItems: "center", display: "flex", gap: "0.55rem", minHeight: "2.6rem" }}
-          >
-            <input
-              checked={isGrimTidingsValue}
-              name="isGrimTidings"
-              onChange={(event) => {
-                const nextValue = event.target.checked;
+        {selectedTicketPrice === "Free" ? (
+          <div className="stack grim-tidings-field" style={fieldBlockStyle}>
+            <label className="muted ggcon-meta-note grim-tidings-option">
+              <input
+                checked={isGrimTidingsValue}
+                name="isGrimTidings"
+                onChange={(event) => {
+                  const nextValue = event.target.checked;
 
-                setIsGrimTidingsValue(nextValue);
-                clearFieldError("isGrimTidings");
-                clearFieldError("grimTidingCost");
-                clearFieldError("ticketPrice");
-                clearFieldError("ticketAccessCode");
+                  setIsGrimTidingsValue(nextValue);
+                  clearFieldError("isGrimTidings");
+                  clearFieldError("grimTidingCost");
+                  clearFieldError("ticketPrice");
+                  clearFieldError("ticketAccessCode");
 
-                if (nextValue) {
-                  setSelectedTicketPrice("Free");
-                }
-              }}
-              type="checkbox"
-            />
-            <span>Grim Tidings game</span>
-          </label>
-          <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-            Limited-access league game that players unlock by spending Tidings.
-          </p>
-          {getFieldError("isGrimTidings") ? (
-            <p style={errorTextStyle}>{getFieldError("isGrimTidings")}</p>
-          ) : null}
-        </div>
+                  if (nextValue) {
+                    setSelectedTicketPrice("Free");
+                  }
+                }}
+                type="checkbox"
+              />
+              <span>Grim Tidings game</span>
+            </label>
+            <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+              Limited-access league game that players unlock by spending Tidings.
+            </p>
+            {getFieldError("isGrimTidings") ? (
+              <p style={errorTextStyle}>{getFieldError("isGrimTidings")}</p>
+            ) : null}
+          </div>
+        ) : null}
         {isGrimTidingsValue ? (
           <div className="stack" style={fieldBlockStyle}>
             <label>
@@ -967,8 +970,7 @@ export function GameForm({
         Each line is a bullet point.
       </p>
 
-      <div className="panel stack">
-        <div>
+      <div className="list-card stack dm-game-section-heading">
           <h2>Participants</h2>
           <p className="muted">
             Search league players, then select one of their characters or mark them as TBD before
@@ -977,7 +979,8 @@ export function GameForm({
           {getFieldError("participants") ? (
             <p style={errorTextStyle}>{getFieldError("participants")}</p>
           ) : null}
-        </div>
+      </div>
+      <div className="panel stack">
         <div className="form-grid">
           <label>
             Search players

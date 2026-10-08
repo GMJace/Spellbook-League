@@ -113,6 +113,7 @@ export default async function AdminModuleEditPage({ params, searchParams }: Page
                 title: module.title,
                 tier: module.tier,
                 duration: module.duration,
+                author: module.author,
                 sourceSheet: module.sourceSheet,
                 gameSummary: module.gameSummary,
                 adventureImagePath: module.adventureImagePath,

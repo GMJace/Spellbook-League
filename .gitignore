@@ -1,6 +1,7 @@
 .next
 .next-dev
 .next-stale-*/
+.deploy-release/
 node_modules
 coverage
 dist

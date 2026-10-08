@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { convertImageFileToDataUrl } from "@/lib/image-data-url";
+import { saveGrimoireAdventureImageUpload } from "@/lib/grimoire-adventure-image-upload";
 import { prisma } from "@/lib/prisma";
 
 const curatedGameSchema = z.object({
@@ -23,8 +23,6 @@ const curatedGameSchema = z.object({
 const deleteGameSchema = z.object({
   gameId: z.string().trim().min(1),
 });
-
-const MAX_GRIMOIRE_COVER_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const grimoireCuratedGameFieldLabels: Record<string, string> = {
   eventSlotId: "Event time slot",
@@ -68,15 +66,7 @@ function isUploadedFile(value: FormDataEntryValue | null): value is File {
 }
 
 async function saveGrimoireAdventureImage(file: File) {
-  if (!file.type.startsWith("image/")) {
-    return { error: "Adventure cover must be an image file." } as const;
-  }
-
-  if (file.size > MAX_GRIMOIRE_COVER_IMAGE_SIZE) {
-    return { error: "Adventure cover must be 5 MB or smaller." } as const;
-  }
-
-  return { path: await convertImageFileToDataUrl(file) } as const;
+  return saveGrimoireAdventureImageUpload(file);
 }
 
 function parseTextareaLines(value: string) {
@@ -330,8 +320,9 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
       )
     `;
   } catch (error) {
+    console.error("Failed to create curated Grimoire game.", error);
+
     if (isHandledPrismaError(error)) {
-      console.error("Failed to create curated Grimoire game.", error);
       return buildGrimoireGameRedirect({
         details:
           error.code === "P2002"
@@ -342,7 +333,11 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
       });
     }
 
-    throw error;
+    return buildGrimoireGameRedirect({
+      details: "The curated game could not be saved.",
+      editEventId: selectedSlot.eventId,
+      status: "invalid",
+    });
   }
 
   revalidateGrimoirePaths({
@@ -474,8 +469,9 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
       WHERE id = ${existingGame.id}
     `;
   } catch (error) {
+    console.error("Failed to update curated Grimoire game.", error);
+
     if (isHandledPrismaError(error)) {
-      console.error("Failed to update curated Grimoire game.", error);
       return buildGrimoireGameRedirect({
         details:
           error.code === "P2002"
@@ -487,7 +483,12 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
       });
     }
 
-    throw error;
+    return buildGrimoireGameRedirect({
+      details: "The curated game could not be saved.",
+      editEventId: selectedSlot.eventId,
+      editGameId: parsedGameId.data.gameId,
+      status: "invalid",
+    });
   }
 
   revalidateGrimoirePaths({

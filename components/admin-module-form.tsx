@@ -14,6 +14,7 @@ type AdminModuleFormValues = {
   moduleId?: string;
   adventureCode: string;
   title: string;
+  author: string;
   tier: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
   duration: string;
   sourceSheet: string;
@@ -77,6 +78,10 @@ export function AdminModuleForm({
         <label>
           Adventure code
           <input defaultValue={initialValues.adventureCode} name="adventureCode" required type="text" />
+        </label>
+        <label>
+          Author
+          <input defaultValue={initialValues.author} name="author" type="text" />
         </label>
         <label>
           Duration

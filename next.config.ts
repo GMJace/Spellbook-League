@@ -7,7 +7,7 @@ export default function nextConfig(phase: string): NextConfig {
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
     experimental: {
       serverActions: {
-        bodySizeLimit: "4mb",
+        bodySizeLimit: "20mb",
       },
     },
   };

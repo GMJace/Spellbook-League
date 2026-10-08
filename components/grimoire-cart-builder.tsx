@@ -393,47 +393,55 @@ export function GrimoireCartBuilder({
         <div className="section-heading">
           <h2 style={{ margin: 0 }}>Game Tickets</h2>
         </div>
-        <div className="ggcon-ticket-grid">
-          {games.map((game) => {
-            const selectedQuantity = selectedGameQuantities[game.slug] ?? 0;
-            const openSeats = Math.max(game.seatCapacity - game.signedUp.length, 0);
+        {games.length ? (
+          <div className="ggcon-ticket-grid">
+            {games.map((game) => {
+              const selectedQuantity = selectedGameQuantities[game.slug] ?? 0;
+              const openSeats = Math.max(game.seatCapacity - game.signedUp.length, 0);
 
-            return (
-              <label key={game.slug} className="ggcon-ticket-option">
-                <div className="stack" style={{ gap: "0.35rem" }}>
-                  <strong>{game.game}</strong>
-                  <span className="muted ggcon-meta-note">
-                    <LocalizedEventTime isoString={game.startAt} /> ·{" "}
-                    {formatGrimoireTier(game.tier)} · DM {game.dm}
-                  </span>
-                  <span className="muted ggcon-meta-note">{game.summary}</span>
-                  <span className="muted ggcon-meta-note">
-                    Open seats: {openSeats}
-                  </span>
-                  <label className="stack ggcon-ticket-quantity" style={{ gap: "0.35rem" }}>
-                    <span className="muted">Tickets</span>
-                    <select
-                      value={selectedQuantity}
-                      onChange={(event) =>
-                        setSelectedGameQuantities((current) => ({
-                          ...current,
-                          [game.slug]: Number(event.target.value),
-                        }))
-                      }
-                    >
-                      {Array.from({ length: openSeats + 1 }, (_, index) => (
-                        <option key={index} value={index}>
-                          {index === 0 ? "No tickets" : `${index} ticket${index === 1 ? "" : "s"}`}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <span className="pill">{game.ticketPrice}</span>
-              </label>
-            );
-          })}
-        </div>
+              return (
+                <label key={game.slug} className="ggcon-ticket-option">
+                  <div className="stack" style={{ gap: "0.35rem" }}>
+                    <strong>{game.game}</strong>
+                    <span className="muted ggcon-meta-note">
+                      <LocalizedEventTime isoString={game.startAt} /> ·{" "}
+                      {formatGrimoireTier(game.tier)} · DM {game.dm}
+                    </span>
+                    <span className="muted ggcon-meta-note">{game.summary}</span>
+                    <span className="muted ggcon-meta-note">
+                      Open seats: {openSeats}
+                    </span>
+                    <label className="stack ggcon-ticket-quantity" style={{ gap: "0.35rem" }}>
+                      <span className="muted">Tickets</span>
+                      <select
+                        value={selectedQuantity}
+                        onChange={(event) =>
+                          setSelectedGameQuantities((current) => ({
+                            ...current,
+                            [game.slug]: Number(event.target.value),
+                          }))
+                        }
+                      >
+                        {Array.from({ length: openSeats + 1 }, (_, index) => (
+                          <option key={index} value={index}>
+                            {index === 0
+                              ? "No tickets"
+                              : `${index} ticket${index === 1 ? "" : "s"}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <span className="pill">{game.ticketPrice}</span>
+                </label>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty">
+            Game ticket listings are not open for your account yet.
+          </div>
+        )}
       </section>
     </div>
   );

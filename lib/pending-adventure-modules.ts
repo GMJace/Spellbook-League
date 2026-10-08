@@ -78,6 +78,13 @@ async function hasLiveAdventureCatalogMatch(params: {
     return false;
   }
 
+  if (lookupCode) {
+    const activeMatches = await prisma.adventureCatalog.count({
+      where: { lookupCode, isActive: true },
+    });
+    if (activeMatches > 1) return false;
+  }
+
   if (lookupCode && lookupTitle) {
     const exactMatch = await prisma.adventureCatalog.findUnique({
       where: {
@@ -87,10 +94,10 @@ async function hasLiveAdventureCatalogMatch(params: {
           tier: params.tier,
         },
       },
-      select: { id: true },
+      select: { id: true, isActive: true },
     });
 
-    if (exactMatch) {
+    if (exactMatch?.isActive) {
       return true;
     }
   }
@@ -100,6 +107,7 @@ async function hasLiveAdventureCatalogMatch(params: {
       where: {
         lookupCode,
         tier: params.tier,
+        isActive: true,
       },
       select: { id: true },
     });
@@ -113,15 +121,21 @@ async function hasLiveAdventureCatalogMatch(params: {
     return false;
   }
 
-  const byTitle = await prisma.adventureCatalog.findFirst({
-    where: {
-      lookupTitle,
-      tier: params.tier,
+  const byTitleCandidates = await prisma.adventureCatalog.findMany({
+      where: {
+        lookupTitle,
+        tier: params.tier,
+        isActive: true,
     },
-    select: { id: true },
+    select: { lookupCode: true },
   });
-
-  return Boolean(byTitle);
+  for (const candidate of byTitleCandidates) {
+    const activeMatches = await prisma.adventureCatalog.count({
+      where: { lookupCode: candidate.lookupCode, isActive: true },
+    });
+    if (activeMatches === 1) return true;
+  }
+  return false;
 }
 
 export async function syncPendingAdventureModuleFromPlayerLog(input: {

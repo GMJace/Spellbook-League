@@ -1,65 +1,39 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 
+import { auth } from "@/auth";
 import { unlockGrimoireDiscord } from "@/app/grimoire-gathering/actions";
 import { FlyingCarpetSection } from "@/components/flying-carpet-section";
+import { GrimoireEventCalendar } from "@/components/grimoire-event-calendar";
 import { GrimoireEventGamesGrid } from "@/components/grimoire-event-games-grid";
 import { GrimoireGatheringText } from "@/components/grimoire-gathering-text";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import {
   getNextEvent,
   grimoireEventTicketNotice,
-  type SeasonEvent,
 } from "@/lib/grimoire";
 import {
   createGrimoireDiscordAccessToken,
   getGrimoireDiscordSettings,
   GRIMOIRE_DISCORD_COOKIE_NAME,
 } from "@/lib/grimoire-discord";
-import { getMergedGamesForEvent, getSeasonSchedule } from "@/lib/grimoire-server";
+import {
+  getGrimoireGameAccessForEvent,
+  getMergedGamesForEvent,
+  getSeasonSchedule,
+} from "@/lib/grimoire-server";
+import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
+import { getGrimoireEventBadgePathIfExists } from "@/lib/grimoire-event-badge";
 
 export const dynamic = "force-dynamic";
 const contactAdminSubject = encodeURIComponent(
   "Grimoire Gathering - Contact Admin"
 );
 
-function buildPaypalWidget(nextEvent: SeasonEvent) {
-  const paypalLink = process.env.GG_PAYPAL_LINK?.trim();
-  const hostedButtonId = process.env.GG_PAYPAL_HOSTED_BUTTON_ID?.trim();
-
-  if (hostedButtonId) {
-    return (
-      <form
-        action="https://www.paypal.com/cgi-bin/webscr"
-        className="ggcon-paypal-form stack"
-        method="post"
-        target="_blank"
-      >
-        <input type="hidden" name="cmd" value="_s-xclick" />
-        <input type="hidden" name="hosted_button_id" value={hostedButtonId} />
-        <button className="ggcon-buy-badge-button" type="submit">
-          Buy {nextEvent.ticketLabel} with PayPal
-        </button>
-      </form>
-    );
-  }
-
-  if (paypalLink) {
-    return (
-      <a
-        className="button ggcon-buy-badge-button"
-        href={paypalLink}
-        rel="noreferrer"
-        target="_blank"
-      >
-        Buy {nextEvent.ticketLabel} with PayPal
-      </a>
-    );
-  }
-
+function buildBadgeCartLink() {
   return (
     <Link className="button ggcon-buy-badge-button" href="/grimoire-gathering/cart?badges=1">
-      Buy {nextEvent.ticketLabel}
+      Add Badge to Cart
     </Link>
   );
 }
@@ -71,11 +45,12 @@ export default async function GrimoireGatheringPage({
     discord?: string;
   }>;
 }) {
-  const [cookieStore, discordSettings, params, seasonSchedule] = await Promise.all([
+  const [cookieStore, discordSettings, params, seasonSchedule, session] = await Promise.all([
     cookies(),
     getGrimoireDiscordSettings(),
     searchParams,
     getSeasonSchedule(),
+    auth(),
   ]);
   const nextEvent = getNextEvent(seasonSchedule);
   const discordStatusMessageMap: Record<string, string> = {
@@ -123,11 +98,21 @@ export default async function GrimoireGatheringPage({
 
   const nextEventHeader = nextEvent.subtitle.replace(/^Season Kickoff\s*:\s*/i, "").trim();
   const featuredSeasonSchedule = seasonSchedule.slice(0, 4);
+  const nextEventBadgePath = await getGrimoireEventBadgePathIfExists(nextEvent.id);
+  const featuredEventBadgePaths = Object.fromEntries(
+    await Promise.all(
+      featuredSeasonSchedule.map(async (event) => [
+        event.id,
+        await getGrimoireEventBadgePathIfExists(event.id),
+      ] as const),
+    ),
+  );
   const nextEventGames = await getMergedGamesForEvent(nextEvent.id);
   const displayedGames =
     nextEventGames.length > 0
       ? nextEventGames
       : await getMergedGamesForEvent(seasonSchedule[0]?.id ?? nextEvent.id);
+  const gameAccess = await getGrimoireGameAccessForEvent(nextEvent, session?.user?.id);
 
   return (
     <main className="stack ggcon-page">
@@ -175,19 +160,17 @@ export default async function GrimoireGatheringPage({
             {grimoireEventTicketNotice}
           </p>
           <div className="inline-actions" style={{ flexWrap: "wrap" }}>
-            {buildPaypalWidget(nextEvent)}
-            <Link className="button secondary" href="/grimoire-gathering/cart">
-              Open cart
-            </Link>
+            {buildBadgeCartLink()}
             <Link className="button secondary" href="/grimoire-gathering/dm">
-              Become a DM
+              Become a Grimoire DM
             </Link>
-            <Link
+            <a
               className="button secondary"
-              href={`/grimoire-gathering/events/${nextEvent.id}`}
+              download
+              href={getGrimoireEventPackPdfPath(nextEvent.id)}
             >
-              Event pack
-            </Link>
+              Download Event Pack
+            </a>
           </div>
         </section>
 
@@ -195,10 +178,21 @@ export default async function GrimoireGatheringPage({
           <img
             alt="Grimoire Gathering logo"
             className="ggcon-logo"
-            src="/grimoire-gathering-banner.png"
+            src={nextEventBadgePath ?? "/grimoire-gathering-banner.png"}
           />
         </div>
       </section>
+
+      <hr className="ggcon-section-divider" />
+
+      <GrimoireEventCalendar
+        canViewGames={gameAccess.canViewGames}
+        event={nextEvent}
+        games={gameAccess.canViewGames ? displayedGames : []}
+        nextAccessAt={gameAccess.nextAccessAt}
+        publicOpensAt={gameAccess.publicOpensAt}
+        tomeKeyOpensAt={gameAccess.tomeKeyOpensAt}
+      />
 
       <FlyingCarpetSection />
 
@@ -221,10 +215,22 @@ export default async function GrimoireGatheringPage({
             View cart
           </Link>
         </div>
-        <GrimoireEventGamesGrid
-          emptyMessage="No games have been posted for this event yet."
-          games={displayedGames}
-        />
+        {gameAccess.canViewGames ? (
+          <GrimoireEventGamesGrid
+            emptyMessage="No games have been posted for this event yet."
+            games={displayedGames}
+          />
+        ) : (
+          <div className="empty">
+            Game listings open to Tome Key Badge holders on{" "}
+            {new Intl.DateTimeFormat("en-US", {
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "America/Edmonton",
+            }).format(new Date(gameAccess.tomeKeyOpensAt))}{" "}
+            Mountain, then to the public 48 hours later.
+          </div>
+        )}
       </section>
 
       <section className="card ledger-panel stack">
@@ -248,9 +254,9 @@ export default async function GrimoireGatheringPage({
               className={`ggcon-schedule-card${event.finale ? " finale" : ""}`}
             >
               <img
-                alt="Grimoire Gathering banner"
+                alt={`${event.subtitle} badge`}
                 className="ggcon-schedule-card-image"
-                src="/grimoire-gathering-banner.png"
+                src={featuredEventBadgePaths[event.id] ?? "/grimoire-gathering-banner.png"}
               />
               <p className="ggcon-schedule-month">{event.label}</p>
               {event.finale ? <span className="pill ggcon-event-pill">GGCON Event</span> : null}
@@ -261,9 +267,6 @@ export default async function GrimoireGatheringPage({
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
                 {grimoireEventTicketNotice}
               </p>
-              <Link className="button secondary ggcon-schedule-button" href={`/grimoire-gathering/events/${event.id}`}>
-                Event pack
-              </Link>
             </article>
           ))}
         </div>
