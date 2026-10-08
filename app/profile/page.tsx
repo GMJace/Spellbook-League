@@ -61,15 +61,15 @@ export default async function ProfilePage({
 
             <div className="ggcon-summary-metrics">
               <div className="list-card stack" style={{ gap: "0.35rem" }}>
-                <span className="muted">Account credit</span>
+                <span className="muted">Account credit:</span>
                 <strong>${user.storeCreditUsd.toFixed(2)}</strong>
               </div>
               <div className="list-card stack" style={{ gap: "0.35rem" }}>
-                <span className="muted">Held for open checkout</span>
+                <span className="muted">Held for open checkout:</span>
                 <strong>${user.storeCreditHeldUsd.toFixed(2)}</strong>
               </div>
               <div className="list-card stack" style={{ gap: "0.35rem" }}>
-                <span className="muted">Available now</span>
+                <span className="muted">Available now:</span>
                 <strong>${Math.max(user.storeCreditUsd - user.storeCreditHeldUsd, 0).toFixed(2)}</strong>
               </div>
             </div>
@@ -89,7 +89,7 @@ export default async function ProfilePage({
               />
               <div className="stack" style={{ gap: "0.5rem", flex: "1 1 280px" }}>
                 <label>
-                  Profile picture
+                  Profile picture:
                   <input
                     accept="image/png,image/jpeg,image/webp,image/gif"
                     name="profileImage"
@@ -114,7 +114,7 @@ export default async function ProfilePage({
             </div>
 
             <label>
-              Display name
+              Display name:
               <input
                 name="name"
                 type="text"
@@ -124,7 +124,7 @@ export default async function ProfilePage({
             </label>
 
             <label>
-              Email
+              Email:
               <input
                 name="email"
                 type="email"
@@ -134,7 +134,7 @@ export default async function ProfilePage({
             </label>
 
             <label>
-              Discord handle
+              Discord handle:
               <input
                 name="discordHandle"
                 type="text"
@@ -151,7 +151,7 @@ export default async function ProfilePage({
             ) : null}
 
             <div className="stack" style={{ gap: "0.45rem" }}>
-              <span className="muted">Roles</span>
+              <span className="muted">Roles:</span>
               <label className="checkbox-row compact-checkbox-row">
                 <input
                   type="checkbox"
@@ -173,7 +173,7 @@ export default async function ProfilePage({
             </div>
 
             <div className="list-card stack" style={{ gap: "0.45rem" }}>
-              <span className="muted">Player alerts</span>
+              <span className="muted">Player alerts:</span>
               <label className="checkbox-row compact-checkbox-row">
                 <input
                   type="checkbox"
@@ -207,7 +207,7 @@ export default async function ProfilePage({
               </div>
 
               <label>
-                Public headline
+                Public headline:
                 <input
                   name="dmProfileHeadline"
                   type="text"
@@ -218,7 +218,7 @@ export default async function ProfilePage({
               </label>
 
               <label>
-                Specialties
+                Specialties:
                 <input
                   name="dmProfileSpecialties"
                   type="text"
@@ -229,7 +229,7 @@ export default async function ProfilePage({
               </label>
 
               <label>
-                Public bio
+                Public bio:
                 <textarea
                   name="dmProfileBio"
                   rows={6}

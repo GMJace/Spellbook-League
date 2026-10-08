@@ -130,50 +130,54 @@ export default async function GrimoireGatheringPage({
 
       <section className="ggcon-hero">
         <section className="card ledger-panel stack ggcon-ticket-card">
-          <div className="stack" style={{ gap: "0.45rem" }}>
-            <p className="eyebrow">Next Event</p>
-            {nextEvent.finale ? (
-              <span className="pill ggcon-event-pill" style={{ width: "fit-content" }}>
-                GGCON Event
-              </span>
-            ) : null}
-            <h2 className="ggcon-ticket-title" style={{ margin: 0 }}>
-              {nextEventHeader}
-            </h2>
-            <p className="muted ggcon-meta-note ggcon-ticket-date" style={{ margin: 0 }}>
-              {nextEvent.displayDate}
-            </p>
-          </div>
-          <div className="ggcon-ticket-price-row">
-            <span className="ggcon-ticket-price">{nextEvent.ticketPrice}</span>
-            <span className="pill ggcon-ticket-label">{nextEvent.ticketLabel}</span>
-          </div>
-          <p className="ggcon-ticket-copy">{nextEvent.focus}</p>
-          <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-            {grimoireEventTicketNotice}
-          </p>
-          <div className="inline-actions" style={{ flexWrap: "wrap" }}>
-            {buildBadgeCartLink()}
-            <Link className="button secondary" href="/grimoire-gathering/dm">
-              Become a Grimoire DM
-            </Link>
-            <a
-              className="button secondary"
-              download
-              href={getGrimoireEventPackPdfPath(nextEvent.id)}
-            >
-              Download Event Pack
-            </a>
+          <div className="ggcon-ticket-card-layout">
+            <div className="stack ggcon-ticket-card-copy">
+              <div className="stack" style={{ gap: "0.45rem" }}>
+                <p className="eyebrow">Next Event</p>
+                {nextEvent.finale ? (
+                  <span className="pill ggcon-event-pill" style={{ width: "fit-content" }}>
+                    GGCON Event
+                  </span>
+                ) : null}
+                <h2 className="ggcon-ticket-title" style={{ margin: 0 }}>
+                  {nextEventHeader}
+                </h2>
+                <p className="muted ggcon-meta-note ggcon-ticket-date" style={{ margin: 0 }}>
+                  {nextEvent.displayDate}
+                </p>
+              </div>
+              <div className="ggcon-ticket-price-row">
+                <span className="ggcon-ticket-price">{nextEvent.ticketPrice}</span>
+                <span className="pill ggcon-ticket-label">{nextEvent.ticketLabel}</span>
+              </div>
+              <p className="ggcon-ticket-copy">{nextEvent.focus}</p>
+              <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
+                {grimoireEventTicketNotice}
+              </p>
+              <div className="inline-actions" style={{ flexWrap: "wrap" }}>
+                {buildBadgeCartLink()}
+                <Link className="button secondary" href="/grimoire-gathering/dm">
+                  Become a Grimoire DM
+                </Link>
+                <a
+                  className="button secondary"
+                  download
+                  href={getGrimoireEventPackPdfPath(nextEvent.id)}
+                >
+                  Download Event Pack
+                </a>
+              </div>
+            </div>
+
+            <div className="ggcon-hero-art">
+              <img
+                alt={`${nextEvent.subtitle} event logo`}
+                className="ggcon-logo"
+                src={nextEvent.badgeImagePath ?? "/grimoire-gathering-banner.png"}
+              />
+            </div>
           </div>
         </section>
-
-        <div className="ggcon-hero-art">
-          <img
-            alt="Grimoire Gathering logo"
-            className="ggcon-logo"
-            src={nextEvent.badgeImagePath ?? "/grimoire-gathering-banner.png"}
-          />
-        </div>
       </section>
 
       <hr className="ggcon-section-divider" />

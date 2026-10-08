@@ -107,7 +107,7 @@ export default async function HomePage() {
               src="/SB_Logo.png"
             />
             <strong>
-              <RainbowSpellbook /> League
+              <RainbowSpellbook /> QUESTS
             </strong>
           </Link>
 

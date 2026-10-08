@@ -878,6 +878,12 @@ button.button-small {
   gap: 0.55rem;
 }
 
+.homepage-ggcon-link strong {
+  font-family: var(--font-comic-display);
+  font-size: 1.18rem;
+  letter-spacing: 0.06em;
+}
+
 .homepage-ggcon-icon {
   width: min(7.5rem, 42%);
   height: 2.8rem;
@@ -1424,8 +1430,8 @@ button.button-small {
 
 .ggcon-hero {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .ggcon-hero-copy-panel {
@@ -1435,11 +1441,29 @@ button.button-small {
 }
 
 .eyebrow.ggcon-hero-copy-heading {
+  font-family: var(--font-comic-display);
   font-size: 36pt;
+  letter-spacing: 0.06em;
 }
 
 .ggcon-lead.ggcon-hero-copy-body {
+  color: var(--comic-ink);
   font-size: 24pt;
+}
+
+.ggcon-page .grimoire-gathering-text {
+  font-family: var(--font-comic-display);
+  letter-spacing: 0.04em;
+}
+
+.ggcon-page .muted,
+.ggcon-page .ggcon-meta-note,
+.ggcon-page .ggcon-lead,
+.ggcon-page .ggcon-ticket-copy,
+.ggcon-page .ggcon-schedule-theme,
+.ggcon-page .ggcon-schedule-date,
+.ggcon-page .ggcon-schedule-focus {
+  color: var(--comic-ink);
 }
 
 .ggcon-table-button {
@@ -1449,7 +1473,7 @@ button.button-small {
 .ggcon-lead {
   max-width: 44rem;
   margin: 0 auto;
-  color: #e2f1df;
+  color: var(--comic-ink);
   font-size: 1.06rem;
   line-height: 1.7;
 }
@@ -1472,7 +1496,7 @@ button.button-small {
   align-items: center;
   justify-content: center;
   min-height: 100%;
-  padding: clamp(1.5rem, 3vw, 2.4rem);
+  padding: clamp(1rem, 2vw, 1.5rem);
 }
 
 .ggcon-logo {
@@ -1486,19 +1510,32 @@ button.button-small {
 }
 
 .ggcon-ticket-card {
-  background:
-    linear-gradient(180deg, rgba(100, 255, 130, 0.12), rgba(0, 0, 0, 0) 52%),
-    #000000;
+  width: 100%;
+  border: 5px solid var(--comic-ink);
+  background: var(--comic-paper);
+  box-shadow: var(--shadow);
+}
+
+.ggcon-ticket-card-layout {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.65fr);
+  align-items: center;
+}
+
+.ggcon-ticket-card-copy {
+  min-width: 0;
 }
 
 .ggcon-ticket-title {
   color: #06ff00;
+  font-family: var(--font-comic-display);
   font-size: 48pt;
   line-height: 1.05;
 }
 
 .muted.ggcon-meta-note.ggcon-ticket-date {
-  color: #ffffff;
+  color: var(--comic-ink);
   font-size: 24pt;
 }
 
@@ -1518,7 +1555,7 @@ button.button-small {
 
 .ggcon-ticket-copy {
   margin: 0;
-  color: #eef8ea;
+  color: var(--comic-ink);
   line-height: 1.7;
 }
 
@@ -1662,7 +1699,8 @@ button.button-small {
   align-items: center;
   gap: 0.75rem;
   padding-bottom: 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 3px solid var(--comic-ink);
+  color: var(--comic-ink);
 }
 
 .ggcon-event-games-grid {
@@ -1691,16 +1729,17 @@ button.button-small {
   display: grid;
   grid-template-columns: 96px repeat(3, minmax(220px, 1fr));
   min-width: 820px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(12, 22, 14, 0.9);
+  border: 3px solid var(--comic-ink);
+  background: var(--comic-paper);
+  color: var(--comic-ink);
 }
 
 .ggcon-calendar-corner,
 .ggcon-calendar-day-header,
 .ggcon-calendar-hour,
 .ggcon-calendar-cell {
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 2px solid var(--comic-ink);
+  border-bottom: 2px solid var(--comic-ink);
 }
 
 .ggcon-calendar-corner,
@@ -1710,7 +1749,8 @@ button.button-small {
   z-index: 1;
   min-height: 68px;
   padding: 0.8rem;
-  background: #050905;
+  background: var(--comic-yellow);
+  color: var(--comic-ink);
 }
 
 .ggcon-calendar-corner {
@@ -1718,7 +1758,7 @@ button.button-small {
   z-index: 2;
   display: flex;
   align-items: end;
-  color: #caf3b7;
+  color: var(--comic-ink);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -1732,7 +1772,7 @@ button.button-small {
 }
 
 .ggcon-calendar-day-header strong {
-  color: #f5ffe9;
+  color: var(--comic-ink);
   font-size: 1rem;
 }
 
@@ -1740,12 +1780,12 @@ button.button-small {
 .ggcon-calendar-game-code,
 .ggcon-calendar-game-meta,
 .ggcon-calendar-game-time {
-  color: #cfdcc7;
+  color: var(--comic-ink);
   font-size: 0.82rem;
 }
 
 .ggcon-calendar-game-code {
-  color: #f5ffe9;
+  color: var(--comic-ink);
   font-weight: 700;
 }
 
@@ -1755,8 +1795,8 @@ button.button-small {
   justify-content: flex-end;
   min-height: 116px;
   padding: 0.85rem 0.7rem;
-  background: #030603;
-  color: #eef8ea;
+  background: var(--comic-paper);
+  color: var(--comic-ink);
   font-size: 0.86rem;
   font-weight: 700;
 }
@@ -1764,34 +1804,34 @@ button.button-small {
 .ggcon-calendar-cell {
   min-height: 116px;
   padding: 0.55rem;
-  background: rgba(0, 0, 0, 0.6);
+  background: #ffffff;
 }
 
 .ggcon-calendar-game {
   display: grid;
   gap: 0.3rem;
   padding: 0.65rem;
-  border: 1px solid rgba(6, 255, 0, 0.25);
-  background: rgba(6, 255, 0, 0.08);
+  border: 3px solid var(--comic-ink);
+  background: var(--comic-paper);
 }
 
 .ggcon-calendar-game + .ggcon-calendar-game {
   margin-top: 0.5rem;
 }
 
-.ggcon-calendar-game-title,
-.ggcon-calendar-dm-link {
-  color: #ffffff;
+.ggcon-calendar-game-title {
+  color: var(--comic-ink);
   font-weight: 700;
 }
 
 .ggcon-calendar-dm-link {
   width: fit-content;
-  color: #06ff00;
+  color: var(--comic-purple);
+  font-weight: 700;
 }
 
 .ggcon-calendar-dm-muted {
-  color: #d8e8d2;
+  color: var(--comic-ink);
   font-weight: 700;
 }
 
@@ -1805,7 +1845,9 @@ button.button-small {
 
 .ggcon-calendar-locked {
   padding: 1rem;
-  background: rgba(6, 255, 0, 0.08);
+  border: 3px solid var(--comic-ink);
+  background: var(--comic-paper);
+  color: var(--comic-ink);
 }
 
 .ggcon-custom-slot-section {
@@ -1858,11 +1900,10 @@ button.button-small {
   min-width: 0;
   padding: 1rem;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
-    #040404;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  border: 4px solid var(--comic-ink);
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+  box-shadow: var(--soft-shadow);
 }
 
 .ggcon-event-game-card-image {
@@ -1872,6 +1913,7 @@ button.button-small {
   display: block;
   border-radius: 20px;
   background: #050805;
+  border: 3px solid var(--comic-ink);
 }
 
 .ggcon-event-game-card-image-placeholder {
@@ -1887,6 +1929,7 @@ button.button-small {
 
 .ggcon-event-game-card-copy {
   min-width: 0;
+  color: var(--comic-ink);
 }
 
 .ggcon-event-game-card-details {
@@ -1910,7 +1953,7 @@ button.button-small {
 }
 
 .ggcon-event-game-card-details dt {
-  color: var(--muted);
+  color: var(--comic-ink);
 }
 
 .ggcon-event-game-card-details dd {
@@ -2114,19 +2157,17 @@ button.button-small {
   min-height: 220px;
   padding: 1.1rem;
   border-radius: 22px;
+  border: 4px solid var(--comic-ink);
   justify-items: center;
   text-align: center;
-  background:
-    linear-gradient(180deg, rgba(104, 255, 92, 0.14), rgba(0, 0, 0, 0) 48%),
-    #000000;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+  box-shadow: var(--soft-shadow);
 }
 
 .ggcon-schedule-card.finale {
-  background:
-    linear-gradient(145deg, rgba(182, 255, 85, 0.18), rgba(0, 0, 0, 0) 50%),
-    #040904;
-  box-shadow: inset 0 0 0 1px rgba(181, 255, 104, 0.24);
+  background: var(--comic-paper);
+  box-shadow: var(--soft-shadow);
 }
 
 .ggcon-schedule-card h3 {
@@ -2141,6 +2182,7 @@ button.button-small {
   display: block;
   border-radius: 18px;
   background: #050805;
+  border: 3px solid var(--comic-ink);
 }
 
 .ggcon-schedule-month,
@@ -2151,7 +2193,7 @@ button.button-small {
 
 .ggcon-schedule-theme {
   margin: 0 0 0.55rem;
-  color: #eef8ea;
+  color: var(--comic-ink);
   font-weight: 700;
 }
 
@@ -2159,17 +2201,17 @@ button.button-small {
   font-size: 0.78rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #caf3b7;
+  color: var(--comic-ink);
 }
 
 .ggcon-schedule-date {
   margin-bottom: 0.65rem;
-  color: #f3ffe8;
+  color: var(--comic-ink);
   font-weight: 700;
 }
 
 .ggcon-schedule-focus {
-  color: #d8e8d2;
+  color: var(--comic-ink);
   line-height: 1.6;
 }
 
@@ -4352,6 +4394,10 @@ body .search-row .button {
 
   .ggcon-hero {
     padding: 1.4rem;
+  }
+
+  .ggcon-ticket-card-layout {
+    grid-template-columns: 1fr;
   }
 
   .ggcon-logo {
