@@ -99,13 +99,13 @@ function renderListingDetails(listing: {
     <div className="stack" style={{ gap: "0.45rem" }}>
       <div>
         <p className="muted" style={{ margin: 0 }}>
-          Item
+          Item:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>{formatTradingPostItemName(listing)}</p>
       </div>
       <div>
         <p className="muted" style={{ margin: 0 }}>
-          Minor Property
+          Minor Property:
         </p>
         <p style={{ margin: "0.2rem 0 0", whiteSpace: "pre-wrap" }}>
           {formatOptionalText(listing.minorProperty)}
@@ -113,7 +113,7 @@ function renderListingDetails(listing: {
       </div>
       <div>
         <p className="muted" style={{ margin: 0 }}>
-          Notes (Flavor)
+          Notes (Flavor):
         </p>
         <p style={{ margin: "0.2rem 0 0", whiteSpace: "pre-wrap" }}>
           {formatOptionalText(listing.flavorNotes)}
@@ -121,19 +121,19 @@ function renderListingDetails(listing: {
       </div>
       <div>
         <p className="muted" style={{ margin: 0 }}>
-          Item received in adventure code
+          Item received in adventure code:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>{formatOptionalText(listing.adventureCode)}</p>
       </div>
       <div>
         <p className="muted" style={{ margin: 0 }}>
-          Downtime days spent
+          Downtime days spent:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>{listing.downtimeDaysSpent}</p>
       </div>
       <div>
         <p className="muted" style={{ margin: 0 }}>
-          Looking For
+          Looking For:
         </p>
         <p style={{ margin: "0.2rem 0 0", whiteSpace: "pre-wrap" }}>
           {formatOptionalText(listing.lookingFor)}
@@ -156,35 +156,35 @@ function GuestProposalFields({ listingId }: { listingId: string }) {
         }}
       >
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Guest name</span>
+          <span>Guest name:</span>
           <input name="guestPlayerName" required type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Guest character name</span>
+          <span>Guest character name:</span>
           <input name="guestCharacterName" required type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Item (Counts as)</span>
+          <span>Item (Counts as):</span>
           <input name="item" required type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Name</span>
+          <span>Name:</span>
           <input name="itemName" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Minor Property</span>
+          <span>Minor Property:</span>
           <input name="minorProperty" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Notes (Flavor)</span>
+          <span>Notes (Flavor):</span>
           <input maxLength={2000} name="flavorNotes" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Item received in adventure code</span>
+          <span>Item received in adventure code:</span>
           <input name="adventureCode" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Downtime days spent</span>
+          <span>Downtime days spent:</span>
           <input defaultValue="0" min="0" name="downtimeDaysSpent" type="number" />
         </label>
       </div>
@@ -217,7 +217,7 @@ function PlayerProposalFields({
         }}
       >
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Offer from character</span>
+          <span>Offer from character:</span>
           <select defaultValue={characters[0]?.id} name="characterId" required>
             {characters.map((character) => (
               <option key={character.id} value={character.id}>
@@ -227,27 +227,27 @@ function PlayerProposalFields({
           </select>
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Item (Counts as)</span>
+          <span>Item (Counts as):</span>
           <input name="item" required type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Name</span>
+          <span>Name:</span>
           <input name="itemName" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Minor Property</span>
+          <span>Minor Property:</span>
           <input name="minorProperty" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Notes (Flavor)</span>
+          <span>Notes (Flavor):</span>
           <input maxLength={2000} name="flavorNotes" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Item received in adventure code</span>
+          <span>Item received in adventure code:</span>
           <input name="adventureCode" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Downtime days spent</span>
+          <span>Downtime days spent:</span>
           <input defaultValue="0" min="0" name="downtimeDaysSpent" type="number" />
         </label>
       </div>
@@ -272,15 +272,15 @@ function GuestListingFields() {
         }}
       >
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Guest name</span>
+          <span>Guest name:</span>
           <input name="guestPlayerName" required type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Guest character name</span>
+          <span>Guest character name:</span>
           <input name="guestCharacterName" required type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Rarity</span>
+          <span>Rarity:</span>
           <select defaultValue="UNCOMMON" name="rarity" required>
             {TRADING_POST_RARITY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -290,31 +290,31 @@ function GuestListingFields() {
           </select>
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Item (Counts as)</span>
+          <span>Item (Counts as):</span>
           <input name="item" required type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Name</span>
+          <span>Name:</span>
           <input name="itemName" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Minor Property</span>
+          <span>Minor Property:</span>
           <input name="minorProperty" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Notes (Flavor)</span>
+          <span>Notes (Flavor):</span>
           <input maxLength={2000} name="flavorNotes" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Item received in adventure code</span>
+          <span>Item received in adventure code:</span>
           <input name="adventureCode" type="text" />
         </label>
         <label className="stack" style={{ gap: "0.35rem" }}>
-          <span>Downtime days spent</span>
+          <span>Downtime days spent:</span>
           <input defaultValue="0" min="0" name="downtimeDaysSpent" type="number" />
         </label>
         <label className="stack" style={{ gap: "0.35rem", gridColumn: "1 / -1" }}>
-          <span>Looking For</span>
+          <span>Looking For:</span>
           <textarea name="lookingFor" rows={4} />
         </label>
       </div>
@@ -536,7 +536,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
 
           <form action="/mercane-mercantile" className="mercane-filter-grid" method="get">
             <label className="stack" style={{ gap: "0.35rem" }}>
-              <span>Keyword search</span>
+              <span>Keyword search:</span>
               <input
                 defaultValue={searchTerm}
                 name="q"
@@ -545,7 +545,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
               />
             </label>
             <label className="stack" style={{ gap: "0.35rem" }}>
-              <span>Rarity</span>
+              <span>Rarity:</span>
               <select defaultValue={selectedRarity} name="rarity">
                 <option value="ALL">All rarities</option>
                 {TRADING_POST_RARITY_OPTIONS.map((option) => (
@@ -556,7 +556,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
               </select>
             </label>
             <div className="mercane-filter-actions">
-              <button className="button search-icon-button" type="submit" aria-label="Search listings">
+              <button className="button mercane-search-button" type="submit" aria-label="Search listings">
                 <SearchIcon />
               </button>
               <Link className="button button-secondary" href="/mercane-mercantile">

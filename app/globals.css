@@ -655,6 +655,7 @@ button.button-small {
 }
 
 .grimoire-gathering-text {
+  font-family: var(--font-comic-display);
   color: #0cff00;
   -webkit-text-stroke: 2px var(--comic-ink);
   paint-order: stroke fill;
@@ -691,7 +692,7 @@ button.button-small {
   place-items: center;
   width: fit-content;
   max-width: min(66rem, calc(100% - 4rem));
-  margin: 2.6rem auto 2.4rem;
+  margin: 4rem auto 2.4rem;
   min-height: 17rem;
   padding: 5.1rem 5.4rem 4.8rem;
   color: var(--comic-ink);
@@ -758,6 +759,18 @@ button.button-small {
   z-index: -4;
   background: var(--comic-yellow);
   transform: translate(1.35rem, 1.35rem);
+}
+
+.homepage-intro-bubble-popout-blue {
+  z-index: -5;
+  background: var(--comic-blue);
+  transform: translate(-0.75rem, -0.75rem);
+}
+
+.homepage-intro-bubble-popout-green {
+  z-index: -6;
+  background: var(--comic-green);
+  transform: translate(-1.35rem, -1.35rem);
 }
 
 .homepage-intro-bubble::before,
@@ -1428,6 +1441,37 @@ button.button-small {
   margin: 0;
 }
 
+.guide-copy.league-copy .grimoire-gathering-text {
+  font-family: var(--font-comic-display);
+  letter-spacing: 0.04em;
+}
+
+.guide-copy.league-copy .ledger-link {
+  color: var(--comic-red);
+}
+
+body a.button.league-jump-button {
+  width: fit-content;
+  font-family: var(--font-comic-display);
+  font-size: clamp(1.42rem, 1.3rem + 0.8vw, 1.78rem);
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: #ffffff;
+  padding: 1rem 1.55rem;
+  text-shadow:
+    2px 2px 0 var(--comic-ink),
+    -1px -1px 0 var(--comic-ink),
+    1px -1px 0 var(--comic-ink),
+    -1px 1px 0 var(--comic-ink),
+    1px 1px 0 var(--comic-ink);
+  -webkit-text-stroke: 1px var(--comic-ink);
+  paint-order: stroke fill;
+}
+
+.homepage-open-games-section#available-quests {
+  scroll-margin-top: 7rem;
+}
+
 .ggcon-hero {
   display: grid;
   gap: 1.5rem;
@@ -1441,6 +1485,9 @@ button.button-small {
 }
 
 .eyebrow.ggcon-hero-copy-heading {
+  display: block;
+  width: 100%;
+  text-align: center;
   font-family: var(--font-comic-display);
   font-size: 36pt;
   letter-spacing: 0.06em;
@@ -3601,6 +3648,14 @@ textarea {
   align-items: center;
 }
 
+.mercane-filter-actions .button {
+  flex: 1 1 11rem;
+}
+
+.mercane-search-button {
+  min-width: 0;
+}
+
 .mercane-grid-shell {
   padding: 1rem;
   border-radius: 24px;
@@ -4509,6 +4564,14 @@ body .search-row .button {
     transform: translate(0.82rem, 0.82rem);
   }
 
+  .homepage-intro-bubble-popout-blue {
+    transform: translate(-0.45rem, -0.45rem);
+  }
+
+  .homepage-intro-bubble-popout-green {
+    transform: translate(-0.82rem, -0.82rem);
+  }
+
   .site-actions {
     gap: 0.6rem;
   }
@@ -4671,6 +4734,22 @@ body :is(button, .button, .site-role-link, .tab-button, .settings-item, .notific
   font-family: var(--font-comic-body) !important;
   font-size: clamp(0.86rem, 0.82rem + 0.35vw, 1.05rem);
   letter-spacing: 0.02em;
+}
+
+body a.button.league-jump-button {
+  font-family: var(--font-comic-display) !important;
+  font-size: clamp(1.42rem, 1.3rem + 0.8vw, 1.78rem) !important;
+  letter-spacing: 0.055em !important;
+  color: #ffffff !important;
+  padding: 1rem 1.55rem !important;
+  text-shadow:
+    2px 2px 0 var(--comic-ink),
+    -1px -1px 0 var(--comic-ink),
+    1px -1px 0 var(--comic-ink),
+    -1px 1px 0 var(--comic-ink),
+    1px 1px 0 var(--comic-ink);
+  -webkit-text-stroke: 1px var(--comic-ink);
+  paint-order: stroke fill;
 }
 
 body :is(input, select, textarea) {

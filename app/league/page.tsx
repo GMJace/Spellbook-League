@@ -14,26 +14,37 @@ export default async function LeaguePage() {
         <h1 style={{ margin: 0 }}>
           Welcome to the <RainbowSpellbook /> Community
         </h1>
+        <Link className="button secondary league-jump-button" href="#available-quests">
+          Jump to Quests
+        </Link>
 
         <div className="guide-copy league-copy">
           <p>
-            <RainbowSpellbook /> is an organized play community built for
-            players and Dungeon Masters who want a smooth, connected, and
-            rewarding Dungeons &amp; Dragons experience. We use Adventurers
-            League guidelines and modules, allowing players to take their
-            characters to other AL-approved events and games. We also support
-            Legends of Greyhawk organized play and encourage DMs to feel
-            supported to run publicly published LoG content.
+            <RainbowSpellbook />&apos;S QUESTS is an organized play community built
+            for players and Dungeon Masters who want a smooth, connected, and
+            rewarding Dungeons &amp; Dragons experience. Rather than tying play to a
+            single organized-play system, <RainbowSpellbook />&apos;S QUESTS provides a
+            flexible structure for running adventures and campaigns while making
+            it easy to log progress, support characters, and reward participation.
           </p>
 
           <p>
-            Participation in the <RainbowSpellbook /> League is free, and
-            non-event Adventurers League games are posted weekly. Players may
-            join the games at any point, create characters, register them
-            through the <RainbowSpellbook /> app, and use the Character Log
-            system to track adventures, rewards, achievements, and progress.
-            As characters play more games, they build a clear record of their
-            journey.
+            <RainbowSpellbook />&apos;S QUESTS are posted daily, allowing players to
+            join games at any point. Players can create characters on D&amp;D
+            Beyond, register them through the <RainbowSpellbook /> app, and use
+            the Character Log system to track adventures, rewards, achievements,
+            and progress. As characters play more games, they build a clear
+            record of their journey and expand their inventory of loot.
+          </p>
+
+          <p>
+            Dungeon Masters can also run their own online campaigns through the{" "}
+            <RainbowSpellbook /> system. We provide campaign support with
+            dedicated Discord voice, text, and mustering channels, giving DMs a
+            ready-made space to organize players, run sessions, and keep their
+            games connected to the wider QUESTS community. Service awards and
+            player loot rolls apply to eligible games, allowing both DMs and
+            players to continue earning rewards through ongoing campaign play.
           </p>
 
           <p>
@@ -46,7 +57,7 @@ export default async function LeaguePage() {
           </p>
 
           <p>
-            <RainbowSpellbook /> is designed to be easy to join and simple to
+            <RainbowSpellbook />&apos;S QUESTS is designed to be easy to join and simple to
             run. A straightforward{" "}
             <a
               className="ledger-link"
@@ -63,21 +74,22 @@ export default async function LeaguePage() {
             >
               DM's Guide
             </a>{" "}
-            help everyone understand how the league works, how games are
+            help everyone understand how quests work, how games are
             logged, how event participation works, and how progress is tracked.
           </p>
 
           <p>
             New and aspiring Dungeon Masters are supported with tutorials for
             the <RainbowSpellbook /> app, Roll20, D&amp;D Beyond, Discord, and
-            Beyond20. DMs can choose to offer free community games or paid
-            ticketed games, depending on the type of table they want to run -
-            any time day or night.
+            Beyond20. DMs can choose to offer free community games, ongoing
+            online campaigns, or paid ticketed games,
+            depending on the type of table they want to run, at any time of day
+            or night.
           </p>
 
           <p>
-            The league is powered by a collaborative DM community that works
-            together to run weekly games, support new players, organize events,
+            The QUESTS are powered by a collaborative DM community that works
+            together to run daily games, support new players, organize events,
             and help shape the future of <RainbowSpellbook /> adventures.
             Paired with Discord, D&amp;D Beyond, Roll20, and Beyond20, the
             experience is smooth, accessible, and seamless from sign-up to game
@@ -85,27 +97,18 @@ export default async function LeaguePage() {
           </p>
 
           <p>
-            At the end of each season, <RainbowSpellbook /> celebrates the
-            community with seasonal awards, prizes, and recognition for the
-            players and DMs who helped bring the community to life.
-          </p>
-
-          <p>
-            Looking to DM in a safe, inclusive community? This just in:
-            {" "}
-            <RainbowSpellbook /> is recruiting resident DMs for free and
-            paid-to-play games. All we ask is that you follow the community
-            code of conduct and run at least one <RainbowSpellbook /> game
-            monthly in support of the growing community.
-          </p>
-
-          <p>
-            It's time to join the community where magic is written!
+            At the end of each year-long QUESTS season, <RainbowSpellbook />{" "}
+            celebrates the community with seasonal awards, prizes, and
+            recognition for the players and DMs who helped bring the community
+            to life.
           </p>
         </div>
       </section>
 
-      <section className="card ledger-panel stack homepage-open-games-section">
+      <section
+        className="card ledger-panel stack homepage-open-games-section"
+        id="available-quests"
+      >
         <img
           alt="Open league games divider"
           className="homepage-roster-divider"
@@ -113,7 +116,7 @@ export default async function LeaguePage() {
         />
 
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>Available league games</h2>
+          <h2 style={{ margin: 0 }}>Available Quests</h2>
         </div>
 
         <div className="list-card stack">

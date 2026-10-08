@@ -70,6 +70,8 @@ export default async function HomePage() {
           />
         </div>
         <p className="homepage-intro-bubble">
+          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-green" />
+          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-blue" />
           <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-yellow" />
           <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-red" />
           <span className="homepage-intro-bubble-copy">
