@@ -24,7 +24,6 @@ import {
   getGrimoireEventDateFieldName,
 } from "@/lib/grimoire-slots";
 import { prisma } from "@/lib/prisma";
-import { getGrimoireEventBadgePathIfExists } from "@/lib/grimoire-event-badge";
 
 function formatDateTime(date: Date | null) {
   if (!date) {
@@ -85,6 +84,7 @@ type EventRow = {
   ticketLabel: string;
   ticketPrice: string;
   ticketPriceUsd: number;
+  badgeImagePath: string | null;
   finale: boolean;
   slots: Array<{
     id: string;
@@ -576,9 +576,7 @@ export default async function AdminGrimoireGatheringPage({
   const selectedEventThemeDetails = selectedEvent
     ? parseStringArray(selectedEvent.themeDetails).join("\n")
     : "";
-  const selectedEventBadgePath = selectedEvent
-    ? await getGrimoireEventBadgePathIfExists(selectedEvent.id)
-    : null;
+  const selectedEventBadgePath = selectedEvent?.badgeImagePath ?? null;
   const selectedGameEventSlotId = selectedGame
     ? eventSlotOptions.find(
         ({ event, slot }) =>
@@ -774,7 +772,7 @@ export default async function AdminGrimoireGatheringPage({
                 </p>
               </div>
 
-              <form action={createGrimoireEvent} className="form-stack">
+              <form action={createGrimoireEvent} className="form-stack" encType="multipart/form-data">
                 <div className="form-grid">
                   <label>
                     Month label

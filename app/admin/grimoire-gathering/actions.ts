@@ -398,9 +398,22 @@ export async function createGrimoireEvent(formData: FormData) {
   }
 
   const eventBadgeFile = formData.get("eventBadge");
+  let badgeImagePath: string | null = null;
 
   if (isUploadedFile(eventBadgeFile) && eventBadgeFile.size > 0) {
-    const badgeUploadResult = await saveGrimoireEventBadgeUpload(generatedEventId, eventBadgeFile);
+    let badgeUploadResult: Awaited<ReturnType<typeof saveGrimoireEventBadgeUpload>>;
+
+    try {
+      badgeUploadResult = await saveGrimoireEventBadgeUpload(eventBadgeFile);
+    } catch (error) {
+      console.error("Failed to save Grimoire event badge upload.", error);
+      redirect(
+        buildGrimoireEventRedirect({
+          details: "Event badge: The image could not be saved. Try a smaller image or a PNG/JPG file.",
+          status: "invalid-fields",
+        }),
+      );
+    }
 
     if ("error" in badgeUploadResult) {
       redirect(
@@ -410,6 +423,8 @@ export async function createGrimoireEvent(formData: FormData) {
         }),
       );
     }
+
+    badgeImagePath = badgeUploadResult.path;
   }
 
   try {
@@ -426,6 +441,7 @@ export async function createGrimoireEvent(formData: FormData) {
         ticketLabel: parsed.data.ticketLabel,
         ticketPrice: parsed.data.ticketPrice,
         ticketPriceUsd: parsed.data.ticketPriceUsd,
+        badgeImagePath,
         finale: true,
         slots: {
           create: slots,
@@ -715,23 +731,39 @@ export async function updateGrimoireEvent(formData: FormData) {
     );
   }
 
-  try {
-    const eventBadgeFile = formData.get("eventBadge");
+  const eventBadgeFile = formData.get("eventBadge");
+  let badgeImagePath = existingEvent.badgeImagePath;
 
-    if (isUploadedFile(eventBadgeFile) && eventBadgeFile.size > 0) {
-      const badgeUploadResult = await saveGrimoireEventBadgeUpload(existingEvent.id, eventBadgeFile);
+  if (isUploadedFile(eventBadgeFile) && eventBadgeFile.size > 0) {
+    let badgeUploadResult: Awaited<ReturnType<typeof saveGrimoireEventBadgeUpload>>;
 
-      if ("error" in badgeUploadResult) {
-        redirect(
-          buildGrimoireEventRedirect({
-            details: `Event badge: ${badgeUploadResult.error}`,
-            editEventId: parsed.data.eventId,
-            status: "invalid-fields",
-          }),
-        );
-      }
+    try {
+      badgeUploadResult = await saveGrimoireEventBadgeUpload(eventBadgeFile);
+    } catch (error) {
+      console.error("Failed to save Grimoire event badge upload.", error);
+      redirect(
+        buildGrimoireEventRedirect({
+          details: "Event badge: The image could not be saved. Try a smaller image or a PNG/JPG file.",
+          editEventId: parsed.data.eventId,
+          status: "invalid-fields",
+        }),
+      );
     }
 
+    if ("error" in badgeUploadResult) {
+      redirect(
+        buildGrimoireEventRedirect({
+          details: `Event badge: ${badgeUploadResult.error}`,
+          editEventId: parsed.data.eventId,
+          status: "invalid-fields",
+        }),
+      );
+    }
+
+    badgeImagePath = badgeUploadResult.path;
+  }
+
+  try {
     await prisma.$transaction(async (tx) => {
       await tx.grimoireEvent.update({
         where: { id: existingEvent.id },
@@ -746,6 +778,7 @@ export async function updateGrimoireEvent(formData: FormData) {
           ticketLabel: parsed.data.ticketLabel,
           ticketPrice: parsed.data.ticketPrice,
           ticketPriceUsd: parsed.data.ticketPriceUsd,
+          badgeImagePath,
         },
       });
 

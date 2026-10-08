@@ -24,6 +24,7 @@ type GrimoireEventRecord = {
   ticketLabel: string;
   ticketPrice: string;
   ticketPriceUsd: number;
+  badgeImagePath: string | null;
   finale: boolean;
 };
 
@@ -93,6 +94,7 @@ function mapEventToSeasonEvent(event: GrimoireEventRecord): SeasonEvent {
     ticketLabel: event.ticketLabel,
     ticketPrice: event.ticketPrice,
     ticketPriceUsd: event.ticketPriceUsd,
+    badgeImagePath: event.badgeImagePath,
     finale: event.finale,
   };
 }

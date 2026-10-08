@@ -12,6 +12,7 @@ export type SeasonEvent = {
   ticketLabel: string;
   ticketPrice: string;
   ticketPriceUsd: number;
+  badgeImagePath?: string | null;
   finale?: boolean;
 };
 

@@ -23,7 +23,6 @@ import {
   getSeasonSchedule,
 } from "@/lib/grimoire-server";
 import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
-import { getGrimoireEventBadgePathIfExists } from "@/lib/grimoire-event-badge";
 
 export const dynamic = "force-dynamic";
 const contactAdminSubject = encodeURIComponent(
@@ -98,14 +97,8 @@ export default async function GrimoireGatheringPage({
 
   const nextEventHeader = nextEvent.subtitle.replace(/^Season Kickoff\s*:\s*/i, "").trim();
   const featuredSeasonSchedule = seasonSchedule.slice(0, 4);
-  const nextEventBadgePath = await getGrimoireEventBadgePathIfExists(nextEvent.id);
   const featuredEventBadgePaths = Object.fromEntries(
-    await Promise.all(
-      featuredSeasonSchedule.map(async (event) => [
-        event.id,
-        await getGrimoireEventBadgePathIfExists(event.id),
-      ] as const),
-    ),
+    featuredSeasonSchedule.map((event) => [event.id, event.badgeImagePath] as const),
   );
   const nextEventGames = await getMergedGamesForEvent(nextEvent.id);
   const displayedGames =
@@ -178,7 +171,7 @@ export default async function GrimoireGatheringPage({
           <img
             alt="Grimoire Gathering logo"
             className="ggcon-logo"
-            src={nextEventBadgePath ?? "/grimoire-gathering-banner.png"}
+            src={nextEvent.badgeImagePath ?? "/grimoire-gathering-banner.png"}
           />
         </div>
       </section>

@@ -728,6 +728,7 @@ model GrimoireEvent {
   ticketLabel    String
   ticketPrice    String
   ticketPriceUsd Float
+  badgeImagePath String?
   finale         Boolean              @default(false)
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt

@@ -13,6 +13,7 @@
     "db:migrate:ddb-sync": "tsx prisma/migrate-dnd-beyond-sync.ts",
     "db:migrate:al-authors": "tsx prisma/migrate-al-authors.ts",
     "db:migrate:module-conflicts": "tsx prisma/migrate-module-conflicts.ts",
+    "db:migrate:grimoire-event-badges": "tsx prisma/migrate-grimoire-event-badges.ts",
     "test:ddb-sync": "tsx --test tests/dnd-beyond-character.test.ts",
     "sync:ddb-roster": "tsx scripts/sync-dnd-beyond-roster.ts",
     "db:push": "prisma db push",
