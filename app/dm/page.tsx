@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { TableActionMenu } from "@/components/table-action-menu";
+import { TwoRowScrollableGrid } from "@/components/two-row-scrollable-grid";
 import { requireRole } from "@/lib/auth";
 import { getProDmRosterEntry } from "@/lib/pro-dm-roster";
 import { prisma } from "@/lib/prisma";
@@ -56,7 +57,7 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <main className="stack">
+    <main className="stack dm-dashboard-page">
       <section className="card ledger-panel stack">
         <div
           style={{
@@ -86,19 +87,19 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
           }}
         >
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Display name</span>
+            <span className="muted">Display name:</span>
             <strong>{user.name ?? "Not provided"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Email</span>
+            <span className="muted">Email:</span>
             <strong>{user.email}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Discord handle</span>
+            <span className="muted">Discord handle:</span>
             <strong>{user.discordHandle || "Not provided"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Games played</span>
+            <span className="muted">Games played:</span>
             <strong>{gamesPlayedCount}</strong>
           </div>
         </div>
@@ -134,21 +135,21 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
           }}
         >
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Roster status</span>
+            <span className="muted">Roster status:</span>
             <strong>{dmProfile?.isListed ? "Listed publicly" : "Saved privately"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Headline</span>
+            <span className="muted">Headline:</span>
             <strong>{dmProfile?.headline ?? "Not provided"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Specialties</span>
+            <span className="muted">Specialties:</span>
             <strong>{dmProfile?.specialties ?? "Not provided"}</strong>
           </div>
         </div>
 
         <div className="list-card stack" style={{ gap: "0.5rem" }}>
-          <span className="muted">Public bio</span>
+          <span className="muted">Public bio:</span>
           <p style={{ margin: 0 }}>
             {dmProfile?.bio ??
               "No public DM bio has been added yet. You can add one from your profile page."}
@@ -162,7 +163,7 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
         src="/divider4.png"
       />
 
-      <section className="panel">
+      <section className="card ledger-panel stack">
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
           <div>
             <p className="eyebrow">DM dashboard</p>
@@ -202,42 +203,81 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
         </form>
       </section>
 
-      <section className="grid two">
+      <section className="card ledger-panel stack">
+        <div className="inline-actions" style={{ justifyContent: "space-between" }}>
+          <h2 style={{ margin: 0 }}>Current DM games</h2>
+        </div>
         {games.length ? (
-          games.map((game) => (
-            <article key={game.id} className="list-card dm-game-log-card">
-              {game.adventureImagePath ? (
-                <img
-                  alt={`${game.title} cover art`}
-                  className="dm-game-log-image"
-                  src={game.adventureImagePath}
-                />
-              ) : null}
-              <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-                <h2 style={{ margin: 0 }}>{game.title}</h2>
-                <span className="dm-player-count">
-                  <span className="dm-player-count-value">{game.participants.length}</span>
-                  <span>players</span>
-                </span>
-              </div>
-              <p className="muted">
-                {formatDate(game.datePlayed)} | {formatTier(game.tier)} |{" "}
-                {formatStatus(game.status)}
-              </p>
-              <p>{game.adventureCode}</p>
-              <div className="stack" style={{ gap: "0.6rem", justifyItems: "start" }}>
-                <Link href={`/dm/games/${game.id}`} className="button secondary">
-                  View game
-                </Link>
-                <Link
-                  href={`/dm/games/new?duplicateFrom=${encodeURIComponent(game.id)}`}
-                  className="button secondary"
-                >
-                  Duplicate game
-                </Link>
-              </div>
-            </article>
-          ))
+          <TwoRowScrollableGrid className="homepage-open-games-grid">
+            {games.map((game) => (
+              <article
+                data-two-row-grid-item
+                key={game.id}
+                className="homepage-open-game-card dm-game-log-card"
+              >
+                {game.adventureImagePath ? (
+                  <img
+                    alt={`${game.title} cover art`}
+                    className="homepage-open-game-card-image"
+                    src={game.adventureImagePath}
+                  />
+                ) : (
+                  <div className="homepage-open-game-card-image homepage-open-game-card-image-placeholder">
+                    <div className="ggcon-game-hero-placeholder-inner">
+                      <p className="eyebrow" style={{ margin: 0 }}>
+                        Adventure art
+                      </p>
+                      <strong>{game.title}</strong>
+                      <p className="muted" style={{ margin: 0 }}>
+                        Image placeholder
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="stack homepage-open-game-card-copy">
+                  <div className="inline-actions" style={{ justifyContent: "space-between" }}>
+                    <strong>{game.title}</strong>
+                    <span className="dm-player-count">
+                      <span className="dm-player-count-value">{game.participants.length}</span>
+                      <span>players</span>
+                    </span>
+                  </div>
+                  <span className="muted">{game.adventureCode}</span>
+
+                  <dl className="homepage-open-game-card-details">
+                    <div>
+                      <dt>Date:</dt>
+                      <dd>{formatDate(game.datePlayed)}</dd>
+                    </div>
+                    <div>
+                      <dt>Tier:</dt>
+                      <dd>{formatTier(game.tier)}</dd>
+                    </div>
+                    <div>
+                      <dt>Status:</dt>
+                      <dd>{formatStatus(game.status)}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="homepage-open-game-card-actions">
+                    <Link
+                      href={`/dm/games/${game.id}`}
+                      className="button button-secondary button-small"
+                    >
+                      View game
+                    </Link>
+                    <Link
+                      href={`/dm/games/new?duplicateFrom=${encodeURIComponent(game.id)}`}
+                      className="button button-small"
+                    >
+                      Duplicate game
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </TwoRowScrollableGrid>
         ) : (
           <div className="empty">
             {query ? "No matching games found." : "You have not created any games yet."}

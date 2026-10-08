@@ -99,7 +99,7 @@ export default async function PlayerDashboardPage({
   }));
 
   return (
-    <main className="stack">
+    <main className="stack player-dashboard-page">
       {resolvedSearchParams?.characterLimit === "reached" ? (
         <div className="stack" style={{ gap: "0.4rem" }}>
           <p style={{ color: "#ffffff", margin: 0 }}>
@@ -155,29 +155,29 @@ export default async function PlayerDashboardPage({
           }}
         >
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Display name</span>
+            <span className="muted">Display name:</span>
             <strong>{user.name ?? "Not provided"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Email</span>
+            <span className="muted">Email:</span>
             <strong>{user.email}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Discord handle</span>
+            <span className="muted">Discord handle:</span>
             <strong>{user.discordHandle || "Not provided"}</strong>
           </div>
           <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Gameplay</span>
+            <span className="muted">Gameplay:</span>
             <strong>{gamesPlayedCount} games played</strong>
           </div>
           {availableStoreCreditUsd > 0 ? (
             <div className="list-card stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Account credit</span>
+              <span className="muted">Account credit:</span>
               <strong>{formatUsd(availableStoreCreditUsd)}</strong>
             </div>
           ) : null}
           <div className="list-card stack" style={{ gap: "0.5rem" }}>
-            <span className="muted">Tidings</span>
+            <span className="muted">Tidings:</span>
             <div
               style={{
                 display: "flex",
@@ -248,7 +248,7 @@ export default async function PlayerDashboardPage({
           <h2 style={{ margin: 0 }}>Current open league games</h2>
         </div>
 
-        <div className="list-card stack">
+        <div className="list-card stack player-open-games-card">
           <TwoRowScrollableGrid className="homepage-open-games-grid">
             {openLeagueGames.length ? (
               openLeagueGames.map((game) => {
