@@ -1,4 +1,5 @@
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
+import { prisma } from "@/lib/prisma";
 
 const MAX_GRIMOIRE_EVENT_BADGE_SIZE = 10 * 1024 * 1024;
 
@@ -19,4 +20,17 @@ export async function saveGrimoireEventBadgeUpload(file: File) {
   }
 
   return { path: await convertImageFileToDataUrl(file) } as const;
+}
+
+export async function getGrimoireEventBadgePathIfExists(eventId: string) {
+  const event = await prisma.grimoireEvent.findUnique({
+    where: {
+      id: eventId,
+    },
+    select: {
+      badgeImagePath: true,
+    },
+  });
+
+  return event?.badgeImagePath ?? null;
 }
