@@ -400,8 +400,8 @@ export function GameRewardFields({
         </p>
       </div>
 
-      <div className="list-card stack">
-        <strong>Uncommon+ magic items</strong>
+      <div className="list-card stack game-reward-section-card">
+        <strong className="game-reward-section-heading">Uncommon+ magic items</strong>
         <MagicRewardSelectList
           addLabel="Add Uncommon+ magic item"
           emptyMessage="No Uncommon+ magic items selected yet."
@@ -426,8 +426,8 @@ export function GameRewardFields({
         />
       </div>
 
-      <div className="list-card stack">
-        <strong>Common magic items</strong>
+      <div className="list-card stack game-reward-section-card">
+        <strong className="game-reward-section-heading">Common magic items</strong>
         <MagicRewardSelectList
           addLabel="Add common magic item"
           emptyMessage="No common magic items selected yet."
@@ -452,8 +452,8 @@ export function GameRewardFields({
         />
       </div>
 
-      <div className="list-card stack">
-        <strong>Consumables</strong>
+      <div className="list-card stack game-reward-section-card">
+        <strong className="game-reward-section-heading">Consumables</strong>
         <RewardSelectList
           addLabel="Add consumable"
           emptyMessage="No consumables selected yet."
@@ -465,12 +465,9 @@ export function GameRewardFields({
         />
       </div>
 
-      <div className="list-card stack">
-        <strong>Spellbooks</strong>
+      <div className="list-card stack game-reward-section-card">
+        <strong className="game-reward-section-heading">Spellbooks</strong>
         <label style={{ margin: 0 }}>
-          <span className="muted" style={{ display: "block", marginBottom: "0.35rem" }}>
-            Spellbook rewards
-          </span>
           <textarea
             name="spellbookAwarded"
             onChange={(event) => setSpellbookAwarded(event.target.value)}
@@ -480,8 +477,8 @@ export function GameRewardFields({
         </label>
       </div>
 
-      <div className="list-card stack">
-        <strong>Boons, blessings, and charms</strong>
+      <div className="list-card stack game-reward-section-card">
+        <strong className="game-reward-section-heading">Boons, blessings, and charms</strong>
         <RewardSelectList
           addLabel="Add boon"
           emptyMessage="No boons selected yet."

@@ -158,27 +158,28 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
       </section>
 
       <section className="card ledger-panel stack dm-dashboard-games-shell">
+        <div className="inline-actions dm-dashboard-actions" style={{ justifyContent: "flex-end" }}>
+          <Link href="/dm/players" className="button button-secondary button-small">
+            Player roster
+          </Link>
+          <Link href="/grimoire-gathering" className="button button-secondary button-small">
+            Grimoire page
+          </Link>
+          <Link href="/dm/achievements" className="button button-secondary button-small">
+            Achievements
+          </Link>
+          <Link href="/dm/service-awards" className="button button-secondary button-small">
+            Service awards
+          </Link>
+          <Link href="/dm/games/new" className="button button-small">
+            Create/Log Game
+          </Link>
+        </div>
+
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
           <div>
             <p className="eyebrow">DM dashboard</p>
             <h1>Your games</h1>
-          </div>
-          <div className="inline-actions dm-dashboard-actions">
-            <Link href="/dm/players" className="button button-secondary button-small">
-              Player roster
-            </Link>
-            <Link href="/grimoire-gathering" className="button button-secondary button-small">
-              Grimoire page
-            </Link>
-            <Link href="/dm/achievements" className="button button-secondary button-small">
-              Achievements
-            </Link>
-            <Link href="/dm/service-awards" className="button button-secondary button-small">
-              Service awards
-            </Link>
-            <Link href="/dm/games/new" className="button button-small">
-              Create/Log Game
-            </Link>
           </div>
         </div>
 

@@ -164,7 +164,7 @@ export function PlayerTradeLogForm({
     : manualRecipientCharacterName;
 
   return (
-    <form action={formAction} className="stack">
+    <form action={formAction} className="stack player-trade-log-form">
       <input name="characterId" type="hidden" value={characterId} />
       {tradeId ? <input name="tradeId" type="hidden" value={tradeId} /> : null}
 
@@ -250,7 +250,7 @@ export function PlayerTradeLogForm({
             value={recipientCharacterName}
           />
         </label>
-        <p className="muted" style={{ margin: 0 }}>
+        <p className="player-trade-helper-note" style={{ margin: 0 }}>
           Check this when the other side uses SPELLBOOK. Their player and character names will
           populate from the roster. Leave it unchecked to enter both manually.
         </p>

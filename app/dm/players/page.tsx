@@ -76,7 +76,7 @@ export default async function DmPlayersPage({ searchParams }: PageProps) {
   return (
     <main className="page-shell">
       <section className="stack">
-        <div className="list-card stack">
+        <div className="list-card stack dm-player-roster-section">
           <div className="section-heading">
             <h2 style={{ margin: 0 }}>PLAYER ROSTER</h2>
             <Link className="button secondary" href={isAdminViewer && !isDm ? "/admin/users" : "/dm"}>

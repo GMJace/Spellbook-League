@@ -1662,14 +1662,73 @@ body a.button.league-jump-button {
 }
 
 .ggcon-flying-carpet-button {
-  background: #8dff70;
-  color: #000000;
-  border-color: #8dff70;
+  position: relative;
+  isolation: isolate;
+  background: var(--comic-paper);
+  border-color: var(--comic-ink);
+  color: #06ff00 !important;
+  font-family: var(--font-comic-display) !important;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 0.98;
+  text-transform: none;
+  text-shadow:
+    2px 2px 0 var(--comic-ink),
+    2px 2px 0 var(--comic-paper);
+  -webkit-text-stroke: 1px var(--comic-ink);
+  paint-order: stroke fill;
+  box-shadow: var(--shadow);
+  overflow: visible;
 }
 
 .ggcon-flying-carpet-button:hover {
-  background: #b4ff97;
-  border-color: #b4ff97;
+  background: #ffffff;
+  border-color: var(--comic-ink);
+}
+
+.ggcon-flying-carpet-button::before,
+.ggcon-flying-carpet-button::after {
+  content: "";
+  position: absolute;
+  clip-path: polygon(
+    0 42%,
+    9% 35%,
+    5% 12%,
+    18% 22%,
+    26% 0,
+    36% 18%,
+    48% 6%,
+    55% 22%,
+    68% 5%,
+    72% 25%,
+    87% 14%,
+    83% 36%,
+    100% 45%,
+    86% 56%,
+    96% 79%,
+    76% 72%,
+    69% 100%,
+    56% 80%,
+    43% 94%,
+    35% 76%,
+    20% 90%,
+    18% 67%,
+    4% 74%,
+    12% 55%
+  );
+  pointer-events: none;
+}
+
+.ggcon-flying-carpet-button::before {
+  inset: -0.55rem -0.85rem;
+  z-index: -2;
+  background: var(--comic-ink);
+}
+
+.ggcon-flying-carpet-button::after {
+  inset: -0.32rem -0.6rem;
+  z-index: -1;
+  background: var(--comic-paper);
 }
 
 .ggcon-flying-carpet-benefits {
@@ -2168,15 +2227,58 @@ body a.button.league-jump-button {
   min-width: 0;
 }
 
+.dnd-beyond-currency-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.dnd-beyond-currency-card {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 5px solid var(--comic-ink);
+  border-radius: 8px;
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.dnd-beyond-currency-card span {
+  font-family: var(--font-comic-display);
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: 0.055em;
+}
+
+.dnd-beyond-currency-card strong {
+  font-size: clamp(1.05rem, 0.94rem + 0.45vw, 1.35rem);
+}
+
 .dnd-beyond-inventory-divider {
   width: 100%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.85);
+  height: 5px;
+  margin: 0.35rem 0;
+  background: var(--comic-ink);
 }
 
 .dnd-beyond-spells-heading {
   font-size: 1.5rem;
   font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .dnd-beyond-currency-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .dnd-beyond-currency-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .ggcon-table-divider {
@@ -2915,6 +3017,7 @@ label {
   align-items: baseline;
   gap: 0.55rem;
   min-width: 0;
+  font-family: var(--font-comic-body) !important;
 }
 
 .skill-matrix-ability {
@@ -2932,14 +3035,108 @@ label {
   justify-self: center;
 }
 
+.character-coin-card {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+.character-logsheet-form :is(
+  h2,
+  h3,
+  strong,
+  .skill-matrix > p,
+  .tool-matrix > p,
+  .language-matrix > p,
+  .feat-matrix > p
+) {
+  font-family: var(--font-comic-body) !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+.character-logsheet-form :is(h2, h3, strong, .character-form-heading) {
+  color: var(--comic-ink) !important;
+}
+
+.character-logsheet-form .character-form-heading {
+  display: block;
+  margin: 0;
+  font-family: var(--font-comic-display) !important;
+  font-size: 1.17em;
+  font-weight: 700;
+  letter-spacing: 0.055em !important;
+  line-height: 1.2;
+  color: var(--comic-ink) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+.character-logsheet-form :is(
+  .character-build-card,
+  .character-magic-item-card,
+  .skill-matrix-group,
+  .tool-matrix-group,
+  .language-matrix-group,
+  .feat-matrix-group
+) {
+  background: #ffffff !important;
+}
+
+.character-logsheet-form :is(
+  .checkbox-row,
+  .compact-checkbox-row,
+  .skill-matrix-skill,
+  .tool-matrix-option,
+  .language-matrix-option,
+  .feat-matrix-option
+) {
+  font-family: var(--font-comic-body) !important;
+}
+
+.character-summary-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.character-summary-heading {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.character-coin-field {
+  min-width: 0;
+}
+
+.character-total-level-card {
+  width: 100%;
+}
+
+.character-section-divider {
+  width: 100%;
+  height: 5px;
+  margin: 5px 0;
+  background: var(--comic-ink);
+}
+
 @media (max-width: 1100px) {
   .skill-matrix-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .character-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 720px) {
   .skill-matrix-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .character-summary-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -4708,9 +4905,56 @@ body .search-row .button {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
+.character-import-primary-card {
+  grid-column: 1 / -1;
+}
+
+.character-import-dropdown {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.character-import-dropdown-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.character-import-dropdown-summary::-webkit-details-marker {
+  display: none;
+}
+
+.character-import-dropdown[open] .character-import-dropdown-summary {
+  margin-bottom: 0.15rem;
+}
+
 .character-import-manual-note {
   margin: 0;
   text-align: center;
+}
+
+.import-template-support-shell {
+  gap: 1rem;
+}
+
+.import-template-support-card {
+  border: 5px solid var(--comic-ink) !important;
+  border-radius: 8px;
+  box-shadow: none !important;
+}
+
+.import-template-support-card h3 {
+  color: var(--comic-ink) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+.import-logsheet-upload-card {
+  border-bottom: 0 !important;
 }
 
 @media (min-width: 900px) {
@@ -4750,6 +4994,20 @@ body a.button.league-jump-button {
     1px 1px 0 var(--comic-ink);
   -webkit-text-stroke: 1px var(--comic-ink);
   paint-order: stroke fill;
+}
+
+body a.button.ggcon-flying-carpet-button {
+  min-height: 4rem;
+  padding: 1.05rem 1.8rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-family: var(--font-comic-display) !important;
+  font-size: clamp(1.42rem, 1.3rem + 0.8vw, 1.78rem) !important;
+  letter-spacing: 0.055em !important;
+  line-height: 0.98;
+  box-shadow: none !important;
+  text-transform: none;
 }
 
 body :is(input, select, textarea) {
@@ -4855,5 +5113,196 @@ body :is(
   .character-record-token-placeholder
 ) {
   border-color: #000000 !important;
+}
+
+body .character-logsheet-form .character-form-heading {
+  display: block;
+  margin: 0;
+  font-family: var(--font-comic-display) !important;
+  font-size: 1.17em !important;
+  font-weight: 700;
+  letter-spacing: 0.055em !important;
+  line-height: 1.2;
+  color: var(--comic-ink) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+body .character-workflow-page .import-logsheet-upload-card {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+body .player-game-log-form > .list-card.form-grid,
+body .player-game-log-form .dm-game-section-heading {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+body .game-reward-section-heading {
+  display: block;
+  margin: 0;
+  font-family: var(--font-comic-display) !important;
+  font-size: calc(1em + 4pt) !important;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
+  color: var(--comic-ink) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+body .player-game-log-form .game-reward-section-card {
+  border: 5px solid var(--comic-ink) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .player-game-log-form .player-game-session-notes-card {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+body .player-game-log-no-match-message {
+  color: var(--comic-red) !important;
+  font-weight: 700;
+}
+
+body .player-trade-log-form .list-card {
+  border: 5px solid var(--comic-ink) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .player-trade-helper-note {
+  color: var(--comic-red) !important;
+  font-weight: 700;
+}
+
+body .character-record-card :is(
+  .character-record-token-panel > .muted:first-child,
+  .character-record-token-stat > .muted:first-child,
+  .character-record-row > .muted:first-child
+) {
+  font-family: var(--font-comic-display) !important;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
+  color: var(--comic-ink) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+body .character-detail-card > .muted:first-child {
+  font-family: var(--font-comic-display) !important;
+  font-size: calc(1em + 4pt) !important;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
+  color: var(--comic-ink) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+body .character-magic-item-detail-label {
+  color: var(--comic-ink) !important;
+  font-size: calc(1em + 2pt);
+  font-weight: 900 !important;
+}
+
+body .list-card > .character-record-card {
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body .character-record-card .character-record-grid {
+  border: 5px solid var(--comic-ink) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .character-workflow-page .downtime-rules-card {
+  border: 5px solid var(--comic-ink) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .character-workflow-page .downtime-entry-form {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+body .trading-post-page .list-card,
+body .trading-post-page .trading-post-active-grid {
+  border: 5px solid var(--comic-ink) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .character-trade-detail-page .character-trade-detail-label {
+  color: var(--comic-ink) !important;
+  font-size: calc(1em + 2pt);
+  font-weight: 900;
+}
+
+body .character-trade-detail-page .character-trade-detail-character-name,
+body .character-trade-detail-page .character-trade-detail-player-name {
+  font-size: calc(1em + 4pt);
+}
+
+body .character-trade-detail-page .character-trade-detail-character-name strong {
+  font-weight: 900;
+}
+
+body .character-game-log-detail-page .character-game-log-detail-label {
+  color: var(--comic-ink) !important;
+  font-size: calc(1em + 2pt);
+  font-weight: 900;
+}
+
+body .dm-player-roster-section {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body .dm-achievements-page .list-card {
+  border: 5px solid var(--comic-ink) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .dm-service-page :is(.ledger-panel, .list-card, .panel, .metric) {
+  border: 5px solid var(--comic-ink) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .dm-service-page .dm-service-award-group h3 {
+  color: var(--comic-ink) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+body .ggcon-event-detail-page :is(
+  p,
+  li,
+  span,
+  strong,
+  dt,
+  dd,
+  .muted,
+  .ggcon-meta-note,
+  .ggcon-feature-list,
+  .ggcon-event-game-card-copy,
+  .ggcon-event-game-card-details,
+  .ggcon-event-game-card-details dt,
+  .ggcon-event-game-card-details dd,
+  .ggcon-event-games-time-header
+) {
+  color: var(--comic-ink) !important;
+}
+
+body .ggcon-event-detail-page :is(a.button, button, .button) {
+  color: inherit;
 }
 

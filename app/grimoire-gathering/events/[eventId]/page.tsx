@@ -30,7 +30,7 @@ export default async function GrimoireEventPackPage({ params }: PageProps) {
   );
 
   return (
-    <main className="page-shell">
+    <main className="page-shell ggcon-event-detail-page">
       <section className="stack">
         <div className="section-heading">
           <div className="stack" style={{ gap: "0.45rem" }}>

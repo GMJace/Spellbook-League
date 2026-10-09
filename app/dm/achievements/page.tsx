@@ -3,14 +3,8 @@ import Link from "next/link";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { SearchIcon } from "@/components/search-icon";
-import { TableActionMenu } from "@/components/table-action-menu";
 import { requireRole } from "@/lib/auth";
 import { canViewPrivateCharacterRoster } from "@/lib/character-visibility";
-import {
-  formatClassSummary,
-  getCharacterTier,
-  getCharacterTotalLevel,
-} from "@/lib/character";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -145,7 +139,7 @@ export default async function DmAchievementsPage({ searchParams }: PageProps) {
   }>;
 
   return (
-    <main className="page-shell">
+    <main className="page-shell dm-achievements-page">
       <section className="stack">
         <div className="list-card stack">
           <div className="section-heading">
@@ -258,17 +252,13 @@ export default async function DmAchievementsPage({ searchParams }: PageProps) {
                   <th>Player</th>
                   <th>Character</th>
                   <th>Build</th>
-                  <th>Tier</th>
-                  <th>Games</th>
                   <th>Achievements</th>
-                  <th>Action</th>
+                  <th aria-label="Award achievement"></th>
                 </tr>
               </thead>
               <tbody>
                 {playerCharacters.length ? (
                   playerCharacters.map((character) => {
-                    const totalLevel = getCharacterTotalLevel(character);
-
                     return (
                       <tr key={character.id}>
                         <td>{character.user.name}</td>
@@ -276,25 +266,21 @@ export default async function DmAchievementsPage({ searchParams }: PageProps) {
                         <td>
                           <CharacterBuildDisplay character={character} compact />
                         </td>
-                        <td>Tier {getCharacterTier(totalLevel)}</td>
-                        <td>{character._count.participants}</td>
                         <td>{character._count.achievementAwards}</td>
                         <td>
-                          <TableActionMenu>
-                            <Link
-                              className="button secondary button-small"
-                              href={`/dm/achievements/award/${character.id}`}
-                            >
-                              AWARD ACHIEVEMENT
-                            </Link>
-                          </TableActionMenu>
+                          <Link
+                            className="button secondary button-small"
+                            href={`/dm/achievements/award/${character.id}`}
+                          >
+                            Award achievement
+                          </Link>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td className="muted" colSpan={7}>
+                    <td className="muted" colSpan={5}>
                       {query ? "No matching players found." : "No player characters found."}
                     </td>
                   </tr>

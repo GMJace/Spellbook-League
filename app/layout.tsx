@@ -91,7 +91,7 @@ export default async function RootLayout({
                   alt="SPELLBOOK"
                   className="brand-logo"
                   height="60"
-                  src="/spellbook-logo.svg"
+                  src="/Spellbook-Logo.png"
                   width="300"
                 />
                 <span className="sr-only">SPELLBOOK</span>

@@ -119,8 +119,7 @@ export function CharacterCreationWorkspace({
       ) : null}
       <div className="store-line-divider" />
       <div className="character-import-grid">
-        {spreadsheetImportCard}
-        <form className="list-card form-stack character-import-card" onSubmit={event => {
+        <form className="list-card form-stack character-import-card character-import-primary-card" onSubmit={event => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
           startTransition(async () => {
@@ -138,92 +137,104 @@ export function CharacterCreationWorkspace({
         }}>
           <h2 style={{ margin: 0 }}>Import from D&amp;D Beyond link</h2>
           <p className="muted">Set your character to Public, then paste its share link. After saving, character details and inventory refresh when the log opens.</p>
-          <label>Character share link<input name="characterSheetLink" type="url" required placeholder="https://www.dndbeyond.com/characters/…" /></label>
+          <label>Character share link:<input name="characterSheetLink" type="url" required placeholder="https://www.dndbeyond.com/characters/…" /></label>
           <p className="muted">Importing replaces unsaved values in the form below.</p>
           <button disabled={isPending} type="submit">{isPending ? "Importing…" : "Import character link"}</button>
         </form>
-        <form
-          className="list-card form-stack character-import-card"
-          onSubmit={(event) => {
-            event.preventDefault();
+        <details className="character-import-dropdown">
+          <summary className="button button-secondary character-import-dropdown-summary">
+            Import Character by Spreadsheet
+          </summary>
+          {spreadsheetImportCard}
+        </details>
+        <details className="character-import-dropdown">
+          <summary className="button button-secondary character-import-dropdown-summary">
+            Import Character from D&amp;D Beyond PDF
+          </summary>
+          <form
+            className="list-card form-stack character-import-card"
+            onSubmit={(event) => {
+              event.preventDefault();
 
-            startTransition(async () => {
-              setErrorMessage(null);
-              setStatusMessage(null);
+              startTransition(async () => {
+                setErrorMessage(null);
+                setStatusMessage(null);
 
-              try {
-                if (!characterPdfFile) {
-                  throw new Error("Choose a D&D Beyond exported PDF first.");
-                }
+                try {
+                  if (!characterPdfFile) {
+                    throw new Error("Choose a D&D Beyond exported PDF first.");
+                  }
 
-                const formData = new FormData();
-                formData.set("characterPdfFile", characterPdfFile);
+                  const formData = new FormData();
+                  formData.set("characterPdfFile", characterPdfFile);
 
-                const response = await fetch("/api/dndbeyond/character-import", {
-                  body: formData,
-                  method: "POST",
-                });
-                const payload = (await response.json()) as {
-                  character?: Record<string, unknown>;
-                  error?: string;
-                };
+                  const response = await fetch("/api/dndbeyond/character-import", {
+                    body: formData,
+                    method: "POST",
+                  });
+                  const payload = (await response.json()) as {
+                    character?: Record<string, unknown>;
+                    error?: string;
+                  };
 
-                if (!response.ok || !payload.character) {
-                  throw new Error(
-                    payload.error ?? "The D&D Beyond PDF import could not be completed.",
+                  if (!response.ok || !payload.character) {
+                    throw new Error(
+                      payload.error ?? "The D&D Beyond PDF import could not be completed.",
+                    );
+                  }
+
+                  const nextValues = buildImportedInitialValues(payload.character);
+                  setImportedValues(nextValues);
+                  setFormKey((current) => current + 1);
+                  setStatusMessage(
+                    `Imported ${nextValues.name || "character details"} from a D&D Beyond PDF. Review the form below before saving.`,
+                  );
+                } catch (error) {
+                  setErrorMessage(
+                    error instanceof Error
+                      ? error.message
+                      : "The D&D Beyond PDF import could not be completed.",
                   );
                 }
-
-                const nextValues = buildImportedInitialValues(payload.character);
-                setImportedValues(nextValues);
-                setFormKey((current) => current + 1);
-                setStatusMessage(
-                  `Imported ${nextValues.name || "character details"} from a D&D Beyond PDF. Review the form below before saving.`,
-                );
-              } catch (error) {
-                setErrorMessage(
-                  error instanceof Error
-                    ? error.message
-                    : "The D&D Beyond PDF import could not be completed.",
-                );
-              }
-            });
-          }}
-        >
-          <div>
-            <h2 style={{ margin: 0 }}>Import Character from D&amp;D Beyond PDF</h2>
-            <ol className="muted" style={{ margin: "0.35rem 0 0", paddingLeft: "1.25rem" }}>
-              <li>Export your character sheet from DnDBeyond.com as a PDF</li>
-              <li>
-                Upload the exported PDF here
-              </li>
-              <li>
-                Review the character upload before saving (DnDBeyond is a less accurate uploading
-                process and will most likely be missing information that needs completion or
-                editing)
-              </li>
-            </ol>
-          </div>
-          <label>
-            D&amp;D Beyond exported PDF
-            <input
-              accept=".pdf,application/pdf"
-              onChange={(event) => setCharacterPdfFile(event.target.files?.[0] ?? null)}
-              type="file"
-            />
-          </label>
-          <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-            Importing again will replace any unsaved values currently in the form.
-          </p>
-          <button disabled={isPending} type="submit">
-            {isPending ? "Importing..." : "Import from D&D Beyond PDF"}
-          </button>
-        </form>
+              });
+            }}
+          >
+            <div>
+              <h2 style={{ margin: 0 }}>Import Character from D&amp;D Beyond PDF</h2>
+              <ol className="muted" style={{ margin: "0.35rem 0 0", paddingLeft: "1.25rem" }}>
+                <li>Export your character sheet from DnDBeyond.com as a PDF</li>
+                <li>
+                  Upload the exported PDF here
+                </li>
+                <li>
+                  Review the character upload before saving (DnDBeyond is a less accurate uploading
+                  process and will most likely be missing information that needs completion or
+                  editing)
+                </li>
+              </ol>
+            </div>
+            <label>
+              D&amp;D Beyond exported PDF
+              <input
+                accept=".pdf,application/pdf"
+                onChange={(event) => setCharacterPdfFile(event.target.files?.[0] ?? null)}
+                type="file"
+              />
+            </label>
+            <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+              Importing again will replace any unsaved values currently in the form.
+            </p>
+            <button disabled={isPending} type="submit">
+              {isPending ? "Importing..." : "Import from D&D Beyond PDF"}
+            </button>
+          </form>
+        </details>
       </div>
       {statusMessage ? <p role="status" style={{ margin: "1rem 0" }}>{statusMessage}</p> : null}
       <p className="muted character-import-manual-note">
         You can also create a Character Logsheet manually.
       </p>
+      <div aria-hidden="true" className="character-section-divider" />
       <img
         alt="Character import divider"
         className="homepage-roster-divider"
@@ -232,6 +243,7 @@ export function CharacterCreationWorkspace({
       <CharacterForm
         key={formKey}
         initialValues={importedValues}
+        submitLabel="Save Logsheet"
         legalBuildMagicItemOptions={legalBuildMagicItemOptions}
         legalUncommonMagicItemOptions={legalUncommonMagicItemOptions}
         legalCommonMagicItemOptions={legalCommonMagicItemOptions}

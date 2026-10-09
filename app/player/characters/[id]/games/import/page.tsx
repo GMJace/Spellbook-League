@@ -87,11 +87,11 @@ export default async function ImportPlayerGameLogsheetPage({
             Download template
           </Link>
           <Link className="button button-secondary" href={`/player/characters/${character.id}`}>
-            Back to character
+            Back
           </Link>
         </div>
 
-        <div className="list-card stack">
+        <div className="stack import-template-support-shell">
           <div className="section-heading">
             <h2 style={{ margin: 0 }}>What the template supports</h2>
           </div>
@@ -106,27 +106,27 @@ export default async function ImportPlayerGameLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            <div className="list-card stack">
+            <div className="list-card stack import-template-support-card">
               <h3 style={{ margin: 0 }}>Required game details</h3>
               <p className="muted" style={{ margin: 0 }}>
                 Date, Game Title, Adventure Code, DM, and Tier are required for each imported row.
               </p>
             </div>
-            <div className="list-card stack">
+            <div className="list-card stack import-template-support-card">
               <h3 style={{ margin: 0 }}>Magic reward blocks</h3>
               <p className="muted" style={{ margin: 0 }}>
                 The template supports Uncommon+ and Common magic item selections with counts-as,
                 item name, minor property, and flavor notes.
               </p>
             </div>
-            <div className="list-card stack">
+            <div className="list-card stack import-template-support-card">
               <h3 style={{ margin: 0 }}>Other rewards</h3>
               <p className="muted" style={{ margin: 0 }}>
                 Consumables, Spellbooks, spell rewards, Boons, Blessings, Charms, and extra notes
                 are all imported into the logged game.
               </p>
             </div>
-            <div className="list-card stack">
+            <div className="list-card stack import-template-support-card">
               <h3 style={{ margin: 0 }}>Extra row details</h3>
               <p className="muted" style={{ margin: 0 }}>
                 Downtime Days Awarded and Leveled Up are preserved in the session notes when they
@@ -136,7 +136,7 @@ export default async function ImportPlayerGameLogsheetPage({
           </div>
         </div>
 
-        <form action={importPlayerGameLogsheet} className="list-card form-stack">
+        <form action={importPlayerGameLogsheet} className="list-card form-stack import-logsheet-upload-card">
           <input name="characterId" type="hidden" value={character.id} />
 
           <label>

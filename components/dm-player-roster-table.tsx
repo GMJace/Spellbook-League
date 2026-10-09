@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { SearchIcon } from "@/components/search-icon";
-import { TableActionMenu } from "@/components/table-action-menu";
 import { formatClassSummary } from "@/lib/character";
 
 export type DmPlayerRosterRow = {
@@ -128,7 +127,7 @@ export function DmPlayerRosterTable({
               <th>Character</th>
               <th>Build</th>
               <th>Games</th>
-              <th>Record</th>
+              <th aria-label="View character"></th>
             </tr>
             <tr className="table-filter-row">
               <th>
@@ -197,14 +196,12 @@ export function DmPlayerRosterTable({
                   </td>
                   <td>{character.games}</td>
                   <td>
-                    <TableActionMenu>
-                      <Link
-                        className="button button-secondary button-small"
-                        href={`/player/characters/${character.id}`}
-                      >
-                        View record
-                      </Link>
-                    </TableActionMenu>
+                    <Link
+                      className="button button-secondary button-small"
+                      href={`/player/characters/${character.id}`}
+                    >
+                      View log
+                    </Link>
                   </td>
                 </tr>
               ))

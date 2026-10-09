@@ -330,7 +330,7 @@ export default async function CharacterTradingPostPage({
   }
 
   return (
-    <main className="page-shell character-workflow-page">
+    <main className="page-shell character-workflow-page trading-post-page">
       <section className="stack">
         {query.listing === "created" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>Mercane Mercantile listing added.</p>

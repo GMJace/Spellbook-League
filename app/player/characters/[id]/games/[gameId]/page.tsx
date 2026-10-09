@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { deletePlayerGameLog } from "@/app/player/characters/[id]/games/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { requireRole } from "@/lib/auth";
 import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { prisma } from "@/lib/prisma";
@@ -70,7 +72,7 @@ export default async function PlayerGameLogDetailPage({
     participant.logSessionNotes ?? participant.game.sessionNotes;
 
   return (
-    <main className="stack">
+    <main className="stack character-game-log-detail-page">
       <section className="panel stack">
         <div className="section-heading">
           <div>
@@ -90,6 +92,14 @@ export default async function PlayerGameLogDetailPage({
             <Link className="button" href={`/player/characters/${id}/games/${gameId}/edit`}>
               Edit log
             </Link>
+            <form action={deletePlayerGameLog.bind(null, id, gameId)} style={{ margin: 0 }}>
+              <ConfirmSubmitButton
+                className="button button-danger"
+                message="Delete this logged game? This cannot be undone."
+              >
+                Delete log
+              </ConfirmSubmitButton>
+            </form>
           </div>
         </div>
       </section>
@@ -108,31 +118,31 @@ export default async function PlayerGameLogDetailPage({
             }}
           >
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Game title</span>
+              <span className="muted character-game-log-detail-label">Game title:</span>
               <strong>{participant.game.title}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Adventure code</span>
+              <span className="muted character-game-log-detail-label">Adventure code:</span>
               <strong>{participant.game.adventureCode}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Date played</span>
+              <span className="muted character-game-log-detail-label">Date played:</span>
               <strong>{formatDate(participant.game.datePlayed)}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Tier</span>
+              <span className="muted character-game-log-detail-label">Tier:</span>
               <strong>{participant.game.tier.replaceAll("_", " ")}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Dungeon Master</span>
+              <span className="muted character-game-log-detail-label">Dungeon Master:</span>
               <strong>{formatOptionalText(participant.game.dmName)}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Downtime days awarded</span>
+              <span className="muted character-game-log-detail-label">Downtime days awarded:</span>
               <strong>{effectiveDowntimeDaysAwarded}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Source (DM&apos;s Guild link)</span>
+              <span className="muted character-game-log-detail-label">Source (DM&apos;s Guild link):</span>
               <strong style={{ wordBreak: "break-word" }}>
                 {formatOptionalText(participant.game.source)}
               </strong>
@@ -147,40 +157,40 @@ export default async function PlayerGameLogDetailPage({
 
           <div className="stack" style={{ gap: "1rem" }}>
             <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Rewards summary
+              <p className="muted character-game-log-detail-label" style={{ margin: 0 }}>
+                Rewards summary:
               </p>
               <p style={{ margin: "0.35rem 0 0", whiteSpace: "pre-wrap" }}>
                 {formatOptionalText(effectiveRewardsSummary)}
               </p>
             </div>
             <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Magic items awarded
+              <p className="muted character-game-log-detail-label" style={{ margin: 0 }}>
+                Magic items awarded:
               </p>
               <p style={{ margin: "0.35rem 0 0", whiteSpace: "pre-wrap" }}>
                 {formatOptionalText(effectiveMagicItemsAwarded)}
               </p>
             </div>
             <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Consumables awarded
+              <p className="muted character-game-log-detail-label" style={{ margin: 0 }}>
+                Consumables awarded:
               </p>
               <p style={{ margin: "0.35rem 0 0", whiteSpace: "pre-wrap" }}>
                 {formatOptionalText(effectiveConsumablesAwarded)}
               </p>
             </div>
             <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Spellbooks awarded
+              <p className="muted character-game-log-detail-label" style={{ margin: 0 }}>
+                Spellbooks awarded:
               </p>
               <p style={{ margin: "0.35rem 0 0", whiteSpace: "pre-wrap" }}>
                 {formatOptionalText(effectiveSpellbookAwarded)}
               </p>
             </div>
             <div>
-              <p className="muted" style={{ margin: 0 }}>
-                Session notes
+              <p className="muted character-game-log-detail-label" style={{ margin: 0 }}>
+                Session notes:
               </p>
               <p style={{ margin: "0.35rem 0 0", whiteSpace: "pre-wrap" }}>
                 {formatOptionalText(effectiveSessionNotes)}

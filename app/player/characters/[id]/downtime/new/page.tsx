@@ -75,7 +75,7 @@ export default async function NewCharacterDowntimePage({
           </p>
         ) : null}
 
-        <div className="list-card stack">
+        <div className="list-card stack downtime-rules-card">
           <h2 style={{ margin: 0 }}>Downtime rules</h2>
           <p className="muted" style={{ margin: 0 }}>
             Use Downtime Days to take part in activities requiring time to complete between or
@@ -105,7 +105,7 @@ export default async function NewCharacterDowntimePage({
           </div>
         </div>
 
-        <form action={createCharacterDowntimeEntry} className="list-card form-stack">
+        <form action={createCharacterDowntimeEntry} className="list-card form-stack downtime-entry-form">
           <input name="characterId" type="hidden" value={character.id} />
 
           <div

@@ -175,6 +175,8 @@ export function PlayerGameLogForm({
     return () => window.clearTimeout(timeoutId);
   }, [adventureCodeValue, metadataLocked]);
 
+  const isNoMatchMessage = autofillMessage === "No saved adventure matched that title or code yet.";
+
   return (
 <form action={formAction} className="form-stack player-game-log-form">
       <input name="characterId" type="hidden" value={characterId} />
@@ -298,7 +300,14 @@ export function PlayerGameLogForm({
           </label>
         </div>
       </div>
-      {autofillMessage ? <p className="muted" style={{ margin: 0 }}>{autofillMessage}</p> : null}
+      {autofillMessage ? (
+        <p
+          className={isNoMatchMessage ? "player-game-log-no-match-message" : "muted"}
+          style={{ margin: 0 }}
+        >
+          {autofillMessage}
+        </p>
+      ) : null}
 
 <div className="list-card form-grid">
         <div className="stack" style={fieldBlockStyle}>
@@ -343,7 +352,7 @@ export function PlayerGameLogForm({
         legalMinorPropertyOptions={legalMinorPropertyOptions}
       />
 
-<div className="list-card stack">
+<div className="list-card stack player-game-session-notes-card">
         <label>
           Session notes/Story Awards
         <BulletTextarea

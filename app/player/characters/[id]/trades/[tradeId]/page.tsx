@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  confirmCharacterTrade,
+  deleteCharacterTrade,
+} from "@/app/player/characters/[id]/trades/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -33,50 +38,50 @@ function renderTradeItemSummary({
   adventureCode: string;
 }) {
   return (
-    <div className="stack" style={{ gap: "0.35rem" }}>
+    <div className="stack character-trade-detail-summary" style={{ gap: "0.35rem" }}>
       <div>
-        <p className="muted" style={{ margin: 0 }}>
-          Item
+        <p className="muted character-trade-detail-label" style={{ margin: 0 }}>
+          Item:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>{itemName || item}</p>
       </div>
       <div>
-        <p className="muted" style={{ margin: 0 }}>
-          Counts as
+        <p className="muted character-trade-detail-label" style={{ margin: 0 }}>
+          Counts as:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>{item}</p>
       </div>
       <div>
-        <p className="muted" style={{ margin: 0 }}>
-          Minor Property
+        <p className="muted character-trade-detail-label" style={{ margin: 0 }}>
+          Minor Property:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>{formatOptionalText(minorProperty)}</p>
       </div>
       <div>
-        <p className="muted" style={{ margin: 0 }}>
-          Notes (Flavor)
+        <p className="muted character-trade-detail-label" style={{ margin: 0 }}>
+          Notes (Flavor):
         </p>
         <p style={{ margin: "0.2rem 0 0", whiteSpace: "pre-wrap" }}>
           {formatOptionalText(flavorNotes)}
         </p>
       </div>
       <div>
-        <p className="muted" style={{ margin: 0 }}>
-          Item received in adventure code
+        <p className="muted character-trade-detail-label" style={{ margin: 0 }}>
+          Item received in adventure code:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>{formatOptionalText(adventureCode)}</p>
       </div>
       <div>
-        <p className="muted" style={{ margin: 0 }}>
-          Special notes
+        <p className="muted character-trade-detail-label" style={{ margin: 0 }}>
+          Special notes:
         </p>
         <p style={{ margin: "0.2rem 0 0", whiteSpace: "pre-wrap" }}>
           {formatOptionalText(specialNotes)}
         </p>
       </div>
       <div>
-        <p className="muted" style={{ margin: 0 }}>
-          Downtime days spent
+        <p className="muted character-trade-detail-label" style={{ margin: 0 }}>
+          Downtime days spent:
         </p>
         <p style={{ margin: "0.2rem 0 0" }}>5</p>
       </div>
@@ -133,8 +138,11 @@ export default async function CharacterTradeDetailPage({
     notFound();
   }
 
+  const canConfirmTrade =
+    trade.status === "PENDING" && trade.recipientCharacterId === character.id;
+
   return (
-    <main className="stack">
+    <main className="stack character-trade-detail-page">
       <section className="panel stack">
         <div className="section-heading">
           <div>
@@ -151,6 +159,21 @@ export default async function CharacterTradeDetailPage({
             <Link className="button" href={`/player/characters/${character.id}/trades/${trade.id}/edit`}>
               Edit trade
             </Link>
+            <form action={deleteCharacterTrade.bind(null, character.id, trade.id)} style={{ margin: 0 }}>
+              <ConfirmSubmitButton
+                className="button button-danger"
+                message="Delete this trade? This cannot be undone."
+              >
+                Delete trade
+              </ConfirmSubmitButton>
+            </form>
+            {canConfirmTrade ? (
+              <form action={confirmCharacterTrade.bind(null, character.id, trade.id)} style={{ margin: 0 }}>
+                <button className="button button-secondary" type="submit">
+                  Confirm trade
+                </button>
+              </form>
+            ) : null}
           </div>
         </div>
       </section>
@@ -168,11 +191,11 @@ export default async function CharacterTradeDetailPage({
             }}
           >
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Date</span>
+              <span className="muted character-trade-detail-label">Date:</span>
               <strong>{formatDate(trade.createdAt)}</strong>
             </div>
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Status</span>
+              <span className="muted character-trade-detail-label">Status:</span>
               <strong>{trade.status === "CONFIRMED" ? "Confirmed" : "Pending"}</strong>
             </div>
           </div>
@@ -187,10 +210,10 @@ export default async function CharacterTradeDetailPage({
         >
           <div className="list-card stack">
             <h2 style={{ margin: 0 }}>Player 1</h2>
-            <p style={{ margin: 0 }}>
+            <p className="character-trade-detail-character-name" style={{ margin: 0 }}>
               <strong>{trade.proposerCharacterName}</strong>
             </p>
-            <p className="muted" style={{ margin: 0 }}>
+            <p className="muted character-trade-detail-player-name" style={{ margin: 0 }}>
               {trade.proposerPlayerName}
             </p>
             {renderTradeItemSummary({
@@ -205,10 +228,10 @@ export default async function CharacterTradeDetailPage({
 
           <div className="list-card stack">
             <h2 style={{ margin: 0 }}>Player 2</h2>
-            <p style={{ margin: 0 }}>
+            <p className="character-trade-detail-character-name" style={{ margin: 0 }}>
               <strong>{trade.recipientCharacterName}</strong>
             </p>
-            <p className="muted" style={{ margin: 0 }}>
+            <p className="muted character-trade-detail-player-name" style={{ margin: 0 }}>
               {trade.recipientPlayerName}
             </p>
             {renderTradeItemSummary({

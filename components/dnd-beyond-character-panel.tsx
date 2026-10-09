@@ -51,6 +51,15 @@ export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, 
     finally { setBusy(false); }
   }, [characterId, linkInput, router]);
   const items = imported?.inventory?.filter(item => `${item.name} ${item.originalName} ${item.type} ${item.container}`.toLowerCase().includes(query.toLowerCase())) ?? [];
+  const currencyEntries = imported
+    ? [
+        ["CP", imported.currencies.cp ?? 0],
+        ["SP", imported.currencies.sp ?? 0],
+        ["EP", imported.currencies.ep ?? 0],
+        ["GP", imported.currencies.gp ?? 0],
+        ["PP", imported.currencies.pp ?? 0],
+      ] as const
+    : [];
   return (
     <section className="list-card stack" aria-labelledby="dnd-beyond-heading">
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
@@ -71,7 +80,14 @@ export function DndBeyondCharacterPanel({ characterId, link, canEditLink, data, 
       {savedError ? <p className="muted">Last refresh error: {savedError}</p> : null}
       {imported?.warnings.map(warning => <p key={warning} className="muted" style={{ margin: 0 }}>{warning}</p>)}
       {imported ? <>
-        <p className="muted" style={{ margin: 0 }}>D&amp;D Beyond currency: {Object.entries(imported.currencies).map(([unit, amount]) => `${amount.toLocaleString("en-US")} ${unit.toUpperCase()}`).join(" · ") || "Not supplied"}.</p>
+        <div className="dnd-beyond-currency-grid" aria-label="D&D Beyond currency">
+          {currencyEntries.map(([unit, amount]) => (
+            <div className="dnd-beyond-currency-card" key={unit}>
+              <span>{unit}</span>
+              <strong>{amount.toLocaleString("en-US")}</strong>
+            </div>
+          ))}
+        </div>
         <div className="dnd-beyond-inventory-divider" aria-hidden="true" />
         <h3 style={{ margin: 0 }}>DnDBeyond Inventory</h3>
         <div className="stack" style={{ gap: "0.35rem" }}>

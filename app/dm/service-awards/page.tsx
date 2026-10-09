@@ -133,7 +133,7 @@ export default async function DmServiceAwardsPage({ searchParams }: PageProps) {
             <h1 style={{ margin: 0 }}>{user.name ?? "Dungeon Master"}</h1>
           </div>
           <Link className="button secondary" href="/dm">
-            Back to DM dashboard
+            Back
           </Link>
         </div>
         <p className="muted" style={{ margin: 0 }}>

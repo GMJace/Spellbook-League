@@ -858,7 +858,7 @@ export function CharacterForm({
   return (
     <form
       action={targetAction}
-      className="form-stack"
+      className="form-stack character-logsheet-form"
     >
       <input name="class1Name" type="hidden" value={class1Name} />
       <input name="class2Name" type="hidden" value={class2Name} />
@@ -925,12 +925,12 @@ export function CharacterForm({
       ))}
 
       <label className="character-magic-item-card">
-        Character name
+        Character name:
         <input name="name" type="text" required defaultValue={initialValues?.name ?? ""} />
       </label>
 
       <label className="character-magic-item-card">
-        Character sheet link
+        Character sheet link:
         <input
           name="characterSheetLink"
           aria-label="Character sheet link"
@@ -952,10 +952,9 @@ export function CharacterForm({
         <span>Make publicly viewable (Note: admin will still have access)</span>
       </label>
 
-      <div className="form-span-full stack character-magic-item-card" style={{ gap: "0.65rem" }}>
-        <div className="stack" style={{ gap: "0.2rem" }}>
-          <h3 style={{ margin: 0 }}>Vision</h3>
-        </div>
+      <div className="form-span-full stack" style={{ gap: "0.65rem" }}>
+        <div aria-hidden="true" className="character-section-divider" />
+        <h3 className="character-form-heading">Vision</h3>
         <div className="character-vision-grid">
           {VISION_FIELDS.map(({ key, label }) => (
             <div className="character-vision-card" key={key}>
@@ -988,6 +987,8 @@ export function CharacterForm({
           ))}
         </div>
       </div>
+
+      <div aria-hidden="true" className="character-section-divider" />
 
       <div className="form-grid">
         <label className="character-magic-item-card">
@@ -1032,6 +1033,8 @@ export function CharacterForm({
         </label>
       </div>
 
+      <div aria-hidden="true" className="character-section-divider" />
+
       <div className="form-stack character-magic-item-card" style={{ gap: "0.5rem" }}>
         <label>
           Player token
@@ -1074,12 +1077,13 @@ export function CharacterForm({
       </div>
 
       <div className="stack" style={{ gap: 0 }}>
+        <div aria-hidden="true" className="character-section-divider" />
         <img
           alt="Character build divider"
           className="ggcon-table-divider"
           src="/divider4.png"
         />
-        <h2 style={{ margin: 0 }}>Character Build</h2>
+        <h2 className="character-form-heading">Character Build</h2>
       </div>
 
       <div className="form-grid character-build-grid">
@@ -1231,9 +1235,24 @@ export function CharacterForm({
         </div>
       </div>
 
-      <div className="form-grid">
-        <label>
-          Total gold
+      <div aria-hidden="true" className="character-section-divider" />
+
+      <div className="character-summary-grid">
+        <h3 className="character-form-heading character-summary-heading">Total coin</h3>
+        <label className="character-magic-item-card character-coin-field">
+          Copper (cp):
+          <input name="copperPieces" type="number" min="0" defaultValue="0" />
+        </label>
+        <label className="character-magic-item-card character-coin-field">
+          Silver (sp):
+          <input name="silverPieces" type="number" min="0" defaultValue="0" />
+        </label>
+        <label className="character-magic-item-card character-coin-field">
+          Electrum (ep):
+          <input name="electrumPieces" type="number" min="0" defaultValue="0" />
+        </label>
+        <label className="character-magic-item-card character-coin-field">
+          Gold (gp):
           <input
             name="totalGold"
             type="number"
@@ -1242,8 +1261,12 @@ export function CharacterForm({
             defaultValue={initialValues?.totalGold ?? 0}
           />
         </label>
-        <div className="metric">
-          <div className="metric-label">Total level</div>
+        <label className="character-magic-item-card character-coin-field">
+          Platinum (pp):
+          <input name="platinumPieces" type="number" min="0" defaultValue="0" />
+        </label>
+        <div className="metric character-total-level-card">
+          <div className="metric-label">Total level:</div>
           <div className="metric-value">{totalLevel}</div>
           <div className="metric-label">
             Tier {tier} | Magic item slots: {magicItemLimit}
@@ -1255,8 +1278,8 @@ export function CharacterForm({
       </div>
 
       <div className="form-stack">
-        <div aria-hidden="true" style={whiteDividerStyle} />
-        <strong>Current build magic items (Uncommon+)</strong>
+        <div aria-hidden="true" className="character-section-divider" />
+        <strong className="character-form-heading">Current build magic items (Uncommon+)</strong>
         <div className="form-grid">
           {magicItems.map((item, index) => {
             const filteredMagicItemOptions = getFilteredOptions(
@@ -1270,7 +1293,7 @@ export function CharacterForm({
             <div className="stack character-magic-item-card" key={index} style={{ gap: "0.45rem" }}>
               <label>
                 Slot {index + 1}
-                {index < 3 ? " (attunement)" : ""} · Item (counts as)
+                {index < 3 ? " (attunement)" : ""} · Item (counts as):
                 <input
                   autoComplete="off"
                   list={magicItemListId}
@@ -1327,7 +1350,7 @@ export function CharacterForm({
               </label>
               {item && legalBuildMagicItemSet.has(item) ? (
                 <label>
-                  Name
+                  Name:
                   <input
 maxLength={160}
                     name="magicItemNames"
@@ -1344,7 +1367,7 @@ maxLength={160}
               ) : null}
               {item && legalBuildMagicItemSet.has(item) ? (
                 <label>
-                  Minor Property
+                  Minor Property:
                   <select
                     name="magicItemMinorProperties"
                     value={magicItemMinorProperties[index] ?? ""}
@@ -1365,7 +1388,7 @@ maxLength={160}
               ) : null}
               {item && legalBuildMagicItemSet.has(item) ? (
                 <label>
-                  Notes (Flavor)
+                  Notes (Flavor):
                   <input
                     maxLength={2000}
                     name="magicItemFlavors"
@@ -1390,8 +1413,8 @@ maxLength={160}
           })}
         </div>
 
-        <div aria-hidden="true" style={whiteDividerStyle} />
-        <strong>Common magic items</strong>
+        <div aria-hidden="true" className="character-section-divider" />
+        <strong className="character-form-heading">Common magic items</strong>
         <div className="form-grid">
           {commonMagicItems.map((item, index) => {
             const filteredCommonMagicItemOptions = getFilteredOptions(
@@ -1465,7 +1488,7 @@ maxLength={160}
               </label>
               {item ? (
                 <label>
-                  Name
+                  Name:
                   <input
                     maxLength={160}
                     name="commonMagicItemNames"
@@ -1482,7 +1505,7 @@ maxLength={160}
               ) : null}
               {item ? (
                 <label>
-                  Minor Property
+                  Minor Property:
                   <select
                     name="commonMagicItemMinorProperties"
                     value={commonMagicItemMinorProperties[index] ?? ""}
@@ -1503,7 +1526,7 @@ maxLength={160}
               ) : null}
               {item ? (
                 <label>
-                  Notes (Flavor)
+                  Notes (Flavor):
                   <input
                     maxLength={2000}
                     name="commonMagicItemFlavors"
@@ -1528,12 +1551,12 @@ maxLength={160}
           })}
         </div>
 
-        <div aria-hidden="true" style={whiteDividerStyle} />
-        <strong>Consumables</strong>
+        <div aria-hidden="true" className="character-section-divider" />
+        <strong className="character-form-heading">Consumables</strong>
         <div className="form-grid">
           {consumables.map((item, index) => (
             <label className="character-magic-item-card" key={`consumable-${index}`}>
-              Consumable Slot {index + 1}
+              Consumable Slot {index + 1}:
               <select
                 name="consumables"
                 value={item}
@@ -1554,8 +1577,8 @@ maxLength={160}
           ))}
         </div>
 
-        <div aria-hidden="true" style={whiteDividerStyle} />
-        <strong>Boons, blessings, and charms</strong>
+        <div aria-hidden="true" className="character-section-divider" />
+        <strong className="character-form-heading">Boons, blessings, and charms</strong>
         <div className="form-grid">
           {boonSlotEnabled ? (
             <label className="character-magic-item-card">
@@ -1586,7 +1609,7 @@ maxLength={160}
             <input name="boon" type="hidden" value="" />
           )}
           <label className="character-magic-item-card">
-            Blessing Slot
+            Blessing Slot:
             {legalBlessingOptions.length ? (
               <select
                 name="blessing"
@@ -1647,6 +1670,7 @@ maxLength={160}
       </div>
 
       <div className="stack" style={{ gap: 0 }}>
+        <div aria-hidden="true" className="character-section-divider" />
         <img
           alt="Character details divider"
           className="ggcon-table-divider"
@@ -1656,7 +1680,7 @@ maxLength={160}
 
       <div className="form-grid">
         <div className="skill-matrix form-span-full">
-          <p style={{ margin: 0 }}>Skills</p>
+          <p className="character-form-heading">Skills</p>
           <div className="skill-matrix-columns">
             {skillGroups.map((group, groupIndex) => (
               <div className="skill-matrix-group" key={`skill-group-${groupIndex + 1}`}>
@@ -1708,7 +1732,7 @@ maxLength={160}
         </div>
         <div className="tool-matrix form-span-full">
           <div aria-hidden="true" style={whiteDividerStyle} />
-          <p style={{ margin: 0 }}>Tools</p>
+          <p className="character-form-heading">Tools</p>
           <div className="tool-matrix-grid">
             {toolGroups.map((group) => (
               <div className="tool-matrix-group" key={group.title}>
@@ -1736,7 +1760,7 @@ maxLength={160}
         <label className="form-span-full">
           <div className="language-matrix">
             <div aria-hidden="true" style={whiteDividerStyle} />
-            <p style={{ margin: 0 }}>Languages</p>
+            <p className="character-form-heading">Languages</p>
             <div className="language-matrix-grid">
               {languageGroups.map((group) => (
                 <div className="language-matrix-group" key={group.title}>
@@ -1780,7 +1804,7 @@ maxLength={160}
         </label>
         <div className="feat-matrix form-span-full">
           <div aria-hidden="true" style={whiteDividerStyle} />
-          <p style={{ margin: 0 }}>Feats</p>
+          <p className="character-form-heading">Feats</p>
           <div className="feat-matrix-grid">
             {featGroups.map((group) => (
               <div className="feat-matrix-group" key={group.title}>
@@ -1806,7 +1830,7 @@ maxLength={160}
         </div>
         <label className="form-span-full">
           <div aria-hidden="true" style={whiteDividerStyle} />
-          Character backstory
+          <span className="character-form-heading">Character backstory</span>
           <textarea
             name="backstory"
             onChange={(event) => setBackstory(event.target.value)}
@@ -1821,7 +1845,7 @@ maxLength={160}
         </label>
         <label className="form-span-full">
           <div aria-hidden="true" style={whiteDividerStyle} />
-          Notes
+          <span className="character-form-heading">Notes</span>
           <textarea
             name="notes"
             onChange={(event) => setNotes(event.target.value)}

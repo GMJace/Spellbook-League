@@ -7,11 +7,6 @@ import {
   deleteCharacter,
 } from "@/app/player/characters/[id]/actions";
 import { deleteCharacterDowntimeEntry } from "@/app/player/characters/[id]/downtime/actions";
-import { deletePlayerGameLog } from "@/app/player/characters/[id]/games/actions";
-import {
-  confirmCharacterTrade,
-  deleteCharacterTrade,
-} from "@/app/player/characters/[id]/trades/actions";
 import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { DndBeyondCharacterPanel } from "@/components/dnd-beyond-character-panel";
 import { isDndBeyondLink, type DndBeyondCharacterImport } from "@/lib/dnd-beyond-character-import";
@@ -145,10 +140,10 @@ function getMagicItemDetailLines(item: {
   flavor: string;
 }) {
   return [
-    { label: "Item (counts as)", value: item.value },
-    { label: "Name", value: item.name || "Not added" },
-    { label: "Minor Property", value: item.minorProperty || "Not added" },
-    { label: "Notes (Flavor)", value: item.flavor || "Not added" },
+    { label: "Item (counts as):", value: item.value },
+    { label: "Name:", value: item.name || "Not added" },
+    { label: "Minor Property:", value: item.minorProperty || "Not added" },
+    { label: "Notes (Flavor):", value: item.flavor || "Not added" },
   ];
 }
 
@@ -639,16 +634,8 @@ export default async function CharacterLogsheetPage({
               marginLeft: "auto",
             }}
           >
-            <Link className="button button-secondary" href={backHref}>
-              Back
-            </Link>
             {isOwner ? (
-              <TableActionMenu
-                label="Character actions"
-                panelStyle={{ minWidth: "14rem" }}
-                summaryClassName="button-secondary"
-                summarySmall={false}
-              >
+              <>
                 <CopyMusterInfoButton
                   className="button button-secondary button-small"
                   text={musterText}
@@ -694,7 +681,7 @@ export default async function CharacterLogsheetPage({
                     rel="noreferrer"
                     target="_blank"
                   >
-                    Character link
+                    D&amp;D Beyond Sheet
                   </a>
                 ) : null}
                 <Link
@@ -703,7 +690,7 @@ export default async function CharacterLogsheetPage({
                 >
                   Edit Character
                 </Link>
-                <form action={deleteCharacter.bind(null, character.id)}>
+                <form action={deleteCharacter.bind(null, character.id)} style={{ margin: 0 }}>
                   <ConfirmSubmitButton
                     className="button button-danger button-small"
                     message="Delete this character? This cannot be undone."
@@ -711,8 +698,11 @@ export default async function CharacterLogsheetPage({
                     Delete character
                   </ConfirmSubmitButton>
                 </form>
-              </TableActionMenu>
+              </>
             ) : null}
+            <Link className="button button-secondary" href={backHref}>
+              Back
+            </Link>
           </div>
         </div>
 
@@ -806,7 +796,7 @@ export default async function CharacterLogsheetPage({
 
               <div className="character-record-column">
                 <div className="character-record-row">
-                  <p className="muted" style={sectionItemHeaderStyle}>Gold</p>
+                  <p className="muted" style={sectionItemHeaderStyle}>Total Coin</p>
                   <p style={{ margin: "0.35rem 0 0" }}>
                     {dndBeyond?.currencies?.gp != null
                       ? `${dndBeyond.currencies.gp.toLocaleString()} GP`
@@ -905,13 +895,13 @@ export default async function CharacterLogsheetPage({
           >
             {visibleMagicItems.length ? (
               visibleMagicItems.map((item, index) => (
-                <div key={`${character.id}-item-${index}`} style={detailCardStyle}>
+                <div className="character-detail-card" key={`${character.id}-item-${index}`} style={detailCardStyle}>
                   <p className="muted" style={sectionItemHeaderStyle}>
                     {item.label}
                   </p>
                   {getMagicItemDetailLines(item).map((detail) => (
                     <div key={`${item.label}-${detail.label}`} className="stack" style={{ gap: "0.2rem" }}>
-                      <p className="muted" style={{ margin: 0 }}>
+                      <p className="muted character-magic-item-detail-label" style={{ margin: 0 }}>
                         {detail.label}
                       </p>
                       <p style={{ margin: 0 }}>{detail.value}</p>
@@ -948,13 +938,13 @@ export default async function CharacterLogsheetPage({
           >
             {visibleCommonMagicItems.length ? (
               visibleCommonMagicItems.map((item, index) => (
-                <div key={`${character.id}-common-item-${index}`} style={detailCardStyle}>
+                <div className="character-detail-card" key={`${character.id}-common-item-${index}`} style={detailCardStyle}>
                   <p className="muted" style={sectionItemHeaderStyle}>
                     {item.label}
                   </p>
                   {getMagicItemDetailLines(item).map((detail) => (
                     <div key={`${item.label}-${detail.label}`} className="stack" style={{ gap: "0.2rem" }}>
-                      <p className="muted" style={{ margin: 0 }}>
+                      <p className="muted character-magic-item-detail-label" style={{ margin: 0 }}>
                         {detail.label}
                       </p>
                       <p style={{ margin: 0 }}>{detail.value}</p>
@@ -990,7 +980,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleConsumables.map((item, index) => (
-              <div key={`${character.id}-consumable-${index}`} style={detailCardStyle}>
+              <div className="character-detail-card" key={`${character.id}-consumable-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1020,7 +1010,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleBoon ? (
-              <div style={detailCardStyle}>
+              <div className="character-detail-card" style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Boon Slot
                 </p>
@@ -1028,7 +1018,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleBlessing ? (
-              <div style={detailCardStyle}>
+              <div className="character-detail-card" style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Blessing Slot
                 </p>
@@ -1036,7 +1026,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleCharms.map((item, index) => (
-              <div key={`${character.id}-charm-${index}`} style={detailCardStyle}>
+              <div className="character-detail-card" key={`${character.id}-charm-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1063,7 +1053,7 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            <div style={detailCardStyle}>
+            <div className="character-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Feats
               </p>
@@ -1071,7 +1061,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(visibleFeats.join("\n"))}
               </p>
             </div>
-            <div style={detailCardStyle}>
+            <div className="character-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Skills
               </p>
@@ -1080,7 +1070,7 @@ export default async function CharacterLogsheetPage({
               </p>
               {dndBeyond?.customSkills?.map(skill => <p key={skill.name} style={{ margin: "0.35rem 0 0" }}>{skill.name} ({skill.rank})</p>)}
             </div>
-            <div style={detailCardStyle}>
+            <div className="character-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Tools
               </p>
@@ -1088,7 +1078,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(dndBeyond?.toolNames?.join("\n") ?? formatToolSelections(character.tools))}
               </p>
             </div>
-            <div style={detailCardStyle}>
+            <div className="character-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Languages
               </p>
@@ -1096,7 +1086,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(dndBeyond?.languageNames?.join("\n") ?? formatLanguageSelections(character.languages))}
               </p>
             </div>
-            <div style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
+            <div className="character-detail-card" style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Character backstory
               </p>
@@ -1104,7 +1094,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(character.backstory)}
               </p>
             </div>
-            <div style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
+            <div className="character-detail-card" style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Notes
               </p>
@@ -1147,14 +1137,10 @@ export default async function CharacterLogsheetPage({
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Status</th>
                   <th>Trade partner</th>
                   <th>You send</th>
-                  <th>You send (code)</th>
                   <th>You receive</th>
-                  <th>You receive (code)</th>
-                  <th>Downtime</th>
-                  {isOwner ? <th>Action</th> : null}
+                  {isOwner ? <th aria-label="View trade"></th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -1200,15 +1186,9 @@ export default async function CharacterLogsheetPage({
                         ? trade.recipientSpecialNotes
                         : trade.proposerSpecialNotes,
                     });
-                    const canConfirmTrade =
-                      isOwner &&
-                      trade.status === "PENDING" &&
-                      trade.recipientCharacterId === character.id;
-
                     return (
                       <tr key={trade.id}>
                         <td>{formatDate(trade.createdAt)}</td>
-                        <td>{trade.status === "CONFIRMED" ? "Confirmed" : "Pending"}</td>
                         <td>
                           <div>{counterpartyCharacterName || counterpartyCharacter?.name || "Unknown character"}</div>
                           <div className="muted">
@@ -1221,54 +1201,18 @@ export default async function CharacterLogsheetPage({
                           ))}
                         </td>
                         <td>
-                          {isTradeProposer
-                            ? trade.proposerAdventureCode || "Not added"
-                            : trade.recipientAdventureCode || "Not added"}
-                        </td>
-                        <td>
                           {receivedItemLines.map((line) => (
                             <div key={`${trade.id}-receive-${line}`}>{line}</div>
                           ))}
                         </td>
-                        <td>
-                          {isTradeProposer
-                            ? trade.recipientAdventureCode || "Not added"
-                            : trade.proposerAdventureCode || "Not added"}
-                        </td>
-                        <td>
-                          {TRADE_DOWNTIME_DAYS}
-                        </td>
                         {isOwner ? (
                           <td>
-                            <TableActionMenu>
-                              <Link
-                                className="button button-secondary button-small"
-                                href={`/player/characters/${character.id}/trades/${trade.id}`}
-                              >
-                                View trade
-                              </Link>
-                              <Link
-                                className="button button-secondary button-small"
-                                href={`/player/characters/${character.id}/trades/${trade.id}/edit`}
-                              >
-                                Edit trade
-                              </Link>
-                              <form action={deleteCharacterTrade.bind(null, character.id, trade.id)}>
-                                <ConfirmSubmitButton
-                                  className="button button-danger button-small"
-                                  message="Delete this trade? This cannot be undone."
-                                >
-                                  Delete trade
-                                </ConfirmSubmitButton>
-                              </form>
-                              {canConfirmTrade ? (
-                                <form action={confirmCharacterTrade.bind(null, character.id, trade.id)}>
-                                  <button className="button button-secondary button-small" type="submit">
-                                    Confirm trade
-                                  </button>
-                                </form>
-                              ) : null}
-                            </TableActionMenu>
+                            <Link
+                              className="button button-secondary button-small"
+                              href={`/player/characters/${character.id}/trades/${trade.id}`}
+                            >
+                              View
+                            </Link>
                           </td>
                         ) : null}
                       </tr>
@@ -1276,17 +1220,13 @@ export default async function CharacterLogsheetPage({
                   })
                 ) : (
                   <tr>
-                    <td className="muted" colSpan={isOwner ? 9 : 8}>
+                    <td className="muted" colSpan={isOwner ? 5 : 4}>
                       No trades logged yet.
                     </td>
                   </tr>
                 )}
                 {Array.from({ length: tradeLogPlaceholderCount }, (_, index) => (
                   <tr key={`trade-placeholder-${index}`}>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
@@ -1343,7 +1283,7 @@ export default async function CharacterLogsheetPage({
                   <th>DT spent</th>
                   <th>Related code</th>
                   <th>Notes</th>
-                  {isOwner ? <th>Actions</th> : null}
+                  {isOwner ? <th aria-label="View adventure log"></th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -1423,7 +1363,7 @@ export default async function CharacterLogsheetPage({
                   <th>Title</th>
                   <th>DM</th>
                   <th>Tier</th>
-                  {isOwner ? <th>Actions</th> : null}
+                  {isOwner ? <th aria-label="View adventure log"></th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -1437,34 +1377,12 @@ export default async function CharacterLogsheetPage({
                       <td>{participant.game.tier.replaceAll("_", " ")}</td>
                       {isOwner ? (
                         <td>
-                          <TableActionMenu>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/player/characters/${character.id}/games/${participant.game.id}`}
-                            >
-                              View log
-                            </Link>
-                            <Link
-                              className="button button-secondary button-small"
-                              href={`/player/characters/${character.id}/games/${participant.game.id}/edit`}
-                            >
-                              Edit log
-                            </Link>
-                            <form
-                              action={deletePlayerGameLog.bind(
-                                null,
-                                character.id,
-                                participant.game.id,
-                              )}
-                            >
-                              <ConfirmSubmitButton
-                                className="button button-danger button-small"
-                                message="Delete this logged game? This cannot be undone."
-                              >
-                                Delete log
-                              </ConfirmSubmitButton>
-                            </form>
-                          </TableActionMenu>
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/player/characters/${character.id}/games/${participant.game.id}`}
+                          >
+                            View
+                          </Link>
                         </td>
                       ) : null}
                     </tr>
@@ -1518,7 +1436,7 @@ export default async function CharacterLogsheetPage({
                     <th>Title</th>
                     <th>DM</th>
                     <th>Tier</th>
-                    <th>Actions</th>
+                    <th aria-label="View scheduled game"></th>
                   </tr>
                 </thead>
                 <tbody>
