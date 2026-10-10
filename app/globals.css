@@ -27,6 +27,30 @@
   --font-roboto: var(--font-comic-body);
 }
 
+:root[data-theme="dark"] {
+  background: #000000;
+  filter: invert(1);
+}
+
+:root[data-theme="dark"] img,
+:root[data-theme="dark"] picture,
+:root[data-theme="dark"] video,
+:root[data-theme="dark"] canvas,
+:root[data-theme="dark"] body h1,
+:root[data-theme="dark"] body h2,
+:root[data-theme="dark"] body h3,
+:root[data-theme="dark"] body .eyebrow,
+:root[data-theme="dark"] body .homepage-tv-heading,
+:root[data-theme="dark"] body .homepage-magic-heading h1,
+:root[data-theme="dark"] body .homepage-intro-bubble-popout,
+:root[data-theme="dark"] body .store-grimoire-card-title,
+:root[data-theme="dark"] body .ggcon-ticket-title,
+:root[data-theme="dark"] body .ggcon-flying-carpet-title,
+:root[data-theme="dark"] body .ggcon-flying-carpet-benefit-title,
+:root[data-theme="dark"] body .grimoire-gathering-text {
+  filter: invert(1);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -611,13 +635,13 @@ button.button-small {
   top: calc(100% + 0.55rem);
   right: 0;
   min-width: 220px;
-  padding: 0.5rem;
+  padding: 0.65rem;
   border-radius: 18px;
   border: 1px solid var(--line);
   background: #000000;
   box-shadow: var(--shadow);
   display: grid;
-  gap: 0.25rem;
+  gap: 0.55rem;
   z-index: 30;
 }
 

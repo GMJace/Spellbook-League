@@ -4,6 +4,22 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 
+type ThemePreference = "light" | "dark";
+
+const THEME_STORAGE_KEY = "spellbook-theme";
+
+function applyTheme(theme: ThemePreference) {
+  document.documentElement.dataset.theme = theme;
+}
+
+function getStoredTheme(): ThemePreference {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
+  return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
+}
+
 export function SettingsMenu({
   adminHref = "/admin/users",
   showEventAdminLink = false,
@@ -18,7 +34,14 @@ export function SettingsMenu({
   showAdminLink?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemePreference>("light");
   const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const storedTheme = getStoredTheme();
+    setTheme(storedTheme);
+    applyTheme(storedTheme);
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -33,6 +56,13 @@ export function SettingsMenu({
       window.removeEventListener("mousedown", handlePointerDown);
     };
   }, []);
+
+  function toggleTheme() {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    applyTheme(nextTheme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  }
 
   return (
     <div className="settings-menu" ref={rootRef}>
@@ -100,6 +130,9 @@ export function SettingsMenu({
           <Link href="/faq" className="settings-item" onClick={() => setOpen(false)}>
             FAQ/Contact
           </Link>
+          <button type="button" className="settings-item" onClick={toggleTheme}>
+            Theme : {theme === "dark" ? "Dark" : "Light"}
+          </button>
           <button
             type="button"
             className="settings-item settings-logout"
