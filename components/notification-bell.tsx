@@ -107,12 +107,7 @@ export function NotificationBell({
               onClick={() => setOpen(false)}
               type="button"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path
-                  d="m6.4 5 12.6 12.6-1.4 1.4L5 6.4 6.4 5Zm11.2 0L19 6.4 6.4 19 5 17.6 17.6 5Z"
-                  fill="currentColor"
-                />
-              </svg>
+              x
             </button>
           </div>
 

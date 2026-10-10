@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { auth } from "@/auth";
-import { NotificationBell } from "@/components/notification-bell";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
-import { SiteRoleLinks } from "@/components/site-role-links";
-import { SettingsMenu } from "@/components/settings-menu";
+import { SiteHeader } from "@/components/site-header";
 import { isAdminEmail } from "@/lib/admin-access";
 import { getUnreadNotificationCount, getUserNotifications } from "@/lib/notifications";
 import "./globals.css";
@@ -84,67 +81,17 @@ export default async function RootLayout({
     <html lang="en">
       <body>
         <div className="page-shell">
-          <header className="site-header">
-            <div className="site-nav">
-              <Link href="/" className="brand">
-                <img
-                  alt="SPELLBOOK"
-                  className="brand-logo"
-                  height="60"
-                  src="/Spellbook-Logo.png"
-                  width="300"
-                />
-                <span className="sr-only">SPELLBOOK</span>
-              </Link>
-              {user ? (
-                <span className="muted site-welcome">
-                  Welcome {user.name ?? user.email}
-                </span>
-              ) : null}
-              <SiteRoleLinks
-                hasDmRole={Boolean(user?.roles.includes("DM"))}
-                hasPlayerRole={Boolean(user?.roles.includes("PLAYER"))}
-              />
-            </div>
-            <div className="site-actions">
-              {user ? (
-                <>
-                  <NotificationBell
-                    notifications={notifications}
-                    unreadCount={unreadNotificationCount}
-                  />
-                  <SettingsMenu
-                    showEventAdminLink={user.roles.includes("EVENT_ADMIN")}
-                    showLeagueAdminLink={isLeagueAdmin}
-                    userName={user.name ?? user.email ?? "Account"}
-                    showAdminLink={isFullAdmin}
-                    adminHref={isFullAdmin ? "/admin/users" : "/admin/league-choices"}
-                  />
-                  <Link
-                    className="game-signups-button site-store-button"
-                    href="/store"
-                  >
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="site-store-button-icon"
-                      src="/grim-book.png"
-                    />
-                    STORE
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" className="button secondary">
-                    Login
-                  </Link>
-                  <Link href="/register" className="button">
-                    Register
-                  </Link>
-                </>
-              )}
-            </div>
-          </header>
+          <SiteHeader
+            adminHref={isFullAdmin ? "/admin/users" : "/admin/league-choices"}
+            hasDmRole={Boolean(user?.roles.includes("DM"))}
+            hasPlayerRole={Boolean(user?.roles.includes("PLAYER"))}
+            isFullAdmin={isFullAdmin}
+            isLeagueAdmin={isLeagueAdmin}
+            notifications={notifications}
+            showEventAdminLink={Boolean(user?.roles.includes("EVENT_ADMIN"))}
+            unreadNotificationCount={unreadNotificationCount}
+            userName={user ? user.name ?? user.email ?? "Account" : null}
+          />
           <main className="site-main">{children}</main>
           <footer className="site-footer" aria-label="Site disclaimer">
             <div className="social-links" aria-label="SPELLBOOK social media links">
