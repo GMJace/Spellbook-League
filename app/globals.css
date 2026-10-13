@@ -3497,6 +3497,10 @@ textarea {
   line-height: 1.7;
 }
 
+.store-page p .grimoire-gathering-text {
+  font-size: calc(1em + 5pt);
+}
+
 .store-feature-grid {
   align-items: start;
 }
@@ -5087,6 +5091,9 @@ body a.button.ggcon-flying-carpet-button {
 }
 
 :root[data-theme="dark"] body a.button.ggcon-flying-carpet-button {
+  background:
+    url("/speech-bubble-dark.png") calc(50% - 3px) center / 100% 100% no-repeat,
+    transparent !important;
   text-shadow: none;
   -webkit-text-stroke: 0;
   paint-order: normal;
@@ -5095,6 +5102,31 @@ body a.button.ggcon-flying-carpet-button {
 :root[data-theme="dark"] body .grimoire-gathering-text,
 :root[data-theme="dark"] body .ggcon-page :is(h1, h2, h3, .ggcon-ticket-title, .ggcon-flying-carpet-title, .ggcon-flying-carpet-benefit-title),
 :root[data-theme="dark"] body :is(.store-grimoire-card-title) {
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
+:root[data-theme="dark"] body :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .section-heading,
+  .section-heading *,
+  .homepage-tv-heading,
+  .homepage-magic-heading h1,
+  .site-welcome,
+  .store-grimoire-card-title,
+  .ggcon-ticket-title,
+  .ggcon-flying-carpet-title,
+  .ggcon-flying-carpet-benefit-title,
+  .character-form-heading,
+  .game-reward-section-heading,
+  .dm-game-section-heading h2
+) {
   text-shadow: none !important;
   -webkit-text-stroke: 0 !important;
   paint-order: normal;
