@@ -95,9 +95,9 @@ export default async function NewCharacterPage({
               Download character import template
             </Link>
             <label>
-              Completed character logsheet spreadsheet
+              Completed character logsheet CSV
               <input
-                accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                accept=".csv,text/csv"
                 name="characterLogsheetFile"
                 required
                 type="file"

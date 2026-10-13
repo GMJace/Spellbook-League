@@ -140,9 +140,9 @@ export default async function ImportPlayerGameLogsheetPage({
           <input name="characterId" type="hidden" value={character.id} />
 
           <label>
-            Completed logsheet spreadsheet
+            Completed logsheet CSV
             <input
-              accept=".csv,text/csv,.xls,application/vnd.ms-excel,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              accept=".csv,text/csv"
               name="logsheetFile"
               required
               type="file"
@@ -150,7 +150,7 @@ export default async function ImportPlayerGameLogsheetPage({
           </label>
 
           <p className="muted" style={{ margin: 0 }}>
-            Tip: spreadsheet line breaks inside a single cell are preserved, so notes and reward
+            Tip: CSV line breaks inside a single cell are preserved, so notes and reward
             lists can stay grouped on one row.
           </p>
 

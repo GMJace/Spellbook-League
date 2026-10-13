@@ -548,10 +548,10 @@ export async function importCharacterLogsheet(formData: FormData) {
 
   const lowerFileName = file.name.toLowerCase();
 
-  if (!lowerFileName.endsWith(".csv") && !lowerFileName.endsWith(".xlsx")) {
+  if (!lowerFileName.endsWith(".csv")) {
     redirectWithCharacterError(
       "/player/characters/new",
-      "Please upload the completed CSV or XLSX character template.",
+      "Please upload the completed CSV character template.",
       "import",
     );
   }
