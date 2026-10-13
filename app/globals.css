@@ -28,27 +28,17 @@
 }
 
 :root[data-theme="dark"] {
-  background: #000000;
-  filter: invert(1);
-}
-
-:root[data-theme="dark"] img,
-:root[data-theme="dark"] picture,
-:root[data-theme="dark"] video,
-:root[data-theme="dark"] canvas,
-:root[data-theme="dark"] body h1,
-:root[data-theme="dark"] body h2,
-:root[data-theme="dark"] body h3,
-:root[data-theme="dark"] body .eyebrow,
-:root[data-theme="dark"] body .homepage-tv-heading,
-:root[data-theme="dark"] body .homepage-magic-heading h1,
-:root[data-theme="dark"] body .homepage-intro-bubble-popout,
-:root[data-theme="dark"] body .store-grimoire-card-title,
-:root[data-theme="dark"] body .ggcon-ticket-title,
-:root[data-theme="dark"] body .ggcon-flying-carpet-title,
-:root[data-theme="dark"] body .ggcon-flying-carpet-benefit-title,
-:root[data-theme="dark"] body .grimoire-gathering-text {
-  filter: invert(1);
+  --bg: #000000;
+  --surface: #000000;
+  --surface-strong: #000000;
+  --text: #ffffff;
+  --muted: #ffffff;
+  --line: #ffffff;
+  --comic-ink: #ffffff;
+  --comic-paper: #000000;
+  --shadow: 12px 12px 0 #ffffff;
+  --soft-shadow: 6px 6px 0 #ffffff;
+  color-scheme: dark;
 }
 
 * {
@@ -3128,7 +3118,7 @@ label {
   .language-matrix-group,
   .feat-matrix-group
 ) {
-  background: #ffffff !important;
+  background: var(--comic-paper) !important;
 }
 
 .character-logsheet-form :is(
@@ -5188,8 +5178,8 @@ body :is(
   .ggcon-calendar-locked,
   .character-import-card
 ) {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
+  background: var(--comic-paper) !important;
+  background-color: var(--comic-paper) !important;
   background-image: none !important;
 }
 
@@ -5203,7 +5193,7 @@ body :is(
   .character-record-token-image,
   .character-record-token-placeholder
 ) {
-  border-color: #000000 !important;
+  border-color: var(--comic-ink) !important;
 }
 
 body .character-logsheet-form .character-form-heading {
