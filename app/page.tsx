@@ -9,6 +9,25 @@ import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
 import { getHomepageData } from "@/lib/data";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 
+function AdventurersLeagueLogo() {
+  return (
+    <span className="handbook-link-logo-swap" role="img" aria-label="Adventurers League logo">
+      <img
+        alt=""
+        aria-hidden="true"
+        className="handbook-link-logo handbook-link-logo-light"
+        src="/al-logo-black.png"
+      />
+      <img
+        alt=""
+        aria-hidden="true"
+        className="handbook-link-logo handbook-link-logo-dark"
+        src="/al-logo-white.png"
+      />
+    </span>
+  );
+}
+
 export default async function HomePage() {
   const discordIframeProps = {
     allowtransparency: "true",
@@ -160,11 +179,7 @@ export default async function HomePage() {
             rel="noreferrer"
             target="_blank"
           >
-            <img
-              alt="Adventurers League logo"
-              className="handbook-link-logo"
-              src="/al-logo-black.png"
-            />
+            <AdventurersLeagueLogo />
             <strong>Player&apos;s Guide</strong>
           </a>
           <a
@@ -174,11 +189,7 @@ export default async function HomePage() {
             rel="noreferrer"
             target="_blank"
           >
-            <img
-              alt="Adventurers League logo"
-              className="handbook-link-logo"
-              src="/al-logo-black.png"
-            />
+            <AdventurersLeagueLogo />
             <strong>DM&apos;s Guide</strong>
           </a>
           <a
@@ -188,11 +199,7 @@ export default async function HomePage() {
             rel="noreferrer"
             target="_blank"
           >
-            <img
-              alt="Adventurers League logo"
-              className="handbook-link-logo"
-              src="/al-logo-black.png"
-            />
+            <AdventurersLeagueLogo />
             <strong>DM Service Awards</strong>
           </a>
         </div>
@@ -204,11 +211,7 @@ export default async function HomePage() {
             rel="noreferrer"
             target="_blank"
           >
-            <img
-              alt="Adventurers League logo"
-              className="handbook-link-logo"
-              src="/al-logo-black.png"
-            />
+            <AdventurersLeagueLogo />
             <strong>Adaptation Guide</strong>
           </a>
           <a
@@ -218,11 +221,7 @@ export default async function HomePage() {
             rel="noreferrer"
             target="_blank"
           >
-            <img
-              alt="Adventurers League logo"
-              className="handbook-link-logo"
-              src="/al-logo-black.png"
-            />
+            <AdventurersLeagueLogo />
             <strong>Organizer&apos;s Guide</strong>
           </a>
           <a
@@ -232,11 +231,7 @@ export default async function HomePage() {
             rel="noreferrer"
             target="_blank"
           >
-            <img
-              alt="Adventurers League logo"
-              className="handbook-link-logo"
-              src="/al-logo-black.png"
-            />
+            <AdventurersLeagueLogo />
             <strong>Dungeoncraft</strong>
           </a>
         </div>

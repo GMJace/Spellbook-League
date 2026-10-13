@@ -880,7 +880,7 @@ export default async function CharacterLogsheetPage({
             }}
           />
 
-          <h2 style={{ margin: 0 }}>AL Legal Carried Magic Items</h2>
+          <h2 style={{ margin: 0 }}>Legal Magic</h2>
 
           <div className="section-heading">
             <h3 style={{ margin: 0 }}>Uncommon+ Magic Items</h3>
@@ -895,7 +895,11 @@ export default async function CharacterLogsheetPage({
           >
             {visibleMagicItems.length ? (
               visibleMagicItems.map((item, index) => (
-                <div className="character-detail-card" key={`${character.id}-item-${index}`} style={detailCardStyle}>
+                <div
+                  className="character-detail-card character-magic-item-detail-card"
+                  key={`${character.id}-item-${index}`}
+                  style={detailCardStyle}
+                >
                   <p className="muted" style={sectionItemHeaderStyle}>
                     {item.label}
                   </p>
@@ -938,7 +942,11 @@ export default async function CharacterLogsheetPage({
           >
             {visibleCommonMagicItems.length ? (
               visibleCommonMagicItems.map((item, index) => (
-                <div className="character-detail-card" key={`${character.id}-common-item-${index}`} style={detailCardStyle}>
+                <div
+                  className="character-detail-card character-magic-item-detail-card"
+                  key={`${character.id}-common-item-${index}`}
+                  style={detailCardStyle}
+                >
                   <p className="muted" style={sectionItemHeaderStyle}>
                     {item.label}
                   </p>
@@ -980,7 +988,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleConsumables.map((item, index) => (
-              <div className="character-detail-card" key={`${character.id}-consumable-${index}`} style={detailCardStyle}>
+              <div className="character-detail-card character-dark-detail-card" key={`${character.id}-consumable-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1010,7 +1018,7 @@ export default async function CharacterLogsheetPage({
             }}
           >
             {visibleBoon ? (
-              <div className="character-detail-card" style={detailCardStyle}>
+              <div className="character-detail-card character-dark-detail-card" style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Boon Slot
                 </p>
@@ -1018,7 +1026,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleBlessing ? (
-              <div className="character-detail-card" style={detailCardStyle}>
+              <div className="character-detail-card character-dark-detail-card" style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   Blessing Slot
                 </p>
@@ -1026,7 +1034,7 @@ export default async function CharacterLogsheetPage({
               </div>
             ) : null}
             {visibleCharms.map((item, index) => (
-              <div className="character-detail-card" key={`${character.id}-charm-${index}`} style={detailCardStyle}>
+              <div className="character-detail-card character-dark-detail-card" key={`${character.id}-charm-${index}`} style={detailCardStyle}>
                 <p className="muted" style={sectionItemHeaderStyle}>
                   {item.label}
                 </p>
@@ -1053,7 +1061,7 @@ export default async function CharacterLogsheetPage({
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            <div className="character-detail-card" style={detailCardStyle}>
+            <div className="character-detail-card character-dark-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Feats
               </p>
@@ -1061,7 +1069,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(visibleFeats.join("\n"))}
               </p>
             </div>
-            <div className="character-detail-card" style={detailCardStyle}>
+            <div className="character-detail-card character-dark-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Skills
               </p>
@@ -1070,7 +1078,7 @@ export default async function CharacterLogsheetPage({
               </p>
               {dndBeyond?.customSkills?.map(skill => <p key={skill.name} style={{ margin: "0.35rem 0 0" }}>{skill.name} ({skill.rank})</p>)}
             </div>
-            <div className="character-detail-card" style={detailCardStyle}>
+            <div className="character-detail-card character-dark-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Tools
               </p>
@@ -1078,7 +1086,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(dndBeyond?.toolNames?.join("\n") ?? formatToolSelections(character.tools))}
               </p>
             </div>
-            <div className="character-detail-card" style={detailCardStyle}>
+            <div className="character-detail-card character-dark-detail-card" style={detailCardStyle}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Languages
               </p>
@@ -1086,7 +1094,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(dndBeyond?.languageNames?.join("\n") ?? formatLanguageSelections(character.languages))}
               </p>
             </div>
-            <div className="character-detail-card" style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
+            <div className="character-detail-card character-dark-detail-card" style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Character backstory
               </p>
@@ -1094,7 +1102,7 @@ export default async function CharacterLogsheetPage({
                 {formatCharacterNotes(character.backstory)}
               </p>
             </div>
-            <div className="character-detail-card" style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
+            <div className="character-detail-card character-dark-detail-card" style={{ ...detailCardStyle, gridColumn: "1 / -1" }}>
               <p className="muted" style={sectionItemHeaderStyle}>
                 Notes
               </p>

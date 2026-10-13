@@ -1701,7 +1701,9 @@ body a.button.league-jump-button {
 .ggcon-flying-carpet-button {
   position: relative;
   isolation: isolate;
-  background: var(--comic-paper);
+  background:
+    url("/speech-bubble.png") calc(50% - 3px) center / 100% 100% no-repeat,
+    transparent;
   border-color: var(--comic-ink);
   color: #06ff00 !important;
   font-family: var(--font-comic-display) !important;
@@ -1714,58 +1716,27 @@ body a.button.league-jump-button {
     2px 2px 0 var(--comic-paper);
   -webkit-text-stroke: 1px var(--comic-ink);
   paint-order: stroke fill;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   overflow: visible;
 }
 
 .ggcon-flying-carpet-button:hover {
-  background: #ffffff;
+  background:
+    url("/speech-bubble.png") calc(50% - 3px) center / 100% 100% no-repeat,
+    transparent;
   border-color: var(--comic-ink);
 }
 
-.ggcon-flying-carpet-button::before,
-.ggcon-flying-carpet-button::after {
-  content: "";
-  position: absolute;
-  clip-path: polygon(
-    0 42%,
-    9% 35%,
-    5% 12%,
-    18% 22%,
-    26% 0,
-    36% 18%,
-    48% 6%,
-    55% 22%,
-    68% 5%,
-    72% 25%,
-    87% 14%,
-    83% 36%,
-    100% 45%,
-    86% 56%,
-    96% 79%,
-    76% 72%,
-    69% 100%,
-    56% 80%,
-    43% 94%,
-    35% 76%,
-    20% 90%,
-    18% 67%,
-    4% 74%,
-    12% 55%
-  );
-  pointer-events: none;
-}
-
-.ggcon-flying-carpet-button::before {
-  inset: -0.55rem -0.85rem;
-  z-index: -2;
-  background: var(--comic-ink);
-}
-
-.ggcon-flying-carpet-button::after {
-  inset: -0.32rem -0.6rem;
-  z-index: -1;
-  background: var(--comic-paper);
+.ggcon-flying-carpet-button-text {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: min(21rem, 82vw);
+  min-height: 6.35rem;
+  padding: 1.65rem 3.5rem;
+  transform: translateX(-7px);
 }
 
 .ggcon-flying-carpet-benefits {
@@ -1775,10 +1746,13 @@ body a.button.league-jump-button {
 
 .ggcon-flying-carpet-aside-actions {
   width: 100%;
+  justify-content: center;
+  margin-top: 0.25rem;
 }
 
 .ggcon-flying-carpet-aside-actions .ggcon-flying-carpet-button {
-  width: 100%;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .ggcon-flying-carpet-benefit {
@@ -3487,6 +3461,27 @@ textarea {
   display: block;
 }
 
+.handbook-link-logo-swap {
+  display: inline-grid;
+  place-items: center;
+}
+
+.handbook-link-logo-swap .handbook-link-logo {
+  grid-area: 1 / 1;
+}
+
+.handbook-link-logo-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] body .handbook-link-logo-light {
+  display: none;
+}
+
+:root[data-theme="dark"] body .handbook-link-logo-dark {
+  display: block;
+}
+
 .handbook-link-card:hover {
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.35);
@@ -5091,6 +5086,20 @@ body a.button.ggcon-flying-carpet-button {
   text-transform: none;
 }
 
+:root[data-theme="dark"] body a.button.ggcon-flying-carpet-button {
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+  paint-order: normal;
+}
+
+:root[data-theme="dark"] body .grimoire-gathering-text,
+:root[data-theme="dark"] body .ggcon-page :is(h1, h2, h3, .ggcon-ticket-title, .ggcon-flying-carpet-title, .ggcon-flying-carpet-benefit-title),
+:root[data-theme="dark"] body :is(.store-grimoire-card-title) {
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  paint-order: normal;
+}
+
 body :is(input, select, textarea) {
   max-width: 100%;
   min-width: 0;
@@ -5285,6 +5294,16 @@ body .character-detail-card > .muted:first-child {
   text-shadow: none !important;
   -webkit-text-stroke: 0 !important;
   paint-order: normal;
+}
+
+:root[data-theme="dark"] body :is(.character-magic-item-detail-card, .character-dark-detail-card) {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body :is(.character-magic-item-detail-card, .character-dark-detail-card) :is(.muted, .character-magic-item-detail-label, p) {
+  color: #ffffff !important;
 }
 
 body .character-magic-item-detail-label {
