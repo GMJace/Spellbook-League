@@ -172,7 +172,7 @@ export default async function LeagueCartPage({ searchParams }: PageProps) {
             salesTaxRatePct={salesTaxRatePct}
           />
         ) : (
-          <div className="empty">No league games are available for checkout yet.</div>
+          <div className="empty">No QUESTS are available for checkout yet.</div>
         )}
       </section>
     </main>

@@ -31,6 +31,11 @@ const adminNavigationLinks = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/magic-item-cards",
+    label: "Magic item cards",
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/grimoire-gathering",
     label: "Grimoire moderation",
     roles: ["ADMIN", "EVENT_ADMIN"],

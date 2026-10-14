@@ -14,6 +14,7 @@ import { requireRole, requireUser } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin-access";
 import { isDndBeyondLink } from "@/lib/dnd-beyond-character-import";
 import { syncDndBeyondCharacter } from "@/lib/dnd-beyond-character-sync";
+import { generateChestCode } from "@/lib/loot-chest";
 import {
   getLeagueLegalBlessingOptions,
   getLeagueLegalBoonOptions,
@@ -52,6 +53,20 @@ function redirectWithCharacterError(
 
 function getSubmittedSlotSelections(formData: FormData, name: string) {
   return formData.getAll(name).map((value) => String(value).trim());
+}
+
+function getSubmittedCardIds(formData: FormData) {
+  return Array.from(
+    new Set(
+      [
+        ...formData.getAll("magicItemCardIds"),
+        ...formData.getAll("commonMagicItemCardIds"),
+        ...formData.getAll("consumableMagicItemCardIds"),
+      ]
+        .map((value) => String(value).trim())
+        .filter(Boolean)
+    )
+  );
 }
 
 function compressSlottedSelections(
@@ -165,6 +180,7 @@ export async function updateCharacter(
     formData,
     "commonMagicItemFlavors"
   );
+  const submittedMagicItemCardIds = getSubmittedCardIds(formData);
   const compressedMagicItemSelections = compressSlottedSelections(
     submittedMagicItems,
     submittedMagicItemNames,
@@ -399,62 +415,79 @@ export async function updateCharacter(
     tokenImagePath = null;
   }
 
-  await prisma.character.update({
-    where: { id: characterId },
-    data: {
-      name: parsed.data.name,
-      isPubliclyViewable,
-      characterSheetLink: parsed.data.characterSheetLink || null,
-      ...(existingCharacter.characterSheetLink !== (parsed.data.characterSheetLink || null)
-        ? {
-            dndBeyondSyncLink: null,
-            dndBeyondData: null,
-            dndBeyondSyncedAt: null,
-            dndBeyondAttemptAt: null,
-            dndBeyondError: null,
-          }
-        : {}),
-      blindsightFt: parsed.data.blindsightFt ?? null,
-      darkvisionFt: parsed.data.darkvisionFt ?? null,
-      tremorsenseFt: parsed.data.tremorsenseFt ?? null,
-      truesightFt: parsed.data.truesightFt ?? null,
-      hitPoints: parsed.data.hitPoints ?? null,
-      armorClass: parsed.data.armorClass ?? null,
-      passivePerception: parsed.data.passivePerception ?? null,
-      spellSaveDc: parsed.data.spellSaveDc ?? null,
-      tokenImagePath,
-      class1Name: parsed.data.class1Name,
-      class1Subclass: parsed.data.class1Subclass || null,
-      class1Level: parsed.data.class1Level,
-      class2Name: parsed.data.class2Name || null,
-      class2Subclass: parsed.data.class2Name ? parsed.data.class2Subclass || null : null,
-      class2Level: parsed.data.class2Name ? parsed.data.class2Level : null,
-      class3Name: parsed.data.class3Name || null,
-      class3Subclass: parsed.data.class3Name ? parsed.data.class3Subclass || null : null,
-      class3Level: parsed.data.class3Name ? parsed.data.class3Level : null,
-      feats: parsed.data.feats || "",
-      proficiencies: parsed.data.proficiencies || "",
-      tools: parsed.data.tools || "",
-      languages: parsed.data.languages || "",
-      notes: parsed.data.notes || "",
-      backstory: parsed.data.backstory || "",
-      totalGold: parsed.data.totalGold,
-      magicItems: JSON.stringify(parsed.data.magicItems),
-      magicItemMinorProperties: JSON.stringify(normalizedMagicItemMinorProperties),
-      magicItemFlavors: serializeMagicItemFlavorDetails(normalizedMagicItemFlavors),
-      commonMagicItems: JSON.stringify(parsed.data.commonMagicItems),
-      commonMagicItemMinorProperties: JSON.stringify(
-        normalizedCommonMagicItemMinorProperties
-      ),
-      commonMagicItemFlavors: serializeMagicItemFlavorDetails(
-        normalizedCommonMagicItemFlavors
-      ),
-      consumables: JSON.stringify(parsed.data.consumables),
-      boon: parsed.data.boon || "",
-      blessing: parsed.data.blessing || "",
-      charms: JSON.stringify(parsed.data.charms),
-    },
-  });
+  await prisma.$transaction([
+    prisma.character.update({
+      where: { id: characterId },
+      data: {
+        name: parsed.data.name,
+        isPubliclyViewable,
+        characterSheetLink: parsed.data.characterSheetLink || null,
+        ...(existingCharacter.characterSheetLink !== (parsed.data.characterSheetLink || null)
+          ? {
+              dndBeyondSyncLink: null,
+              dndBeyondData: null,
+              dndBeyondSyncedAt: null,
+              dndBeyondAttemptAt: null,
+              dndBeyondError: null,
+            }
+          : {}),
+        blindsightFt: parsed.data.blindsightFt ?? null,
+        darkvisionFt: parsed.data.darkvisionFt ?? null,
+        tremorsenseFt: parsed.data.tremorsenseFt ?? null,
+        truesightFt: parsed.data.truesightFt ?? null,
+        hitPoints: parsed.data.hitPoints ?? null,
+        armorClass: parsed.data.armorClass ?? null,
+        passivePerception: parsed.data.passivePerception ?? null,
+        spellSaveDc: parsed.data.spellSaveDc ?? null,
+        tokenImagePath,
+        class1Name: parsed.data.class1Name,
+        class1Subclass: parsed.data.class1Subclass || null,
+        class1Level: parsed.data.class1Level,
+        class2Name: parsed.data.class2Name || null,
+        class2Subclass: parsed.data.class2Name ? parsed.data.class2Subclass || null : null,
+        class2Level: parsed.data.class2Name ? parsed.data.class2Level : null,
+        class3Name: parsed.data.class3Name || null,
+        class3Subclass: parsed.data.class3Name ? parsed.data.class3Subclass || null : null,
+        class3Level: parsed.data.class3Name ? parsed.data.class3Level : null,
+        feats: parsed.data.feats || "",
+        proficiencies: parsed.data.proficiencies || "",
+        tools: parsed.data.tools || "",
+        languages: parsed.data.languages || "",
+        notes: parsed.data.notes || "",
+        backstory: parsed.data.backstory || "",
+        totalGold: parsed.data.totalGold,
+        magicItems: JSON.stringify(parsed.data.magicItems),
+        magicItemMinorProperties: JSON.stringify(normalizedMagicItemMinorProperties),
+        magicItemFlavors: serializeMagicItemFlavorDetails(normalizedMagicItemFlavors),
+        commonMagicItems: JSON.stringify(parsed.data.commonMagicItems),
+        commonMagicItemMinorProperties: JSON.stringify(
+          normalizedCommonMagicItemMinorProperties
+        ),
+        commonMagicItemFlavors: serializeMagicItemFlavorDetails(
+          normalizedCommonMagicItemFlavors
+        ),
+        consumables: JSON.stringify(parsed.data.consumables),
+        boon: parsed.data.boon || "",
+        blessing: parsed.data.blessing || "",
+        charms: JSON.stringify(parsed.data.charms),
+      },
+    }),
+    prisma.magicItemCard.updateMany({
+      where: { characterId },
+      data: { isCarried: false },
+    }),
+    ...(submittedMagicItemCardIds.length
+      ? [
+          prisma.magicItemCard.updateMany({
+            where: {
+              characterId,
+              id: { in: submittedMagicItemCardIds },
+            },
+            data: { isCarried: true },
+          }),
+        ]
+      : []),
+  ]);
 
   if (existingCharacter.characterSheetLink !== (parsed.data.characterSheetLink || null) &&
       isDndBeyondLink(parsed.data.characterSheetLink)) {
@@ -557,6 +590,7 @@ export async function approvePendingGameLog(
     data: {
       logStatus: "APPROVED",
       approvedAt: new Date(),
+      chestCode: participant.chestCode ?? generateChestCode(),
       logDowntimeDaysAwarded: parsed.data.downtimeDaysAwarded,
       logRewardsSummary: parsed.data.rewardsSummary,
       logMagicItemsAwarded: parsed.data.magicItemsAwarded || "",

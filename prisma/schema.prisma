@@ -138,50 +138,50 @@ enum TidingSourceType {
 }
 
 model User {
-  id           String            @id @default(cuid())
-  name         String
-  email        String            @unique
-  discordHandle String?
-  profileImagePath String?
-  passwordHash String?
-  newGameSignupAlertsEnabled Boolean @default(false)
-  storeCreditUsd Float           @default(0)
-  storeCreditHeldUsd Float       @default(0)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  roles        UserRole[]
-  characters   Character[]
-  gamesCreated Game[]            @relation("GameDungeonMaster")
-  gamesLogged  Game[]            @relation("GameLoggedBy")
-  participants GameParticipant[]
-  awardedAchievements CharacterAchievement[] @relation("AchievementAwardedBy")
-  accounts     Account[]
-  sessions     Session[]
-  passwordResetTokens PasswordResetToken[]
-  notifications Notification[]   @relation("UserNotifications")
-  createdNotifications Notification[] @relation("NotificationCreatedBy")
-  siteHealthChecksTriggered SiteHealthCheck[]
-  checkoutOrders CheckoutOrder[]
-  patronMemberships PatronMembership[]
-  ticketSalesSettingsUpdated TicketSalesSettings[] @relation("TicketSalesSettingsUpdatedBy")
-  ticketRefundsCreated TicketRefund[] @relation("TicketRefundCreatedBy")
+  id                              String                    @id @default(cuid())
+  name                            String
+  email                           String                    @unique
+  discordHandle                   String?
+  profileImagePath                String?
+  passwordHash                    String?
+  newGameSignupAlertsEnabled      Boolean                   @default(false)
+  storeCreditUsd                  Float                     @default(0)
+  storeCreditHeldUsd              Float                     @default(0)
+  createdAt                       DateTime                  @default(now())
+  updatedAt                       DateTime                  @updatedAt
+  roles                           UserRole[]
+  characters                      Character[]
+  gamesCreated                    Game[]                    @relation("GameDungeonMaster")
+  gamesLogged                     Game[]                    @relation("GameLoggedBy")
+  participants                    GameParticipant[]
+  awardedAchievements             CharacterAchievement[]    @relation("AchievementAwardedBy")
+  accounts                        Account[]
+  sessions                        Session[]
+  passwordResetTokens             PasswordResetToken[]
+  notifications                   Notification[]            @relation("UserNotifications")
+  createdNotifications            Notification[]            @relation("NotificationCreatedBy")
+  siteHealthChecksTriggered       SiteHealthCheck[]
+  checkoutOrders                  CheckoutOrder[]
+  patronMemberships               PatronMembership[]
+  ticketSalesSettingsUpdated      TicketSalesSettings[]     @relation("TicketSalesSettingsUpdatedBy")
+  ticketRefundsCreated            TicketRefund[]            @relation("TicketRefundCreatedBy")
   spellbookExpenseReceiptsCreated SpellbookExpenseReceipt[] @relation("SpellbookExpenseReceiptCreatedBy")
-  dmPaymentProfiles DmPaymentProfile[] @relation("DmPaymentProfileUser")
-  ticketPayoutsAsDm TicketPayout[] @relation("TicketPayoutDmUser")
-  ticketPayoutsCreated TicketPayout[] @relation("TicketPayoutCreatedBy")
-  reportedPendingAdventureModules PendingAdventureModule[] @relation("PendingAdventureModuleReportedBy")
-  characterTradesProposed CharacterTrade[] @relation("CharacterTradeProposedByUser")
-  characterTradesReceived CharacterTrade[] @relation("CharacterTradeReceivedByUser")
-  characterTradesConfirmed CharacterTrade[] @relation("CharacterTradeConfirmedByUser")
-  characterDowntimeEntries CharacterDowntimeEntry[] @relation("CharacterDowntimeEntryUser")
-  tradingPostListings TradingPostListing[] @relation("TradingPostListingUser")
-  tradingPostProposals TradingPostProposal[] @relation("TradingPostProposalUser")
-  reviewedTradingPostProposals TradingPostProposal[] @relation("TradingPostProposalReviewedByUser")
-  tidingAwards TidingAward[] @relation("UserTidingAwards")
-  playerTidingAwards TidingAward[] @relation("PlayerTidingAwards")
-  dmTidingAwards TidingAward[] @relation("DmTidingAwards")
-  tidingSpends TidingSpend[] @relation("UserTidingSpends")
-  dmServiceLogs DmServiceLog[] @relation("DmServiceLogUser")
+  dmPaymentProfiles               DmPaymentProfile[]        @relation("DmPaymentProfileUser")
+  ticketPayoutsAsDm               TicketPayout[]            @relation("TicketPayoutDmUser")
+  ticketPayoutsCreated            TicketPayout[]            @relation("TicketPayoutCreatedBy")
+  reportedPendingAdventureModules PendingAdventureModule[]  @relation("PendingAdventureModuleReportedBy")
+  characterTradesProposed         CharacterTrade[]          @relation("CharacterTradeProposedByUser")
+  characterTradesReceived         CharacterTrade[]          @relation("CharacterTradeReceivedByUser")
+  characterTradesConfirmed        CharacterTrade[]          @relation("CharacterTradeConfirmedByUser")
+  characterDowntimeEntries        CharacterDowntimeEntry[]  @relation("CharacterDowntimeEntryUser")
+  tradingPostListings             TradingPostListing[]      @relation("TradingPostListingUser")
+  tradingPostProposals            TradingPostProposal[]     @relation("TradingPostProposalUser")
+  reviewedTradingPostProposals    TradingPostProposal[]     @relation("TradingPostProposalReviewedByUser")
+  tidingAwards                    TidingAward[]             @relation("UserTidingAwards")
+  playerTidingAwards              TidingAward[]             @relation("PlayerTidingAwards")
+  dmTidingAwards                  TidingAward[]             @relation("DmTidingAwards")
+  tidingSpends                    TidingSpend[]             @relation("UserTidingSpends")
+  dmServiceLogs                   DmServiceLog[]            @relation("DmServiceLogUser")
 }
 
 model UserRole {
@@ -195,73 +195,119 @@ model UserRole {
 }
 
 model Character {
-  id           String            @id @default(cuid())
-  userId       String
-  name         String
-  isPubliclyViewable Boolean     @default(true)
-  characterSheetLink String?
-  dndBeyondData String?
-  dndBeyondSyncedAt DateTime?
-  dndBeyondAttemptAt DateTime?
-  dndBeyondSyncLink String?
-  dndBeyondError String?
-  blindsightFt Int?
-  darkvisionFt Int?
-  tremorsenseFt Int?
-  truesightFt  Int?
-  hitPoints    Int?
-  armorClass   Int?
-  passivePerception Int?
-  spellSaveDc  Int?
-  tokenImagePath String?
-  class1Name   String
-  class1Subclass String?
-  class1Level  Int
-  class2Name   String?
-  class2Subclass String?
-  class2Level  Int?
-  class3Name   String?
-  class3Subclass String?
-  class3Level  Int?
-  feats        String            @default("")
-  proficiencies String           @default("")
-  tools        String            @default("")
-  languages    String            @default("")
-  notes        String            @default("")
-  backstory    String            @default("")
-  totalGold    Int               @default(0)
-  magicItems   String            @default("[]")
-  magicItemMinorProperties String @default("[]")
-  magicItemFlavors String        @default("[]")
-  commonMagicItems String        @default("[]")
-  commonMagicItemMinorProperties String @default("[]")
-  commonMagicItemFlavors String  @default("[]")
-  consumables  String            @default("[]")
-  boon         String            @default("")
-  blessing     String            @default("")
-  charms       String            @default("[]")
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  participants GameParticipant[]
-  achievementAwards CharacterAchievement[]
-  tradesProposed CharacterTrade[] @relation("CharacterTradeProposerCharacter")
-  tradesReceived CharacterTrade[] @relation("CharacterTradeRecipientCharacter")
-  downtimeEntries CharacterDowntimeEntry[] @relation("CharacterDowntimeEntryCharacter")
-  tradingPostListings TradingPostListing[] @relation("TradingPostListingCharacter")
-  tradingPostProposals TradingPostProposal[] @relation("TradingPostProposalCharacter")
+  id                             String                   @id @default(cuid())
+  userId                         String
+  name                           String
+  isPubliclyViewable             Boolean                  @default(true)
+  characterSheetLink             String?
+  dndBeyondData                  String?
+  dndBeyondSyncedAt              DateTime?
+  dndBeyondAttemptAt             DateTime?
+  dndBeyondSyncLink              String?
+  dndBeyondError                 String?
+  blindsightFt                   Int?
+  darkvisionFt                   Int?
+  tremorsenseFt                  Int?
+  truesightFt                    Int?
+  hitPoints                      Int?
+  armorClass                     Int?
+  passivePerception              Int?
+  spellSaveDc                    Int?
+  tokenImagePath                 String?
+  class1Name                     String
+  class1Subclass                 String?
+  class1Level                    Int
+  class2Name                     String?
+  class2Subclass                 String?
+  class2Level                    Int?
+  class3Name                     String?
+  class3Subclass                 String?
+  class3Level                    Int?
+  feats                          String                   @default("")
+  proficiencies                  String                   @default("")
+  tools                          String                   @default("")
+  languages                      String                   @default("")
+  notes                          String                   @default("")
+  backstory                      String                   @default("")
+  totalGold                      Int                      @default(0)
+  magicItems                     String                   @default("[]")
+  magicItemMinorProperties       String                   @default("[]")
+  magicItemFlavors               String                   @default("[]")
+  commonMagicItems               String                   @default("[]")
+  commonMagicItemMinorProperties String                   @default("[]")
+  commonMagicItemFlavors         String                   @default("[]")
+  consumables                    String                   @default("[]")
+  boon                           String                   @default("")
+  blessing                       String                   @default("")
+  charms                         String                   @default("[]")
+  createdAt                      DateTime                 @default(now())
+  updatedAt                      DateTime                 @updatedAt
+  user                           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  participants                   GameParticipant[]
+  achievementAwards              CharacterAchievement[]
+  tradesProposed                 CharacterTrade[]         @relation("CharacterTradeProposerCharacter")
+  tradesReceived                 CharacterTrade[]         @relation("CharacterTradeRecipientCharacter")
+  downtimeEntries                CharacterDowntimeEntry[] @relation("CharacterDowntimeEntryCharacter")
+  tradingPostListings            TradingPostListing[]     @relation("TradingPostListingCharacter")
+  tradingPostProposals           TradingPostProposal[]    @relation("TradingPostProposalCharacter")
+  magicItemCards                 MagicItemCard[]
+}
+
+model MagicItemCard {
+  id                   String                   @id @default(cuid())
+  definitionId         String?
+  characterId          String
+  gameParticipantId    String?
+  frontImagePath       String
+  backImagePath        String
+  itemName             String
+  countsAs             String                   @default("")
+  minorProperty        String                   @default("")
+  rarity               String                   @default("")
+  flavorNotes          String                   @default("")
+  adventureTitle       String                   @default("")
+  limitedEditionNumber Int?
+  limitedEditionLimit  Int?
+  isCarried            Boolean                  @default(false)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  definition           MagicItemCardDefinition? @relation(fields: [definitionId], references: [id], onDelete: SetNull)
+  character            Character                @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  gameParticipant      GameParticipant?         @relation(fields: [gameParticipantId], references: [id], onDelete: SetNull)
+
+  @@index([characterId, createdAt])
+  @@index([definitionId])
+  @@index([gameParticipantId])
+}
+
+model MagicItemCardDefinition {
+  id                  String          @id @default(cuid())
+  frontImagePath      String
+  backImagePath       String
+  itemName            String          @unique
+  countsAs            String          @default("")
+  minorProperty       String          @default("")
+  rarity              String          @default("")
+  flavorNotes         String          @default("")
+  awardedCount        Int             @default(0)
+  limitedEditionLimit Int?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  awards              MagicItemCard[]
+
+  @@index([itemName])
 }
 
 model Achievement {
-  id            String                 @id @default(cuid())
-  slug          String                 @unique
-  category      String
-  name          String
-  description   String
+  id             String                 @id @default(cuid())
+  slug           String                 @unique
+  category       String
+  name           String
+  description    String
   badgeImagePath String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  awards        CharacterAchievement[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  awards         CharacterAchievement[]
 }
 
 model CharacterAchievement {
@@ -281,39 +327,39 @@ model CharacterAchievement {
 }
 
 model CharacterTrade {
-  id                          String               @id @default(cuid())
-  proposerUserId              String
-  proposerCharacterId         String
-  proposerPlayerName          String               @default("")
-  proposerCharacterName       String               @default("")
-  recipientUserId             String?
-  recipientCharacterId        String?
-  recipientPlayerName         String               @default("")
-  recipientCharacterName      String               @default("")
-  proposerItem                String
-  proposerItemName            String               @default("")
-  proposerMinorProperty       String               @default("")
-  proposerFlavorNotes         String               @default("")
-  proposerSpecialNotes        String               @default("")
-  proposerAdventureCode       String               @default("")
-  proposerDowntimeDaysSpent   Int                  @default(0)
-  recipientItem               String
-  recipientItemName           String               @default("")
-  recipientMinorProperty      String               @default("")
-  recipientFlavorNotes        String               @default("")
-  recipientSpecialNotes       String               @default("")
-  recipientAdventureCode      String               @default("")
-  recipientDowntimeDaysSpent  Int                  @default(0)
-  status                      CharacterTradeStatus @default(PENDING)
-  confirmedByUserId           String?
-  confirmedAt                 DateTime?
-  createdAt                   DateTime             @default(now())
-  updatedAt                   DateTime             @updatedAt
-  proposerUser                User                 @relation("CharacterTradeProposedByUser", fields: [proposerUserId], references: [id], onDelete: Cascade)
-  proposerCharacter           Character            @relation("CharacterTradeProposerCharacter", fields: [proposerCharacterId], references: [id], onDelete: Cascade)
-  recipientUser               User?                @relation("CharacterTradeReceivedByUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
-  recipientCharacter          Character?           @relation("CharacterTradeRecipientCharacter", fields: [recipientCharacterId], references: [id], onDelete: Cascade)
-  confirmedByUser             User?                @relation("CharacterTradeConfirmedByUser", fields: [confirmedByUserId], references: [id], onDelete: SetNull)
+  id                         String               @id @default(cuid())
+  proposerUserId             String
+  proposerCharacterId        String
+  proposerPlayerName         String               @default("")
+  proposerCharacterName      String               @default("")
+  recipientUserId            String?
+  recipientCharacterId       String?
+  recipientPlayerName        String               @default("")
+  recipientCharacterName     String               @default("")
+  proposerItem               String
+  proposerItemName           String               @default("")
+  proposerMinorProperty      String               @default("")
+  proposerFlavorNotes        String               @default("")
+  proposerSpecialNotes       String               @default("")
+  proposerAdventureCode      String               @default("")
+  proposerDowntimeDaysSpent  Int                  @default(0)
+  recipientItem              String
+  recipientItemName          String               @default("")
+  recipientMinorProperty     String               @default("")
+  recipientFlavorNotes       String               @default("")
+  recipientSpecialNotes      String               @default("")
+  recipientAdventureCode     String               @default("")
+  recipientDowntimeDaysSpent Int                  @default(0)
+  status                     CharacterTradeStatus @default(PENDING)
+  confirmedByUserId          String?
+  confirmedAt                DateTime?
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+  proposerUser               User                 @relation("CharacterTradeProposedByUser", fields: [proposerUserId], references: [id], onDelete: Cascade)
+  proposerCharacter          Character            @relation("CharacterTradeProposerCharacter", fields: [proposerCharacterId], references: [id], onDelete: Cascade)
+  recipientUser              User?                @relation("CharacterTradeReceivedByUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  recipientCharacter         Character?           @relation("CharacterTradeRecipientCharacter", fields: [recipientCharacterId], references: [id], onDelete: Cascade)
+  confirmedByUser            User?                @relation("CharacterTradeConfirmedByUser", fields: [confirmedByUserId], references: [id], onDelete: SetNull)
 
   @@index([proposerCharacterId, createdAt(sort: Desc)])
   @@index([recipientCharacterId, createdAt(sort: Desc)])
@@ -322,43 +368,43 @@ model CharacterTrade {
 }
 
 model CharacterDowntimeEntry {
-  id                  String    @id @default(cuid())
-  userId              String
-  characterId         String
-  activity            String
-  downtimeDaysSpent   Int       @default(0)
-  relatedAdventureCode String   @default("")
-  notes               String    @default("")
-  spentAt             DateTime
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  user                User      @relation("CharacterDowntimeEntryUser", fields: [userId], references: [id], onDelete: Cascade)
-  character           Character @relation("CharacterDowntimeEntryCharacter", fields: [characterId], references: [id], onDelete: Cascade)
+  id                   String    @id @default(cuid())
+  userId               String
+  characterId          String
+  activity             String
+  downtimeDaysSpent    Int       @default(0)
+  relatedAdventureCode String    @default("")
+  notes                String    @default("")
+  spentAt              DateTime
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation("CharacterDowntimeEntryUser", fields: [userId], references: [id], onDelete: Cascade)
+  character            Character @relation("CharacterDowntimeEntryCharacter", fields: [characterId], references: [id], onDelete: Cascade)
 
   @@index([characterId, spentAt(sort: Desc)])
   @@index([userId, spentAt(sort: Desc)])
 }
 
 model TradingPostListing {
-  id                String                   @id @default(cuid())
-  userId            String?
-  characterId       String?
-  guestPlayerName   String                   @default("")
-  guestCharacterName String                  @default("")
-  rarity            TradingPostRarity
-  item              String
-  itemName          String                   @default("")
-  minorProperty     String                   @default("")
-  flavorNotes       String                   @default("")
-  adventureCode     String                   @default("")
-  downtimeDaysSpent Int                      @default(0)
-  lookingFor        String                   @default("")
-  status            TradingPostListingStatus @default(ACTIVE)
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
-  user              User?                    @relation("TradingPostListingUser", fields: [userId], references: [id], onDelete: SetNull)
-  character         Character?               @relation("TradingPostListingCharacter", fields: [characterId], references: [id], onDelete: SetNull)
-  proposals         TradingPostProposal[]
+  id                 String                   @id @default(cuid())
+  userId             String?
+  characterId        String?
+  guestPlayerName    String                   @default("")
+  guestCharacterName String                   @default("")
+  rarity             TradingPostRarity
+  item               String
+  itemName           String                   @default("")
+  minorProperty      String                   @default("")
+  flavorNotes        String                   @default("")
+  adventureCode      String                   @default("")
+  downtimeDaysSpent  Int                      @default(0)
+  lookingFor         String                   @default("")
+  status             TradingPostListingStatus @default(ACTIVE)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  user               User?                    @relation("TradingPostListingUser", fields: [userId], references: [id], onDelete: SetNull)
+  character          Character?               @relation("TradingPostListingCharacter", fields: [characterId], references: [id], onDelete: SetNull)
+  proposals          TradingPostProposal[]
 
   @@index([status, createdAt(sort: Desc)])
   @@index([characterId, status, createdAt(sort: Desc)])
@@ -366,27 +412,27 @@ model TradingPostListing {
 }
 
 model TradingPostProposal {
-  id                String                    @id @default(cuid())
-  listingId         String
-  proposerUserId    String?
+  id                  String                    @id @default(cuid())
+  listingId           String
+  proposerUserId      String?
   proposerCharacterId String?
-  guestPlayerName   String                    @default("")
-  guestCharacterName String                   @default("")
-  item              String
-  itemName          String                    @default("")
-  minorProperty     String                    @default("")
-  flavorNotes       String                    @default("")
-  adventureCode     String                    @default("")
-  downtimeDaysSpent Int                       @default(0)
-  status            TradingPostProposalStatus @default(PENDING)
-  reviewedAt        DateTime?
-  reviewedByUserId  String?
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  listing           TradingPostListing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  proposerUser      User?                     @relation("TradingPostProposalUser", fields: [proposerUserId], references: [id], onDelete: SetNull)
-  proposerCharacter Character?                @relation("TradingPostProposalCharacter", fields: [proposerCharacterId], references: [id], onDelete: SetNull)
-  reviewedByUser    User?                     @relation("TradingPostProposalReviewedByUser", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  guestPlayerName     String                    @default("")
+  guestCharacterName  String                    @default("")
+  item                String
+  itemName            String                    @default("")
+  minorProperty       String                    @default("")
+  flavorNotes         String                    @default("")
+  adventureCode       String                    @default("")
+  downtimeDaysSpent   Int                       @default(0)
+  status              TradingPostProposalStatus @default(PENDING)
+  reviewedAt          DateTime?
+  reviewedByUserId    String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  listing             TradingPostListing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  proposerUser        User?                     @relation("TradingPostProposalUser", fields: [proposerUserId], references: [id], onDelete: SetNull)
+  proposerCharacter   Character?                @relation("TradingPostProposalCharacter", fields: [proposerCharacterId], references: [id], onDelete: SetNull)
+  reviewedByUser      User?                     @relation("TradingPostProposalReviewedByUser", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
 
   @@index([listingId, status, createdAt(sort: Desc)])
   @@index([proposerCharacterId, status, createdAt(sort: Desc)])
@@ -394,57 +440,60 @@ model TradingPostProposal {
 }
 
 model Game {
-  id                  String            @id @default(cuid())
-  dmId                String?
-  loggedByUserId      String?
-  dmName              String?
-  title               String
-  adventureCode       String
-  source              String            @default("")
-  gameSummary         String            @default("")
-  ticketPrice         String            @default("Free")
+  id                   String            @id @default(cuid())
+  dmId                 String?
+  loggedByUserId       String?
+  dmName               String?
+  title                String
+  adventureCode        String
+  source               String            @default("")
+  gameSummary          String            @default("")
+  ticketPrice          String            @default("Free")
   ticketAccessCodeHash String?
-  isGrimTidings       Boolean           @default(false)
-  grimTidingCost      Int               @default(1)
-  adventureImagePath  String?
-  datePlayed          DateTime
-  duration            String            @default("")
-  tier                Tier
-  seatCapacity        Int               @default(6)
-  serviceHours        Float             @default(0)
-  downtimeDaysAwarded Int               @default(0)
-  rewardsSummary      String
-  magicItemsAwarded   String            @default("")
-  consumablesAwarded  String            @default("")
-  spellbookAwarded    String            @default("")
-  consequencesSummary String
-  sessionNotes        String
-  status              GameStatus
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  dm                  User?             @relation("GameDungeonMaster", fields: [dmId], references: [id], onDelete: Cascade)
-  loggedByUser        User?             @relation("GameLoggedBy", fields: [loggedByUserId], references: [id], onDelete: SetNull)
-  participants        GameParticipant[]
-  tidingSpends        TidingSpend[]
+  isGrimTidings        Boolean           @default(false)
+  grimTidingCost       Int               @default(1)
+  adventureImagePath   String?
+  datePlayed           DateTime
+  duration             String            @default("")
+  tier                 Tier
+  seatCapacity         Int               @default(6)
+  serviceHours         Float             @default(0)
+  downtimeDaysAwarded  Int               @default(0)
+  rewardsSummary       String
+  magicItemsAwarded    String            @default("")
+  consumablesAwarded   String            @default("")
+  spellbookAwarded     String            @default("")
+  consequencesSummary  String
+  sessionNotes         String
+  status               GameStatus
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  dm                   User?             @relation("GameDungeonMaster", fields: [dmId], references: [id], onDelete: Cascade)
+  loggedByUser         User?             @relation("GameLoggedBy", fields: [loggedByUserId], references: [id], onDelete: SetNull)
+  participants         GameParticipant[]
+  tidingSpends         TidingSpend[]
 }
 
 model GameParticipant {
-  id                    String               @id @default(cuid())
-  gameId                String
-  characterId           String?
-  userId                String
-  logStatus             ParticipantLogStatus @default(APPROVED)
-  approvedAt            DateTime?
+  id                     String               @id @default(cuid())
+  gameId                 String
+  characterId            String?
+  userId                 String
+  logStatus              ParticipantLogStatus @default(APPROVED)
+  approvedAt             DateTime?
   logDowntimeDaysAwarded Int?
-  logRewardsSummary     String?
-  logMagicItemsAwarded  String?
-  logConsumablesAwarded String?
-  logSpellbookAwarded   String?
-  logSessionNotes       String?
-  createdAt             DateTime             @default(now())
-  game                  Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  character             Character?           @relation(fields: [characterId], references: [id], onDelete: SetNull)
-  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logRewardsSummary      String?
+  logMagicItemsAwarded   String?
+  logConsumablesAwarded  String?
+  logSpellbookAwarded    String?
+  logSessionNotes        String?
+  chestCode              String?              @unique
+  chestCodeRedeemedAt    DateTime?
+  createdAt              DateTime             @default(now())
+  game                   Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  character              Character?           @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  magicItemCards         MagicItemCard[]
 
   @@unique([gameId, characterId])
 }
@@ -512,39 +561,39 @@ model TidingSpend {
 }
 
 model AdventureCatalog {
-  id                    String   @id @default(cuid())
-  adventureCode         String
-  lookupCode            String
-  isActive              Boolean  @default(true)
-  title                 String
-  author                String   @default("")
-  lookupTitle           String
-  tier                  Tier
-  duration              String   @default("")
-  gameSummary           String   @default("")
-  adventureImagePath    String?
-  serviceHours          Float    @default(0)
-  downtimeDaysAwarded   Int      @default(0)
-  gold                  String   @default("")
-  spellbook             String   @default("")
-  storyAwards           String   @default("")
-  pageNumbers           String   @default("")
-  sourceSheet           String   @default("")
-  sourceNotes           String   @default("")
-  consumablesJson       String   @default("[]")
-  commonMagicItemsJson  String   @default("[]")
-  uncommonMagicItemsJson String  @default("[]")
-  rareMagicItemsJson    String   @default("[]")
-  veryRareMagicItemsJson String  @default("[]")
-  legendaryMagicItemsJson String @default("[]")
-  uniqueMagicItemsJson  String   @default("[]")
-  boonsJson             String   @default("[]")
-  blessingsJson         String   @default("[]")
-  charmsJson            String   @default("[]")
-  additionalMagicRewardNotes String @default("")
-  additionalConsumableNotes String @default("")
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                         String   @id @default(cuid())
+  adventureCode              String
+  lookupCode                 String
+  isActive                   Boolean  @default(true)
+  title                      String
+  author                     String   @default("")
+  lookupTitle                String
+  tier                       Tier
+  duration                   String   @default("")
+  gameSummary                String   @default("")
+  adventureImagePath         String?
+  serviceHours               Float    @default(0)
+  downtimeDaysAwarded        Int      @default(0)
+  gold                       String   @default("")
+  spellbook                  String   @default("")
+  storyAwards                String   @default("")
+  pageNumbers                String   @default("")
+  sourceSheet                String   @default("")
+  sourceNotes                String   @default("")
+  consumablesJson            String   @default("[]")
+  commonMagicItemsJson       String   @default("[]")
+  uncommonMagicItemsJson     String   @default("[]")
+  rareMagicItemsJson         String   @default("[]")
+  veryRareMagicItemsJson     String   @default("[]")
+  legendaryMagicItemsJson    String   @default("[]")
+  uniqueMagicItemsJson       String   @default("[]")
+  boonsJson                  String   @default("[]")
+  blessingsJson              String   @default("[]")
+  charmsJson                 String   @default("[]")
+  additionalMagicRewardNotes String   @default("")
+  additionalConsumableNotes  String   @default("")
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   @@unique([lookupCode, lookupTitle, tier])
   @@index([lookupCode, tier])
@@ -553,43 +602,43 @@ model AdventureCatalog {
 }
 
 model PendingAdventureModule {
-  id                    String   @id @default(cuid())
-  adventureCode         String
-  lookupCode            String
-  title                 String
-  author                String   @default("")
-  lookupTitle           String
-  tier                  Tier
-  duration              String   @default("")
-  gameSummary           String   @default("")
-  adventureImagePath    String?
-  serviceHours          Float    @default(0)
-  downtimeDaysAwarded   Int      @default(0)
-  gold                  String   @default("")
-  spellbook             String   @default("")
-  storyAwards           String   @default("")
-  sourceSheet           String   @default("")
-  sourceNotes           String   @default("")
-  consumablesJson       String   @default("[]")
-  commonMagicItemsJson  String   @default("[]")
-  uncommonMagicItemsJson String  @default("[]")
-  rareMagicItemsJson    String   @default("[]")
-  veryRareMagicItemsJson String  @default("[]")
-  legendaryMagicItemsJson String @default("[]")
-  uniqueMagicItemsJson  String   @default("[]")
-  boonsJson             String   @default("[]")
-  blessingsJson         String   @default("[]")
-  charmsJson            String   @default("[]")
-  additionalMagicRewardNotes String @default("")
-  additionalConsumableNotes String @default("")
-  lastReportedByUserId  String?
-  reportedDmName        String   @default("")
-  reportedDatePlayed    DateTime?
-  reportCount           Int      @default(1)
-  lastReportedAt        DateTime @default(now())
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  lastReportedBy        User?    @relation("PendingAdventureModuleReportedBy", fields: [lastReportedByUserId], references: [id], onDelete: SetNull)
+  id                         String    @id @default(cuid())
+  adventureCode              String
+  lookupCode                 String
+  title                      String
+  author                     String    @default("")
+  lookupTitle                String
+  tier                       Tier
+  duration                   String    @default("")
+  gameSummary                String    @default("")
+  adventureImagePath         String?
+  serviceHours               Float     @default(0)
+  downtimeDaysAwarded        Int       @default(0)
+  gold                       String    @default("")
+  spellbook                  String    @default("")
+  storyAwards                String    @default("")
+  sourceSheet                String    @default("")
+  sourceNotes                String    @default("")
+  consumablesJson            String    @default("[]")
+  commonMagicItemsJson       String    @default("[]")
+  uncommonMagicItemsJson     String    @default("[]")
+  rareMagicItemsJson         String    @default("[]")
+  veryRareMagicItemsJson     String    @default("[]")
+  legendaryMagicItemsJson    String    @default("[]")
+  uniqueMagicItemsJson       String    @default("[]")
+  boonsJson                  String    @default("[]")
+  blessingsJson              String    @default("[]")
+  charmsJson                 String    @default("[]")
+  additionalMagicRewardNotes String    @default("")
+  additionalConsumableNotes  String    @default("")
+  lastReportedByUserId       String?
+  reportedDmName             String    @default("")
+  reportedDatePlayed         DateTime?
+  reportCount                Int       @default(1)
+  lastReportedAt             DateTime  @default(now())
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+  lastReportedBy             User?     @relation("PendingAdventureModuleReportedBy", fields: [lastReportedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([lookupCode, lookupTitle, tier])
   @@index([lookupCode, tier])
@@ -647,13 +696,13 @@ model VerificationToken {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   usedAt    DateTime?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model SpellbookMonthlySubscriber {
@@ -665,14 +714,14 @@ model SpellbookMonthlySubscriber {
 }
 
 model GrimoireGuildMembershipSettings {
-  id          String   @id
-  productName String
-  description String
-  priceUsd    Float
+  id           String   @id
+  productName  String
+  description  String
+  priceUsd     Float
   durationDays Int
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model GrimoireDiscordSettings {
@@ -684,13 +733,13 @@ model GrimoireDiscordSettings {
 }
 
 model LeagueLegalChoiceList {
-  id        String   @id @default(cuid())
-  category  String
-  key       String
-  label     String
-  valuesJson String  @default("[]")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  category   String
+  key        String
+  label      String
+  valuesJson String   @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([category, key])
   @@index([category, key])
@@ -717,21 +766,21 @@ model Notification {
 }
 
 model GrimoireEvent {
-  id             String               @id
+  id             String                 @id
   label          String
   subtitle       String
   date           DateTime
   displayDate    String
   theme          String
-  themeDetails   String               @default("[]")
+  themeDetails   String                 @default("[]")
   focus          String
   ticketLabel    String
   ticketPrice    String
   ticketPriceUsd Float
   badgeImagePath String?
-  finale         Boolean              @default(false)
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  finale         Boolean                @default(false)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
   slots          GrimoireEventSlot[]
   curatedGames   GrimoireCuratedGame[]
   submissions    GrimoireDmSubmission[]
@@ -740,16 +789,16 @@ model GrimoireEvent {
 }
 
 model GrimoireEventSlot {
-  id        String        @id @default(cuid())
-  eventId   String
-  slotKey   String
-  label     String
-  startAt   DateTime
-  endAt     DateTime
-  gameSlotCount Int       @default(0)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  event     GrimoireEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id            String        @id @default(cuid())
+  eventId       String
+  slotKey       String
+  label         String
+  startAt       DateTime
+  endAt         DateTime
+  gameSlotCount Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  event         GrimoireEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, slotKey])
   @@unique([eventId, startAt])
@@ -757,23 +806,23 @@ model GrimoireEventSlot {
 }
 
 model GrimoireCuratedGame {
-  id             String        @id @default(cuid())
-  eventId        String
-  slug           String        @unique
-  title          String
-  summary        String
-  details        String        @default("[]")
+  id                 String        @id @default(cuid())
+  eventId            String
+  slug               String        @unique
+  title              String
+  summary            String
+  details            String        @default("[]")
   adventureImagePath String?
-  startAt        DateTime
-  dm             String
-  tier           Tier
-  ticketPrice    String
-  ticketPriceUsd Float
-  seatCapacity   Int
-  gameCode       String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  event          GrimoireEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  startAt            DateTime
+  dm                 String
+  tier               Tier
+  ticketPrice        String
+  ticketPriceUsd     Float
+  seatCapacity       Int
+  gameCode           String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  event              GrimoireEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId, startAt])
 }
@@ -831,72 +880,72 @@ model SiteHealthCheck {
 }
 
 model CheckoutOrder {
-  id                String         @id @default(cuid())
-  userId            String?
-  provider          String         @default("PAYPAL")
-  checkoutType      CheckoutType
-  status            CheckoutStatus @default(CREATED)
-  paypalOrderId     String         @unique
-  receiptNumber     String?        @unique
-  currencyCode      String         @default("USD")
-  amountUsd         Float
-  subtotalUsd       Float          @default(0)
-  taxUsd            Float          @default(0)
-  storeCreditAppliedUsd Float      @default(0)
-  summaryText       String
-  itemDataJson      String         @default("[]")
-  recipientDataJson String         @default("[]")
-  payerEmail        String?
-  captureDataJson   String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  capturedAt        DateTime?
-  user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  patronMembership  PatronMembership?
-  ticketRefunds     TicketRefund[]
+  id                    String            @id @default(cuid())
+  userId                String?
+  provider              String            @default("PAYPAL")
+  checkoutType          CheckoutType
+  status                CheckoutStatus    @default(CREATED)
+  paypalOrderId         String            @unique
+  receiptNumber         String?           @unique
+  currencyCode          String            @default("USD")
+  amountUsd             Float
+  subtotalUsd           Float             @default(0)
+  taxUsd                Float             @default(0)
+  storeCreditAppliedUsd Float             @default(0)
+  summaryText           String
+  itemDataJson          String            @default("[]")
+  recipientDataJson     String            @default("[]")
+  payerEmail            String?
+  captureDataJson       String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  capturedAt            DateTime?
+  user                  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  patronMembership      PatronMembership?
+  ticketRefunds         TicketRefund[]
 
   @@index([status, createdAt(sort: Desc)])
   @@index([checkoutType, createdAt(sort: Desc)])
 }
 
 model TicketSalesSettings {
-  id                      String   @id @default("default")
-  provincialTaxRatePct    Float    @default(0)
-  federalTaxRatePct       Float    @default(5)
-  leagueGameDmPayoutRatePct Float  @default(0)
-  eventGameDmPayoutRatePct Float   @default(0)
-  updatedByUserId         String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  updatedBy               User?    @relation("TicketSalesSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  id                        String   @id @default("default")
+  provincialTaxRatePct      Float    @default(0)
+  federalTaxRatePct         Float    @default(5)
+  leagueGameDmPayoutRatePct Float    @default(0)
+  eventGameDmPayoutRatePct  Float    @default(0)
+  updatedByUserId           String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  updatedBy                 User?    @relation("TicketSalesSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 }
 
 model TicketRefund {
-  id             String               @id @default(cuid())
-  checkoutOrderId String?
-  receiptNumber  String?              @unique
-  checkoutType   CheckoutType
-  saleSourceType TicketSaleSourceType @default(OTHER)
-  saleSourceId   String?
-  saleSourceLabel String
-  amountUsd      Float
-  creditGiven    Boolean              @default(false)
-  creditAmountUsd Float               @default(0)
-  currencyCode   String               @default("USD")
-  reason         String
-  notes          String?
-  paypalCaptureId String?
-  paypalRefundId  String?
-  paypalRefundStatus String?
+  id                      String               @id @default(cuid())
+  checkoutOrderId         String?
+  receiptNumber           String?              @unique
+  checkoutType            CheckoutType
+  saleSourceType          TicketSaleSourceType @default(OTHER)
+  saleSourceId            String?
+  saleSourceLabel         String
+  amountUsd               Float
+  creditGiven             Boolean              @default(false)
+  creditAmountUsd         Float                @default(0)
+  currencyCode            String               @default("USD")
+  reason                  String
+  notes                   String?
+  paypalCaptureId         String?
+  paypalRefundId          String?
+  paypalRefundStatus      String?
   paypalRefundedAmountUsd Float?
-  paypalRefundDataJson String?
-  paypalRefundError String?
-  refundedAt     DateTime             @default(now())
-  createdByUserId String?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  checkoutOrder  CheckoutOrder?       @relation(fields: [checkoutOrderId], references: [id], onDelete: SetNull)
-  createdBy      User?                @relation("TicketRefundCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  paypalRefundDataJson    String?
+  paypalRefundError       String?
+  refundedAt              DateTime             @default(now())
+  createdByUserId         String?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  checkoutOrder           CheckoutOrder?       @relation(fields: [checkoutOrderId], references: [id], onDelete: SetNull)
+  createdBy               User?                @relation("TicketRefundCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([checkoutType, refundedAt(sort: Desc)])
   @@index([saleSourceType, refundedAt(sort: Desc)])
@@ -939,30 +988,30 @@ model DmPaymentProfile {
 }
 
 model TicketPayout {
-  id                 String             @id @default(cuid())
-  groupKey           String?
-  dmPaymentProfileId String?
-  dmUserId           String?
-  dmName             String
-  checkoutType       CheckoutType
-  saleSourceType     TicketSaleSourceType
-  saleSourceId       String?
-  saleSourceLabel    String
-  seatCount          Int                @default(0)
+  id                  String               @id @default(cuid())
+  groupKey            String?
+  dmPaymentProfileId  String?
+  dmUserId            String?
+  dmName              String
+  checkoutType        CheckoutType
+  saleSourceType      TicketSaleSourceType
+  saleSourceId        String?
+  saleSourceLabel     String
+  seatCount           Int                  @default(0)
   grossTicketSalesUsd Float
-  payoutRatePct      Float
-  payoutAmountUsd    Float
-  paidPayoutRatePct  Float?
-  currencyCode       String             @default("USD")
-  status             TicketPayoutStatus @default(PENDING)
-  notes              String?
-  paidAt             DateTime?
-  createdByUserId    String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  dmPaymentProfile   DmPaymentProfile?  @relation(fields: [dmPaymentProfileId], references: [id], onDelete: SetNull)
-  dmUser             User?              @relation("TicketPayoutDmUser", fields: [dmUserId], references: [id], onDelete: SetNull)
-  createdBy          User?              @relation("TicketPayoutCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  payoutRatePct       Float
+  payoutAmountUsd     Float
+  paidPayoutRatePct   Float?
+  currencyCode        String               @default("USD")
+  status              TicketPayoutStatus   @default(PENDING)
+  notes               String?
+  paidAt              DateTime?
+  createdByUserId     String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  dmPaymentProfile    DmPaymentProfile?    @relation(fields: [dmPaymentProfileId], references: [id], onDelete: SetNull)
+  dmUser              User?                @relation("TicketPayoutDmUser", fields: [dmUserId], references: [id], onDelete: SetNull)
+  createdBy           User?                @relation("TicketPayoutCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt(sort: Desc)])
   @@index([groupKey])

@@ -64,7 +64,7 @@ export function FlyingCarpetSection() {
                 className="button ggcon-flying-carpet-button"
                 href="/grimoire-gathering/cart?badges=1&badgeType=FLYING_CARPET"
               >
-                Claim Yours Now
+                <span className="ggcon-flying-carpet-button-text">Claim Yours Now</span>
               </Link>
             </div>
           </div>

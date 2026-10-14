@@ -10,6 +10,7 @@ import {
   hasStructuredGameRewardSelectionFields,
   readGameRewardSelectionsFromFormData,
 } from "@/lib/game-reward-selections";
+import { generateChestCode } from "@/lib/loot-chest";
 import { createNotification } from "@/lib/notifications";
 import {
   buildImportedRewardStrings,
@@ -108,9 +109,13 @@ async function requireOwnedLoggedGame(characterId: string, gameId: string) {
 }
 
 function getApprovedParticipantUpdate(status: "SCHEDULED" | "COMPLETED" | "CANCELLED") {
+  const isCompleted = status === "COMPLETED";
+
   return {
     logStatus: "APPROVED" as const,
-    approvedAt: status === "COMPLETED" ? new Date() : null,
+    approvedAt: isCompleted ? new Date() : null,
+    chestCode: isCompleted ? generateChestCode() : null,
+    chestCodeRedeemedAt: null,
     logDowntimeDaysAwarded: null,
     logRewardsSummary: null,
     logMagicItemsAwarded: null,
@@ -544,6 +549,11 @@ export async function updatePlayerGameLog(
         },
         data: {
           ...participantDefaults,
+          chestCode: participantDefaults.chestCode ?? participant.chestCode,
+          chestCodeRedeemedAt:
+            participantDefaults.chestCode && !participant.chestCode
+              ? null
+              : participant.chestCodeRedeemedAt,
           logDowntimeDaysAwarded: parsed.data.downtimeDaysAwarded,
         },
       });
@@ -555,6 +565,7 @@ export async function updatePlayerGameLog(
         data: {
           logStatus: "APPROVED",
           approvedAt: participant.approvedAt ?? new Date(),
+          chestCode: participant.chestCode ?? generateChestCode(),
           logDowntimeDaysAwarded: parsed.data.downtimeDaysAwarded,
           logRewardsSummary: parsed.data.rewardsSummary,
           logMagicItemsAwarded: parsed.data.magicItemsAwarded,

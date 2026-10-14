@@ -69,6 +69,13 @@ export async function CharacterEditContent({
       id,
       ...(admin ? {} : { userId: user.id }),
     },
+    include: {
+      magicItemCards: {
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
   });
 
   if (!character) {
@@ -130,6 +137,15 @@ export async function CharacterEditContent({
           legalLanguageGroups={legalLanguageGroups}
           legalLanguageOptions={legalLanguageOptions}
           legalSubclassOptions={legalSubclassOptions}
+          magicItemCardOptions={character.magicItemCards.map((card) => ({
+            id: card.id,
+            itemName: card.itemName,
+            countsAs: card.countsAs,
+            minorProperty: card.minorProperty,
+            flavorNotes: card.flavorNotes,
+            rarity: card.rarity,
+            isCarried: card.isCarried,
+          }))}
           submitLabel="Update character log"
           initialValues={{
             name: character.name,

@@ -5393,6 +5393,412 @@ body .character-game-log-detail-page .character-game-log-detail-label {
   font-weight: 900;
 }
 
+.loot-chest-page {
+  gap: 1.25rem;
+}
+
+.loot-chest-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: min(72vh, 48rem);
+  padding: clamp(1rem, 4vw, 3rem);
+  overflow: hidden;
+}
+
+.loot-chest-image {
+  width: min(100%, 62rem);
+  height: auto;
+  display: block;
+}
+
+.loot-chest-code-form {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 1;
+  display: grid;
+  gap: 0.65rem;
+  width: min(34rem, calc(100% - 2rem));
+  padding: 1rem;
+  border: 5px solid var(--comic-ink);
+  border-radius: 8px;
+  background: var(--comic-paper);
+  box-shadow: var(--shadow);
+  transform: translate(-50%, -50%);
+}
+
+.loot-chest-code-form label {
+  font-family: var(--font-comic-display);
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--comic-red);
+  letter-spacing: 0.055em;
+  text-align: center;
+}
+
+.loot-chest-code-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.loot-chest-code-row input {
+  flex: 1 1 15rem;
+}
+
+.loot-chest-code-row button {
+  flex: 0 0 auto;
+}
+
+.loot-chest-code-form p {
+  margin: 0;
+  text-align: center;
+  font-weight: 900;
+}
+
+.loot-chest-success {
+  color: var(--comic-green);
+}
+
+.loot-chest-error {
+  color: var(--comic-red);
+}
+
+.loot-chest-reward-section {
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.loot-chest-magic-card {
+  width: min(100%, 23.25rem);
+  aspect-ratio: 744 / 1038;
+  padding: 0.85rem;
+  border: 5px solid var(--comic-ink);
+  border-radius: 8px;
+  background: var(--comic-paper);
+  box-shadow: var(--shadow);
+}
+
+.loot-chest-magic-card-inner {
+  display: grid;
+  align-content: end;
+  gap: 0.65rem;
+  height: 100%;
+  padding: 1rem;
+  border: 3px solid var(--comic-ink);
+  border-radius: 5px;
+  background: linear-gradient(180deg, rgba(255, 214, 89, 0.2), rgba(255, 255, 255, 0.92));
+}
+
+.loot-chest-code-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem;
+  border: 3px solid var(--comic-ink);
+  border-radius: 8px;
+  background: var(--comic-paper);
+}
+
+.magic-card-collection-carousel {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+}
+
+.magic-card-collection-item {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+  width: min(100%, 34rem);
+  padding: 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--comic-paper);
+  box-shadow: none;
+}
+
+.magic-card-flip-stage {
+  width: min(100%, 23.25rem);
+  aspect-ratio: 744 / 1038;
+  perspective: 1200px;
+}
+
+.magic-card-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 520ms ease;
+}
+
+.magic-card-flip.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.magic-card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  backface-visibility: hidden;
+  border: 3px solid var(--comic-ink);
+}
+
+.magic-card-face-back {
+  transform: rotateY(180deg);
+}
+
+.magic-card-flip-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  min-height: 3rem;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.magic-card-navigation {
+  display: grid;
+  grid-template-columns: 3rem 3rem 3rem;
+  align-items: start;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.magic-card-navigation-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  min-height: 3rem;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.magic-card-flip-control {
+  display: grid;
+  justify-items: center;
+  gap: calc(0.75rem + 5px);
+}
+
+.magic-card-position {
+  min-width: 3rem;
+  color: var(--comic-ink);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.magic-card-meta {
+  width: 100%;
+}
+
+.magic-card-detail-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  margin: 0;
+}
+
+.magic-card-detail-grid div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.magic-card-detail-grid dt {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.magic-card-detail-grid dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.admin-magic-card-catalog-section {
+  width: 100%;
+  padding: 1rem;
+  border: 3px solid var(--comic-ink);
+  border-radius: 5px;
+}
+
+.admin-magic-card-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-magic-card-catalog-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid var(--comic-ink);
+  border-radius: 8px;
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+}
+
+.admin-magic-card-catalog-item > .stack,
+.admin-magic-card-catalog-item .button {
+  width: 100%;
+}
+
+.admin-magic-card-catalog-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.admin-magic-card-page-button {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+}
+
+.admin-magic-card-page-button.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.admin-magic-card-catalog-image {
+  width: 100%;
+  aspect-ratio: 744 / 1038;
+  border: 2px solid var(--comic-ink);
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.admin-magic-card-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.65fr);
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.admin-magic-card-image-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-magic-card-image-pair figure {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.admin-magic-card-image-pair img {
+  width: 100%;
+  aspect-ratio: 744 / 1038;
+  border: 2px solid var(--comic-ink);
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.admin-magic-card-image-pair figcaption {
+  font-weight: 900;
+  text-align: center;
+}
+
+.admin-magic-card-definition-details {
+  padding: 1rem;
+  border-left: 3px solid var(--comic-ink);
+}
+
+.admin-magic-card-awards-table {
+  min-width: 48rem;
+  table-layout: auto;
+}
+
+@media (max-width: 760px) {
+  .admin-magic-card-catalog-grid,
+  .admin-magic-card-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-magic-card-catalog-image {
+    width: 100%;
+  }
+
+  .admin-magic-card-definition-details {
+    border-top: 3px solid var(--comic-ink);
+    border-left: 0;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .admin-magic-card-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+:root[data-theme="dark"] body .loot-chest-code-form {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .loot-chest-code-card {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .loot-chest-magic-card,
+:root[data-theme="dark"] body .loot-chest-magic-card-inner {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .magic-card-collection-item {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .magic-card-face {
+  border-color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .magic-card-position {
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .admin-magic-card-catalog-item,
+:root[data-theme="dark"] body .admin-magic-card-definition-details {
+  background: #000000 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .admin-magic-card-catalog-image,
+:root[data-theme="dark"] body .admin-magic-card-image-pair img {
+  border-color: #ffffff !important;
+}
+
+:root[data-theme="dark"] body .loot-chest-code-form label {
+  color: var(--comic-red) !important;
+}
+
 body .dm-player-roster-section {
   border: 0 !important;
   box-shadow: none !important;

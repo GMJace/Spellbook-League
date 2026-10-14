@@ -353,9 +353,9 @@ export function LeagueCartBuilder({
         <section className="card ledger-panel stack">
           <div className="stack" style={{ gap: "0.45rem" }}>
             <p className="eyebrow">Customize Purchase</p>
-            <h1 style={{ margin: 0 }}>League Cart</h1>
+            <h1 style={{ margin: 0 }}>QUEST Cart</h1>
             <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-              Add memberships, paid league games, and Grim Tidings games to your cart before continuing to checkout.
+              Add memberships, paid QUESTS, and Grim Tidings games to your cart before continuing to checkout.
             </p>
           </div>
 
@@ -452,7 +452,7 @@ export function LeagueCartBuilder({
               </div>
             ) : (
               <p className="muted ggcon-meta-note" style={{ margin: 0 }}>
-                Add a paid league game, a Grim Tidings game, or the Grimoire Guild membership to start checkout.
+                Add a paid QUEST, a Grim Tidings game, or the Grimoire Guild membership to start checkout.
               </p>
             )}
           </div>
@@ -499,12 +499,12 @@ export function LeagueCartBuilder({
             ) : null}
             {isPlayerSignedIn && hasInvalidSelectedCharacters ? (
               <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
-                Choose a matching-tier character or select TBD for each league game.
+                Choose a matching-tier character or select TBD for each QUEST.
               </p>
             ) : null}
             {hasMixedTidingsAndUsdSelections ? (
               <p className="muted ggcon-meta-note league-cart-warning" style={{ margin: 0 }}>
-                Grim Tidings games must be checked out separately from paid league games and memberships.
+                Grim Tidings games must be checked out separately from paid QUESTS and memberships.
               </p>
             ) : null}
             {isPlayerSignedIn && hasInsufficientTidings ? (
@@ -542,8 +542,8 @@ export function LeagueCartBuilder({
             />
 
             <div className="inline-actions" style={{ flexWrap: "wrap" }}>
-              <Link className="button secondary" href="/league">
-                Back to League
+              <Link className="button secondary" href="/store">
+                Back to Store
               </Link>
               {selectedGames.length === 1 ? (
                 <Link className="button secondary" href={`/league/games/${selectedGames[0].id}`}>
@@ -598,7 +598,7 @@ export function LeagueCartBuilder({
           </div>
 
           <div className="section-heading">
-            <h2 style={{ margin: 0 }}>League games available for checkout</h2>
+            <h2 style={{ margin: 0 }}>QUESTS available for checkout</h2>
           </div>
           <div className="ggcon-ticket-grid league-ticket-grid">
             {games.map((game) => {

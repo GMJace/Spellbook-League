@@ -165,7 +165,7 @@ export default async function StorePage() {
       <section className="card ledger-panel stack store-hero">
         <h1 style={{ margin: 0 }}>Explore the <RainbowSpellbook /> Store</h1>
         <p className="muted store-hero-copy" style={{ margin: 0, maxWidth: "68ch" }}>
-          Find upcoming <GrimoireGatheringsText /> event access, paid league tables,
+          Find upcoming <GrimoireGatheringsText /> event access, paid QUEST tables,
           professional Dungeon Masters, and official <RainbowSpellbook /> Publishing
           releases in one place.
         </p>
@@ -174,7 +174,7 @@ export default async function StorePage() {
             Open Grimoire cart
           </Link>
           <Link className="button secondary" href="/league/cart">
-            Open league cart
+            Open QUEST cart
           </Link>
           <a
             className="button secondary store-publishing-button"
@@ -295,10 +295,10 @@ export default async function StorePage() {
             <p className="eyebrow" style={{ margin: 0 }}>
               Paid tickets
             </p>
-            <h2 style={{ margin: 0 }}>League Games Selling Tickets</h2>
+            <h2 style={{ margin: 0 }}>QUESTS Selling Tickets</h2>
           </div>
           <Link className="button secondary" href="/league">
-            View league hub
+            View QUEST Board
           </Link>
         </div>
 
@@ -355,7 +355,7 @@ export default async function StorePage() {
           </div>
         ) : (
           <p className="muted" style={{ margin: 0 }}>
-            No paid league games are currently available for ticket purchase.
+            No paid QUESTS are currently available for ticket purchase.
           </p>
         )}
       </section>
@@ -442,12 +442,12 @@ export default async function StorePage() {
             <h2 style={{ margin: 0 }}><RainbowSpellbook /> Publishing</h2>
           </div>
           <p className="muted" style={{ margin: 0 }}>
-            Looking for books, adventures, and published releases beyond league
+            Looking for books, adventures, and published releases beyond QUEST
             tickets? Visit the official <RainbowSpellbook /> Publishing store.
           </p>
           <p style={{ margin: 0 }}>
             Use the main store to browse external products and publishing updates,
-            then come back here to book events, league tickets, and DM services.
+            then come back here to book events, QUEST tickets, and DM services.
           </p>
           <div className="inline-actions" style={{ flexWrap: "wrap" }}>
             <a className="button" href={publishingStoreUrl} rel="noreferrer" target="_blank">

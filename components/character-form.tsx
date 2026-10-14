@@ -85,6 +85,16 @@ export type CharacterFormValues = {
   charms: string;
 };
 
+export type CharacterMagicItemCardOption = {
+  id: string;
+  itemName: string;
+  countsAs: string;
+  minorProperty: string;
+  flavorNotes: string;
+  rarity: string;
+  isCarried: boolean;
+};
+
 const VISION_FIELDS = [
   { key: "blindsightFt", label: "Blindsight" },
   { key: "darkvisionFt", label: "Darkvision" },
@@ -123,6 +133,47 @@ function getFilteredOptions(options: string[], keyword: string, selectedValue: s
   }
 
   return filteredOptions;
+}
+
+function getCardCountsAs(card: CharacterMagicItemCardOption) {
+  return card.countsAs.trim() || card.itemName.trim();
+}
+
+function getCardOptionLabel(card: CharacterMagicItemCardOption) {
+  const countsAs = getCardCountsAs(card);
+  const detailParts = [countsAs, card.rarity].filter(Boolean);
+
+  return detailParts.length ? `${card.itemName} (${detailParts.join(" · ")})` : card.itemName;
+}
+
+function getSelectedCardId(
+  cards: CharacterMagicItemCardOption[],
+  item: string,
+  name = "",
+  minorProperty = "",
+  flavor = ""
+) {
+  if (!item) {
+    return "";
+  }
+
+  const normalizedName = name.trim();
+  const normalizedMinorProperty = minorProperty.trim();
+  const normalizedFlavor = flavor.trim();
+
+  return (
+    cards.find((card) => {
+      if (getCardCountsAs(card) !== item) {
+        return false;
+      }
+
+      return (
+        (!normalizedName || card.itemName === normalizedName) &&
+        (!normalizedMinorProperty || card.minorProperty === normalizedMinorProperty) &&
+        (!normalizedFlavor || card.flavorNotes === normalizedFlavor)
+      );
+    })?.id ?? ""
+  );
 }
 
 function clampLevel(value: number, min: number, max: number) {
@@ -186,6 +237,7 @@ export function CharacterForm({
   legalLanguageOptions = getDefaultLegalLanguageOptions(),
   legalLanguageGroups,
   legalSubclassOptions = getDefaultLegalSubclassOptions(),
+  magicItemCardOptions = [],
 }: {
   action?: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
@@ -205,6 +257,7 @@ export function CharacterForm({
   legalLanguageOptions?: string[];
   legalLanguageGroups?: LegalLanguageGroup[];
   legalSubclassOptions?: LegalSubclassOptionsMap;
+  magicItemCardOptions?: CharacterMagicItemCardOption[];
 }) {
   const [class1Name, setClass1Name] = useState<string>(initialValues?.class1Name ?? "");
   const [class2Name, setClass2Name] = useState<string>(initialValues?.class2Name ?? "");
@@ -391,6 +444,26 @@ export function CharacterForm({
   const legalBuildMagicItemSet = useMemo(
     () => new Set(legalBuildMagicItemOptions),
     [legalBuildMagicItemOptions]
+  );
+  const legalCommonMagicItemSet = useMemo(
+    () => new Set(legalCommonMagicItemOptions),
+    [legalCommonMagicItemOptions]
+  );
+  const legalConsumableSet = useMemo(
+    () => new Set(legalConsumableOptions),
+    [legalConsumableOptions]
+  );
+  const buildMagicItemCardOptions = useMemo(
+    () => magicItemCardOptions.filter((card) => legalBuildMagicItemSet.has(getCardCountsAs(card))),
+    [legalBuildMagicItemSet, magicItemCardOptions]
+  );
+  const commonMagicItemCardOptions = useMemo(
+    () => magicItemCardOptions.filter((card) => legalCommonMagicItemSet.has(getCardCountsAs(card))),
+    [legalCommonMagicItemSet, magicItemCardOptions]
+  );
+  const consumableMagicItemCardOptions = useMemo(
+    () => magicItemCardOptions.filter((card) => legalConsumableSet.has(getCardCountsAs(card))),
+    [legalConsumableSet, magicItemCardOptions]
   );
   const skillGroups = Array.from({ length: 3 }, (_, index) =>
     DND_SKILLS.slice(
@@ -766,6 +839,94 @@ export function CharacterForm({
       field.style.height = `${maxHeight}px`;
     }
   }, [notes, backstory]);
+
+  function selectBuildMagicItemCard(index: number, cardId: string) {
+    const card = buildMagicItemCardOptions.find((option) => option.id === cardId);
+
+    if (!card) {
+      return;
+    }
+
+    const countsAs = getCardCountsAs(card);
+
+    setMagicItems((current) => {
+      const next = [...current];
+      next[index] = countsAs;
+      return next;
+    });
+    setMagicItemFilters((current) => {
+      const next = [...current];
+      next[index] = countsAs;
+      return next;
+    });
+    setMagicItemNames((current) => {
+      const next = [...current];
+      next[index] = card.itemName;
+      return next;
+    });
+    setMagicItemMinorProperties((current) => {
+      const next = [...current];
+      next[index] = card.minorProperty;
+      return next;
+    });
+    setMagicItemFlavors((current) => {
+      const next = [...current];
+      next[index] = card.flavorNotes;
+      return next;
+    });
+  }
+
+  function selectCommonMagicItemCard(index: number, cardId: string) {
+    const card = commonMagicItemCardOptions.find((option) => option.id === cardId);
+
+    if (!card) {
+      return;
+    }
+
+    const countsAs = getCardCountsAs(card);
+
+    setCommonMagicItems((current) => {
+      const next = [...current];
+      next[index] = countsAs;
+      return next;
+    });
+    setCommonMagicItemFilters((current) => {
+      const next = [...current];
+      next[index] = countsAs;
+      return next;
+    });
+    setCommonMagicItemNames((current) => {
+      const next = [...current];
+      next[index] = card.itemName;
+      return next;
+    });
+    setCommonMagicItemMinorProperties((current) => {
+      const next = [...current];
+      next[index] = card.minorProperty;
+      return next;
+    });
+    setCommonMagicItemFlavors((current) => {
+      const next = [...current];
+      next[index] = card.flavorNotes;
+      return next;
+    });
+  }
+
+  function selectConsumableMagicItemCard(index: number, cardId: string) {
+    const card = consumableMagicItemCardOptions.find((option) => option.id === cardId);
+
+    if (!card) {
+      return;
+    }
+
+    const countsAs = getCardCountsAs(card);
+
+    setConsumables((current) => {
+      const next = [...current];
+      next[index] = countsAs;
+      return next;
+    });
+  }
 
   function toggleVisionField(field: VisionFieldName, checked: boolean) {
     setVisionEnabled((current) => ({
@@ -1288,9 +1449,35 @@ export function CharacterForm({
               item
             );
             const magicItemListId = `character-magic-item-options-${index}`;
+            const selectedCardId = getSelectedCardId(
+              buildMagicItemCardOptions,
+              item,
+              magicItemNames[index] ?? "",
+              magicItemMinorProperties[index] ?? "",
+              magicItemFlavors[index] ?? ""
+            );
 
             return (
             <div className="stack character-magic-item-card" key={index} style={{ gap: "0.45rem" }}>
+              {buildMagicItemCardOptions.length ? (
+                <label>
+                  Card collection:
+                  <select
+                    name="magicItemCardIds"
+                    value={selectedCardId}
+                    onChange={(event) => selectBuildMagicItemCard(index, event.target.value)}
+                  >
+                    <option value="">No card selected</option>
+                    {buildMagicItemCardOptions.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {getCardOptionLabel(card)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <input name="magicItemCardIds" type="hidden" value="" />
+              )}
               <label>
                 Slot {index + 1}
                 {index < 3 ? " (attunement)" : ""} · Item (counts as):
@@ -1423,6 +1610,13 @@ maxLength={160}
               item
             );
             const commonMagicItemListId = `character-common-magic-item-options-${index}`;
+            const selectedCardId = getSelectedCardId(
+              commonMagicItemCardOptions,
+              item,
+              commonMagicItemNames[index] ?? "",
+              commonMagicItemMinorProperties[index] ?? "",
+              commonMagicItemFlavors[index] ?? ""
+            );
 
             return (
             <div
@@ -1430,6 +1624,25 @@ maxLength={160}
               key={`common-${index}`}
               style={{ gap: "0.45rem" }}
             >
+              {commonMagicItemCardOptions.length ? (
+                <label>
+                  Card collection:
+                  <select
+                    name="commonMagicItemCardIds"
+                    value={selectedCardId}
+                    onChange={(event) => selectCommonMagicItemCard(index, event.target.value)}
+                  >
+                    <option value="">No card selected</option>
+                    {commonMagicItemCardOptions.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {getCardOptionLabel(card)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <input name="commonMagicItemCardIds" type="hidden" value="" />
+              )}
               <label>
                 Slot {index + 1} · Item (counts as)
                 <input
@@ -1554,27 +1767,61 @@ maxLength={160}
         <div aria-hidden="true" className="character-section-divider" />
         <strong className="character-form-heading">Consumables</strong>
         <div className="form-grid">
-          {consumables.map((item, index) => (
-            <label className="character-magic-item-card" key={`consumable-${index}`}>
-              Consumable Slot {index + 1}:
-              <select
-                name="consumables"
-                value={item}
-                onChange={(event) => {
-                  const next = [...consumables];
-                  next[index] = event.target.value;
-                  setConsumables(next);
-                }}
+          {consumables.map((item, index) => {
+            const selectedCardId = getSelectedCardId(
+              consumableMagicItemCardOptions,
+              item
+            );
+
+            return (
+              <div
+                className="stack character-magic-item-card"
+                key={`consumable-${index}`}
+                style={{ gap: "0.45rem" }}
               >
-                <option value="">Select a consumable</option>
-                {legalConsumableOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
+                {consumableMagicItemCardOptions.length ? (
+                  <label>
+                    Card collection:
+                    <select
+                      name="consumableMagicItemCardIds"
+                      value={selectedCardId}
+                      onChange={(event) =>
+                        selectConsumableMagicItemCard(index, event.target.value)
+                      }
+                    >
+                      <option value="">No card selected</option>
+                      {consumableMagicItemCardOptions.map((card) => (
+                        <option key={card.id} value={card.id}>
+                          {getCardOptionLabel(card)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <input name="consumableMagicItemCardIds" type="hidden" value="" />
+                )}
+                <label>
+                  Consumable Slot {index + 1}:
+                  <select
+                    name="consumables"
+                    value={item}
+                    onChange={(event) => {
+                      const next = [...consumables];
+                      next[index] = event.target.value;
+                      setConsumables(next);
+                    }}
+                  >
+                    <option value="">Select a consumable</option>
+                    {legalConsumableOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            );
+          })}
         </div>
 
         <div aria-hidden="true" className="character-section-divider" />

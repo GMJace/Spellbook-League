@@ -83,6 +83,47 @@ export function CopyMusterInfoButton({
   );
 }
 
+export function CopyTextButton({
+  text,
+  label,
+  copiedLabel,
+  className,
+}: {
+  text: string;
+  label: string;
+  copiedLabel?: string;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        fallbackCopyText(text);
+      }
+
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      fallbackCopyText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  return (
+    <button
+      className={className ?? "button button-secondary"}
+      onClick={handleCopy}
+      type="button"
+    >
+      {copied ? copiedLabel ?? "Copied" : label}
+    </button>
+  );
+}
+
 export function CopyPlayerTokenButton({
   tokenImagePath,
   className,

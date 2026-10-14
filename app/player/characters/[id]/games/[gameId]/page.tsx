@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deletePlayerGameLog } from "@/app/player/characters/[id]/games/actions";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { CopyTextButton } from "@/components/copy-muster-info-button";
 import { requireRole } from "@/lib/auth";
 import { getParticipantCharacterLabel } from "@/lib/game-participants";
 import { prisma } from "@/lib/prisma";
@@ -141,6 +142,18 @@ export default async function PlayerGameLogDetailPage({
               <span className="muted character-game-log-detail-label">Downtime days awarded:</span>
               <strong>{effectiveDowntimeDaysAwarded}</strong>
             </div>
+            {participant.chestCode ? (
+              <div className="stack" style={{ gap: "0.35rem" }}>
+                <span className="muted character-game-log-detail-label">Chest code:</span>
+                <strong>{participant.chestCode}</strong>
+                <CopyTextButton
+                  className="button button-secondary button-small"
+                  copiedLabel="Copied chest code"
+                  label="Copy chest code"
+                  text={participant.chestCode}
+                />
+              </div>
+            ) : null}
             <div className="stack" style={{ gap: "0.35rem" }}>
               <span className="muted character-game-log-detail-label">Source (DM&apos;s Guild link):</span>
               <strong style={{ wordBreak: "break-word" }}>

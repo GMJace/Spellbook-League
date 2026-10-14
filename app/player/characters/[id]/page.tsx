@@ -11,9 +11,11 @@ import { CharacterBuildDisplay } from "@/components/character-build-display";
 import { DndBeyondCharacterPanel } from "@/components/dnd-beyond-character-panel";
 import { isDndBeyondLink, type DndBeyondCharacterImport } from "@/lib/dnd-beyond-character-import";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { MagicItemCardCollection } from "@/components/magic-item-card";
 import {
   CopyMusterInfoButton,
   CopyPlayerTokenButton,
+  CopyTextButton,
 } from "@/components/copy-muster-info-button";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { TableActionMenu } from "@/components/table-action-menu";
@@ -317,6 +319,18 @@ export default async function CharacterLogsheetPage({
           spentAt: "desc",
         },
       },
+      magicItemCards: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          gameParticipant: {
+            select: {
+              chestCode: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -473,6 +487,11 @@ export default async function CharacterLogsheetPage({
     (participant) =>
       participant.game.status === "COMPLETED" && participant.logStatus === "APPROVED"
   );
+  const chestCodeLog = visibleGameLog
+    .filter((participant) => participant.chestCode)
+    .sort((left, right) => right.game.datePlayed.getTime() - left.game.datePlayed.getTime());
+  const receivedChestCodes = chestCodeLog.filter((participant) => !participant.chestCodeRedeemedAt);
+  const redeemedChestCodes = chestCodeLog.filter((participant) => participant.chestCodeRedeemedAt);
   const gameLog = [...visibleGameLog].sort((left, right) => {
     return right.game.datePlayed.getTime() - left.game.datePlayed.getTime();
   });
@@ -690,6 +709,12 @@ export default async function CharacterLogsheetPage({
                 >
                   Edit Character
                 </Link>
+                <Link
+                  className="button button-secondary button-small"
+                  href={`/player/characters/${character.id}/loot-chest`}
+                >
+                  Redeem chest code
+                </Link>
                 <form action={deleteCharacter.bind(null, character.id)} style={{ margin: 0 }}>
                   <ConfirmSubmitButton
                     className="button button-danger button-small"
@@ -868,6 +893,50 @@ export default async function CharacterLogsheetPage({
               )}
             </div>
           </div>
+
+          {isOwner ? (
+            <>
+              <div
+                aria-hidden="true"
+                style={{
+                  width: "100%",
+                  height: "1px",
+                  background: "rgba(255, 255, 255, 0.85)",
+                }}
+              />
+
+              <div className="stack">
+                <div className="section-heading">
+                  <div>
+                    <h3 style={{ margin: 0 }}>Card collection</h3>
+                  </div>
+                </div>
+
+                {character.magicItemCards.length ? (
+                  <MagicItemCardCollection
+                    cards={character.magicItemCards.map((card) => ({
+                      id: card.id,
+                      backImagePath: card.backImagePath,
+                      chestCode: card.gameParticipant?.chestCode ?? "",
+                      countsAs: card.countsAs,
+                      flavorNotes: card.flavorNotes,
+                      frontImagePath: card.frontImagePath,
+                      isCarried: card.isCarried,
+                      itemName: card.itemName,
+                      limitedEditionLimit: card.limitedEditionLimit,
+                      limitedEditionNumber: card.limitedEditionNumber,
+                      minorProperty: card.minorProperty,
+                      rarity: card.rarity,
+                    }))}
+                  />
+                ) : (
+                  <p className="muted" style={{ margin: 0 }}>
+                    No magic item cards collected yet.
+                  </p>
+                )}
+              </div>
+            </>
+          ) : null}
 
         </div>
         <div className="list-card stack">
@@ -1416,6 +1485,93 @@ export default async function CharacterLogsheetPage({
             </table>
           </div>
         </div>
+
+        {isOwner ? (
+          <div className="list-card stack">
+            <div aria-hidden="true" style={whiteLineDividerStyle} />
+
+            <div className="section-heading">
+              <div>
+                <h2 style={{ margin: 0 }}>Loot chest codes</h2>
+                <p className="muted" style={{ margin: "0.35rem 0 0" }}>
+                  Every approved completed game log receives one chest code. Redeem codes on the loot chest page.
+                </p>
+              </div>
+              <Link
+                className="button button-secondary"
+                href={`/player/characters/${character.id}/loot-chest`}
+              >
+                Redeem chest code
+              </Link>
+            </div>
+
+            <div className="grid two">
+              <div className="character-detail-card character-dark-detail-card">
+                <h3 style={{ margin: 0 }}>Codes received</h3>
+                {receivedChestCodes.length ? (
+                  <div className="stack" style={{ gap: "0.75rem" }}>
+                    {receivedChestCodes.map((participant) => (
+                      <div className="loot-chest-code-card" key={participant.id}>
+                        <div>
+                          <p className="muted" style={{ margin: 0 }}>
+                            {participant.game.title}
+                          </p>
+                          <strong>{participant.chestCode}</strong>
+                          <p className="muted" style={{ margin: "0.25rem 0 0" }}>
+                            {formatDate(participant.game.datePlayed)}
+                          </p>
+                        </div>
+                        <div className="inline-actions" style={{ flexWrap: "wrap" }}>
+                          <CopyTextButton
+                            className="button button-secondary button-small"
+                            copiedLabel="Copied code"
+                            label="Copy code"
+                            text={participant.chestCode ?? ""}
+                          />
+                          <Link
+                            className="button button-secondary button-small"
+                            href={`/player/characters/${character.id}/loot-chest?code=${encodeURIComponent(participant.chestCode ?? "")}`}
+                          >
+                            Redeem
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted" style={{ margin: 0 }}>
+                    No unredeemed chest codes yet.
+                  </p>
+                )}
+              </div>
+
+              <div className="character-detail-card character-dark-detail-card">
+                <h3 style={{ margin: 0 }}>Codes redeemed</h3>
+                {redeemedChestCodes.length ? (
+                  <div className="stack" style={{ gap: "0.75rem" }}>
+                    {redeemedChestCodes.map((participant) => (
+                      <div className="loot-chest-code-card" key={participant.id}>
+                        <div>
+                          <p className="muted" style={{ margin: 0 }}>
+                            {participant.game.title}
+                          </p>
+                          <strong>{participant.chestCode}</strong>
+                          <p className="muted" style={{ margin: "0.25rem 0 0" }}>
+                            Redeemed {participant.chestCodeRedeemedAt ? formatDate(participant.chestCodeRedeemedAt) : "recently"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted" style={{ margin: 0 }}>
+                    No chest codes redeemed yet.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {isOwner ? (
           <div className="list-card stack">
