@@ -26,6 +26,20 @@ type DefinitionRow = {
   itemName: string;
 };
 
+const defaultCardDefinitions = [
+  {
+    backImagePath: "/magic-item-cards/dagger-of-the-blackrose-back.jpg",
+    countsAs: "+3 Weapon, Dagger",
+    flavorNotes:
+      "Bestowed upon knights sworn to Lord Soth, the Dagger of the Black Rose bears the charred rose of the fallen Solamnic lord, whose refusal to fulfill his redemption doomed him and his loyal retainers to undeath. Each abyssal blade imprisons a creature drawn from the void, sealed within its steel by binding runes woven during the knight oath of fealty. Its presence stirs as a crawling shadow beneath the metal, whispering in Abyssal whenever the dagger is drawn. To carry one is to bear both Soth favour and a captive horror, an enduring reminder that service to the Knight of the Black Rose does not end with death.",
+    frontImagePath: "/magic-item-cards/dagger-of-the-blackrose-front.jpg",
+    itemName: "Dagger of the Blackrose",
+    limitedEditionLimit: 30,
+    minorProperty: "Language: Abyssal",
+    rarity: "Very Rare",
+  },
+];
+
 async function backupDatabaseFile() {
   const databasePath = path.join(process.cwd(), "prisma", "dev.db");
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -152,6 +166,31 @@ async function main() {
       definitionId,
       card.itemName,
     );
+  }
+
+  for (const card of defaultCardDefinitions) {
+    if (definitionIdByName.has(card.itemName)) {
+      continue;
+    }
+
+    const definitionId = randomUUID();
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "MagicItemCardDefinition" (
+        "id", "frontImagePath", "backImagePath", "itemName", "countsAs",
+        "minorProperty", "rarity", "flavorNotes", "awardedCount", "limitedEditionLimit",
+        "createdAt", "updatedAt"
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      definitionId,
+      card.frontImagePath,
+      card.backImagePath,
+      card.itemName,
+      card.countsAs,
+      card.minorProperty,
+      card.rarity,
+      card.flavorNotes,
+      card.limitedEditionLimit,
+    );
+    definitionIdByName.set(card.itemName, definitionId);
   }
 
   await prisma.$executeRawUnsafe(`
