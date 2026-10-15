@@ -924,6 +924,127 @@ button.button-small {
   border-color: rgba(255, 255, 255, 0.35);
 }
 
+.homepage-quests-guides {
+  width: 100%;
+  scroll-margin-top: 10rem;
+}
+
+.homepage-quests-guide-icon {
+  width: 2.6rem;
+  height: 2.6rem;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.quests-guide-page {
+  min-width: 0;
+}
+
+.quests-guide-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.quests-guide-title > img {
+  width: 4.3rem;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.quests-guide-title h1,
+.quests-guide-title p {
+  margin: 0;
+}
+
+.quests-guide-header [aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.quests-guide-contents ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem 2rem;
+  padding-left: 1.5rem;
+}
+
+.quests-guide-copy {
+  line-height: 1.75;
+}
+
+.quests-guide-copy > section {
+  max-width: 80ch;
+  margin-inline: auto;
+  scroll-margin-top: 10rem;
+}
+
+.quests-guide-copy > section + section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--comic-ink);
+}
+
+.quests-guide-copy :is(p, li, dd) {
+  color: var(--text);
+}
+
+.quests-guide-copy :is(a, strong, dt),
+.quests-guide-contents a {
+  color: var(--comic-ink);
+}
+
+.quests-guide-copy a,
+.quests-guide-contents a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.quests-guide-copy li + li {
+  margin-top: 0.5rem;
+}
+
+.quests-guide-copy dt {
+  margin-top: 1rem;
+  font-weight: 900;
+}
+
+.quests-guide-copy dd {
+  margin-left: 0;
+}
+
+.quests-guide-oath {
+  margin-inline: 0;
+  padding-left: 1.25rem;
+  border-left: 4px solid var(--comic-red);
+  font-style: italic;
+}
+
+.quests-guide-copy caption {
+  padding: 0.75rem;
+  color: var(--comic-ink);
+  font-weight: 900;
+  text-align: left;
+}
+
+.quests-guide-carry-table :is(th, td):first-child {
+  width: 30%;
+}
+
+@media (max-width: 760px) {
+  .quests-guide-contents ol {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quests-guide-title {
+    align-items: flex-start;
+  }
+
+  .quests-guide-title > img {
+    width: 3rem;
+  }
+}
+
 .homepage-ggcon-link {
   gap: 0.55rem;
 }
@@ -1469,7 +1590,7 @@ button.button-small {
   display: grid;
   gap: 1rem;
   max-width: 72rem;
-  font-size: 24pt;
+  font-size: 14pt;
   line-height: 1.5;
   text-align: center;
 }
@@ -3976,6 +4097,18 @@ body .handbook-link-logo {
   filter: drop-shadow(2px 2px 0 var(--comic-ink));
 }
 
+:root[data-theme="dark"] body :is(
+  .homepage-discord-logo,
+  .store-publishing-button-logo,
+  .site-store-button-icon,
+  .homepage-spellbook-icon,
+  .homepage-ggcon-icon,
+  .homepage-character-log-icon,
+  .handbook-link-logo
+) {
+  filter: none;
+}
+
 body .social-icon {
   filter: none;
 }
@@ -4676,7 +4809,6 @@ body .search-row .button {
     font-size: clamp(2rem, 9vw, 2.9rem);
   }
 
-  .guide-copy.league-copy,
   .ggcon-lead.ggcon-hero-copy-body,
   .ggcon-ticket-copy,
   .muted.ggcon-meta-note.ggcon-ticket-date {
@@ -4910,7 +5042,7 @@ body .search-row .button {
   }
 
   .guide-copy.league-copy {
-    font-size: 0.95rem;
+    font-size: 14pt;
     text-align: left;
   }
 
@@ -5072,6 +5204,10 @@ body a.button.league-jump-button {
     1px 1px 0 var(--comic-ink);
   -webkit-text-stroke: 1px var(--comic-ink);
   paint-order: stroke fill;
+}
+
+:root[data-theme="dark"] body a.button.league-jump-button {
+  color: #000000 !important;
 }
 
 body a.button.ggcon-flying-carpet-button {

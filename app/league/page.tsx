@@ -1,5 +1,6 @@
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { QuestsGuidesSection } from "@/components/quests-guides-section";
 import { getHomepageData } from "@/lib/data";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 import Link from "next/link";
@@ -59,21 +60,19 @@ export default async function LeaguePage() {
           <p>
             <RainbowSpellbook />&apos;S QUESTS is designed to be easy to join and simple to
             run. A straightforward{" "}
-            <a
+            <Link
               className="ledger-link"
-              download
-              href="/handbooks/adventurers-league-players-guide-v2026.4.pdf"
+              href="/quests/players-guide"
             >
               Player's Guide
-            </a>{" "}
+            </Link>{" "}
             and{" "}
-            <a
+            <Link
               className="ledger-link"
-              download
-              href="/handbooks/adventurers-league-dm-guide-v2026.2.pdf"
+              href="/quests/dm-guide"
             >
               DM's Guide
-            </a>{" "}
+            </Link>{" "}
             help everyone understand how quests work, how games are
             logged, how event participation works, and how progress is tracked.
           </p>
@@ -104,6 +103,8 @@ export default async function LeaguePage() {
           </p>
         </div>
       </section>
+
+      <QuestsGuidesSection />
 
       <section
         className="card ledger-panel stack homepage-open-games-section"

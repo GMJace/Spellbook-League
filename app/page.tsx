@@ -7,6 +7,7 @@ import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
 import { getHomepageData } from "@/lib/data";
+import { QuestsGuidesSection } from "@/components/quests-guides-section";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 
 function AdventurersLeagueLogo() {
@@ -161,6 +162,8 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      <QuestsGuidesSection />
 
       <section className="card ledger-panel stack homepage-handbooks">
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
