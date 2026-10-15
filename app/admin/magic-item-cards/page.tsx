@@ -1,9 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 
+import { createMagicItemCardDefinition } from "@/app/admin/magic-item-cards/actions";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { SearchIcon } from "@/components/search-icon";
 import { requireAdminUser } from "@/lib/admin";
+import { listMagicItemCardImages } from "@/lib/magic-item-card-image-upload";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +15,7 @@ const PAGE_SIZE = 16;
 export default async function AdminMagicItemCardsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ catalog?: string; page?: string; q?: string }>;
 }) {
   await requireAdminUser();
   const params = await searchParams;
@@ -34,7 +36,10 @@ export default async function AdminMagicItemCardsPage({
       }
     : {};
 
-  const total = await prisma.magicItemCardDefinition.count({ where });
+  const [total, availableImages] = await Promise.all([
+    prisma.magicItemCardDefinition.count({ where }),
+    listMagicItemCardImages(),
+  ]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(validRequestedPage, pages);
 
@@ -57,6 +62,15 @@ export default async function AdminMagicItemCardsPage({
     next.set("page", String(nextPage));
     return `/admin/magic-item-cards?${next.toString()}`;
   };
+  const statusMessages: Record<string, string> = {
+    duplicate: "A catalog card with that item name already exists.",
+    "image-invalid": "Card images must be JPG, PNG, or WEBP files no larger than 10 MB each.",
+    "images-required": "Choose or upload both a front image and a back image.",
+    invalid: "Enter a card name and a valid limited-edition total.",
+  };
+  const statusMessage = params.catalog ? statusMessages[params.catalog] : "";
+  const frontImages = availableImages.filter((image) => /(?:-|_)front(?:-[^.]+)?\.[^.]+$/i.test(image.label));
+  const backImages = availableImages.filter((image) => /(?:-|_)back(?:-[^.]+)?\.[^.]+$/i.test(image.label));
 
   return (
     <main className="page-shell stack">
@@ -64,6 +78,75 @@ export default async function AdminMagicItemCardsPage({
         title="Magic item cards"
         description="Review the card catalog, inspect award and chest-code history, and manage cards awarded to characters."
       />
+
+      {statusMessage ? <p style={{ margin: 0 }}>{statusMessage}</p> : null}
+
+      <section className="list-card stack admin-magic-card-create-section">
+        <div>
+          <h2 style={{ margin: 0 }}>Add card to catalog</h2>
+        </div>
+
+        <form action={createMagicItemCardDefinition} className="form-stack">
+          <div className="form-grid">
+            <label>
+              Item name
+              <input maxLength={160} name="itemName" required type="text" />
+            </label>
+            <label>
+              Counts as
+              <input maxLength={240} name="countsAs" type="text" />
+            </label>
+            <label>
+              Rarity
+              <input maxLength={120} name="rarity" type="text" />
+            </label>
+            <label>
+              Minor property
+              <input maxLength={240} name="minorProperty" type="text" />
+            </label>
+            <label>
+              Limited-edition total
+              <input min={1} name="limitedEditionLimit" step={1} type="number" />
+            </label>
+          </div>
+
+          <div className="form-grid admin-magic-card-create-images">
+            <label>
+              Existing front image
+              <select name="frontImagePath" defaultValue="">
+                <option value="">None selected</option>
+                {frontImages.map((image) => (
+                  <option key={image.path} value={image.path}>{image.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Upload front image
+              <input accept="image/jpeg,image/png,image/webp" name="frontImage" type="file" />
+            </label>
+            <label>
+              Existing back image
+              <select name="backImagePath" defaultValue="">
+                <option value="">None selected</option>
+                {backImages.map((image) => (
+                  <option key={image.path} value={image.path}>{image.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Upload back image
+              <input accept="image/jpeg,image/png,image/webp" name="backImage" type="file" />
+            </label>
+          </div>
+
+          <label>
+            Flavor and notes
+            <textarea maxLength={4000} name="flavorNotes" rows={5} />
+          </label>
+
+          <button className="button" type="submit">Create catalog card</button>
+        </form>
+      </section>
 
       <section className="stack admin-magic-card-catalog-section">
         <div className="section-heading">

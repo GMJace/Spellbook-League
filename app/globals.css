@@ -5636,6 +5636,14 @@ body .character-game-log-detail-page .character-game-log-detail-label {
   border-radius: 5px;
 }
 
+.admin-magic-card-create-section {
+  width: 100%;
+}
+
+.admin-magic-card-create-section form > .button {
+  justify-self: start;
+}
+
 .admin-magic-card-catalog-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
