@@ -142,6 +142,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: user.email.toLowerCase(),
             name: user.name ?? user.email,
             passwordHash: null,
+            accountWelcome: { create: {} },
           },
         });
       }

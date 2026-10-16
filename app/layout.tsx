@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
+import { AccountWelcome } from "@/components/account-welcome";
 import { SiteHeader } from "@/components/site-header";
 import { isAdminEmail } from "@/lib/admin-access";
 import { getUnreadNotificationCount, getUserNotifications } from "@/lib/notifications";
@@ -92,7 +93,12 @@ export default async function RootLayout({
             unreadNotificationCount={unreadNotificationCount}
             userName={user ? user.name ?? user.email ?? "Account" : null}
           />
-          <main className="site-main">{children}</main>
+          <main className="site-main">
+            {user?.id && user.roles.some((role) => role === "PLAYER" || role === "DM") ? (
+              <AccountWelcome key={user.id} />
+            ) : null}
+            {children}
+          </main>
           <footer className="site-footer" aria-label="Site disclaimer">
             <div className="social-links" aria-label="SPELLBOOK social media links">
               {socialLinks.map((link) => (

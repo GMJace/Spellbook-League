@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
+    "db:migrate:account-welcome": "tsx prisma/migrate-account-welcome.ts",
+    "test:account-welcome": "tsx --test tests/account-welcome.test.ts",
     "db:migrate:ddb-sync": "tsx prisma/migrate-dnd-beyond-sync.ts",
     "db:migrate:al-authors": "tsx prisma/migrate-al-authors.ts",
     "db:migrate:module-conflicts": "tsx prisma/migrate-module-conflicts.ts",

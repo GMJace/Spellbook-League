@@ -61,6 +61,7 @@ export async function registerUser(
         email: parsed.data.email.toLowerCase(),
         profileImagePath: uploadedProfileImagePath,
         passwordHash,
+        accountWelcome: { create: {} },
         roles: {
           create: roles.map((role) => ({ role })),
         },

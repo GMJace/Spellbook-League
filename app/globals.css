@@ -929,6 +929,64 @@ button.button-small {
   scroll-margin-top: 10rem;
 }
 
+.account-welcome {
+  align-items: center;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.account-welcome-image {
+  display: block;
+  width: min(100%, 48rem);
+  height: auto;
+  margin-inline: auto;
+}
+
+.account-welcome-copy {
+  width: 100%;
+  max-width: 75ch;
+  margin-inline: auto;
+  justify-items: center;
+  line-height: 1.7;
+}
+
+.account-welcome-copy :is(h1, p) {
+  margin: 0;
+}
+
+.account-welcome-copy > section {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.account-welcome-copy h2 {
+  margin: 0 0 0.75rem;
+}
+
+.account-welcome-copy p + p {
+  margin-top: 0.75rem;
+}
+
+.account-welcome-copy ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+
+.account-welcome-copy li + li {
+  margin-top: 0.5rem;
+}
+
+.account-welcome-copy :is(p, li, strong) {
+  color: var(--text);
+}
+
+.account-welcome-copy a {
+  color: var(--comic-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .homepage-quests-guide-icon {
   width: 2.6rem;
   height: 2.6rem;

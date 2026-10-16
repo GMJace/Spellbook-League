@@ -144,6 +144,7 @@ model User {
   discordHandle                   String?
   profileImagePath                String?
   passwordHash                    String?
+  accountWelcome                  AccountWelcome?
   newGameSignupAlertsEnabled      Boolean                   @default(false)
   storeCreditUsd                  Float                     @default(0)
   storeCreditHeldUsd              Float                     @default(0)
@@ -182,6 +183,12 @@ model User {
   dmTidingAwards                  TidingAward[]             @relation("DmTidingAwards")
   tidingSpends                    TidingSpend[]             @relation("UserTidingSpends")
   dmServiceLogs                   DmServiceLog[]            @relation("DmServiceLogUser")
+}
+
+model AccountWelcome {
+  userId  String    @id
+  shownAt DateTime?
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UserRole {
