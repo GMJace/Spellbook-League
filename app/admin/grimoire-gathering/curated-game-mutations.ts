@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { saveGrimoireAdventureImageUpload } from "@/lib/grimoire-adventure-image-upload";
 import { prisma } from "@/lib/prisma";
+import { buildCuratedGameSlug } from "@/lib/curated-game-slug";
 
 const curatedGameSchema = z.object({
   eventSlotId: z.string().trim().min(1),
@@ -239,7 +240,8 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
     });
   }
 
-  const normalizedSlug = slugifyGrimoireEventTitle(parsed.data.title);
+  const gameId = crypto.randomUUID();
+  const normalizedSlug = buildCuratedGameSlug(parsed.data.title, gameId);
   const adventureImageFile = formData.get("adventureImage");
   let adventureImagePath: string | null = null;
 
@@ -301,7 +303,7 @@ export async function createCuratedGameRedirectPath(formData: FormData) {
         createdAt,
         updatedAt
       ) VALUES (
-        ${crypto.randomUUID()},
+        ${gameId},
         ${selectedSlot.eventId},
         ${normalizedSlug},
         ${parsed.data.title},
@@ -453,7 +455,7 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
       UPDATE GrimoireCuratedGame
       SET
         eventId = ${selectedSlot.eventId},
-        slug = ${normalizedSlug},
+        slug = ${existingGame.slug},
         title = ${parsed.data.title},
         summary = ${parsed.data.summary},
         details = ${JSON.stringify(parseTextareaLines(parsed.data.details))},
@@ -497,7 +499,7 @@ export async function updateCuratedGameRedirectPath(formData: FormData) {
   });
   revalidateGrimoirePaths({
     eventId: selectedSlot.eventId,
-    gameSlugs: [normalizedSlug],
+    gameSlugs: [existingGame.slug],
   });
 
   return buildGrimoireGameRedirect({
