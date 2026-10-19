@@ -123,17 +123,20 @@ function addDaysToDateParts(
 
 function parseEventDateInput(value: string) {
   const trimmed = value.trim();
-  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
   if (!match) {
     return null;
   }
 
-  return {
+  const parts = {
     year: Number(match[1]),
     month: Number(match[2]),
     day: Number(match[3]),
   };
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  return date.getUTCFullYear() === parts.year && date.getUTCMonth() + 1 === parts.month && date.getUTCDate() === parts.day
+    ? parts : null;
 }
 
 function slugifySlotKey(value: string) {
@@ -147,6 +150,9 @@ function slugifySlotKey(value: string) {
 function formatCustomSlotLabel(startAt: Date, durationHours: number) {
   const label = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
     timeZone: GRIMOIRE_EVENT_TIME_ZONE,
@@ -165,6 +171,16 @@ export function formatGrimoireEventDateInput(date: Date) {
   return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(
     parts.day,
   ).padStart(2, "0")}`;
+}
+
+export function formatGrimoireEventTimeInput(date: Date) {
+  const parts = getTimeZoneDateParts(date);
+  return `${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`;
+}
+
+export function getGrimoireEventStartDate(value: string) {
+  const parts = parseEventDateInput(value);
+  return parts ? createDateInTimeZone(parts.year, parts.month, parts.day, 0, 0) : null;
 }
 
 export function readStandardGrimoireSlotCountsFromFormData(formData: FormData) {
@@ -210,7 +226,7 @@ export function buildStandardGrimoireEventSlots(
 
     return {
       slotKey: slot.key,
-      label: slot.label,
+      label: formatCustomSlotLabel(startAt, 4),
       startAt,
       endAt: new Date(startAt.getTime() + FOUR_HOURS_IN_MS),
       gameSlotCount: slotCounts[slot.key] ?? 0,
@@ -219,6 +235,7 @@ export function buildStandardGrimoireEventSlots(
 }
 
 export function buildCustomGrimoireEventSlots(formData: FormData) {
+  const keys = formData.getAll("customSlotKey").map((value) => String(value).trim());
   const dates = formData.getAll("customSlotDate").map((value) => String(value).trim());
   const startTimes = formData.getAll("customSlotStartTime").map((value) => String(value).trim());
   const durations = formData.getAll("customSlotDurationHours").map((value) => String(value).trim());
@@ -255,18 +272,18 @@ export function buildCustomGrimoireEventSlots(formData: FormData) {
       continue;
     }
 
-    if (!timeMatch) {
+    if (!timeMatch || Number(timeMatch[1]) > 23 || Number(timeMatch[2]) > 59) {
       errors.push(`${rowLabel}: Choose a valid start time.`);
       continue;
     }
 
-    if (!Number.isFinite(durationHours) || durationHours <= 0 || durationHours > 24) {
+    if (!Number.isFinite(durationHours) || durationHours < 0.5 || durationHours > 24 || !Number.isInteger(durationHours * 2)) {
       errors.push(`${rowLabel}: Enter a duration between 0.5 and 24 hours.`);
       continue;
     }
 
-    if (!Number.isInteger(gameSlotCount) || gameSlotCount < 0 || gameSlotCount > 99) {
-      errors.push(`${rowLabel}: Enter a whole number of spaces between 0 and 99.`);
+    if (!Number.isSafeInteger(gameSlotCount) || gameSlotCount < 0 || gameSlotCount > 2147483647 || !countInput) {
+      errors.push(`${rowLabel}: Enter a non-negative whole number of game tables.`);
       continue;
     }
 
@@ -279,9 +296,18 @@ export function buildCustomGrimoireEventSlots(formData: FormData) {
     );
     const slotKeyBase = slugifySlotKey(`${dateInput}_${startTimeInput}`);
     const durationMs = Math.round(durationHours * 60 * 60 * 1000);
+    if (formatGrimoireEventDateInput(startAt) !== dateInput || formatGrimoireEventTimeInput(startAt) !== startTimeInput) {
+      errors.push(`${rowLabel}: This time does not exist in Mountain time because of daylight saving time. Choose another start time.`);
+      continue;
+    }
+    const eventDate = String(formData.get("date") ?? "").trim();
+    if (eventDate && dateInput < eventDate) {
+      errors.push(`${rowLabel}: Choose a date on or after the event start date.`);
+      continue;
+    }
 
     slots.push({
-      slotKey: `custom_${slotKeyBase || index + 1}`,
+      slotKey: keys[index] || `custom_${slotKeyBase || index + 1}`,
       label: formatCustomSlotLabel(startAt, durationHours),
       startAt,
       endAt: new Date(startAt.getTime() + durationMs),
@@ -292,6 +318,17 @@ export function buildCustomGrimoireEventSlots(formData: FormData) {
   if (!slots.length && !errors.length) {
     errors.push("Create at least one custom event time slot.");
   }
+
+  const seenTimes = new Set<number>();
+  const seenKeys = new Set<string>();
+  for (const slot of slots) {
+    if (seenTimes.has(slot.startAt.getTime()) || seenKeys.has(slot.slotKey)) {
+      errors.push("Each time slot must have a unique start time. For simultaneous games, increase the number of game tables instead.");
+    }
+    seenTimes.add(slot.startAt.getTime());
+    seenKeys.add(slot.slotKey);
+  }
+  slots.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 
   return {
     errors,
@@ -314,8 +351,8 @@ export function getGrimoireSlotCapacityValidationErrors(
   for (const slot of STANDARD_GRIMOIRE_TIME_SLOTS) {
     const value = slotCounts[slot.key];
 
-    if (!Number.isInteger(value) || value < 0 || value > 99) {
-      errors.push(`${slot.label}: Enter a whole number between 0 and 99.`);
+    if (!Number.isSafeInteger(value) || value < 0 || value > 2147483647) {
+      errors.push(`${slot.label}: Enter a non-negative whole number of game tables.`);
     }
   }
 

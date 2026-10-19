@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { AdminPageHeader } from "@/components/admin-page-header";
 import { DatePickerField } from "@/components/date-picker-field";
+import { GrimoireEventScheduleFields } from "@/components/grimoire-event-schedule-fields";
 import { LocalizedEventTime } from "@/components/localized-event-time";
 import { TableActionMenu } from "@/components/table-action-menu";
 import {
@@ -19,9 +20,8 @@ import { getGrimoireDiscordSettings } from "@/lib/grimoire-discord";
 import { getGrimoireEventPackPdfPath } from "@/lib/grimoire-event-pack";
 import { formatGrimoireTier } from "@/lib/grimoire";
 import {
-  STANDARD_GRIMOIRE_TIME_SLOTS,
   formatGrimoireEventDateInput,
-  getGrimoireEventDateFieldName,
+  formatGrimoireEventTimeInput,
 } from "@/lib/grimoire-slots";
 import { prisma } from "@/lib/prisma";
 
@@ -127,41 +127,6 @@ type CuratedGameRow = {
 
 function formatEventSlotOptionLabel({ event, slot }: EventSlotOption) {
   return `${event.subtitle} | ${slot.label} (${slot.availableGameSlots} of ${slot.gameSlotCount} open)`;
-}
-
-function EventSlotCapacityFields({
-  slots,
-}: {
-  slots?: EventRow["slots"];
-}) {
-  const slotMap = new Map((slots ?? []).map((slot) => [slot.slotKey, slot]));
-
-  return (
-    <div className="form-grid">
-      {STANDARD_GRIMOIRE_TIME_SLOTS.map((slotDefinition) => {
-        const slot = slotMap.get(slotDefinition.key);
-
-        return (
-          <label key={slotDefinition.key}>
-            {slotDefinition.label}
-            <input
-              defaultValue={slot?.gameSlotCount ?? 0}
-              max="99"
-              min="0"
-              name={getGrimoireEventDateFieldName(slotDefinition.key)}
-              required
-              type="number"
-            />
-            <span className="muted ggcon-meta-note">
-              {slot
-                ? `${slot.filledGameSlots} filled, ${slot.availableGameSlots} open`
-                : "Number of open four-hour game slots for this time slot."}
-            </span>
-          </label>
-        );
-      })}
-    </div>
-  );
 }
 
 function ModerationActionButton({
@@ -772,7 +737,7 @@ export default async function AdminGrimoireGatheringPage({
                 </p>
               </div>
 
-              <form action={createGrimoireEvent} className="form-stack" encType="multipart/form-data">
+              <form action={createGrimoireEvent} className="form-stack">
                 <div className="form-grid">
                   <label>
                     Month label
@@ -785,23 +750,7 @@ export default async function AdminGrimoireGatheringPage({
                   <input name="subtitle" placeholder="Summer of Secrets" required type="text" />
                 </label>
 
-                <div className="form-grid">
-                  <DatePickerField
-                    label="Weekend start date (Friday)"
-                    name="date"
-                    required
-                    type="date"
-                  />
-                  <label>
-                    Display date
-                    <input
-                      name="displayDate"
-                      placeholder="June 12-14, 2027"
-                      required
-                      type="text"
-                    />
-                  </label>
-                </div>
+                <GrimoireEventScheduleFields />
 
                 <label>
                   Theme
@@ -829,7 +778,7 @@ export default async function AdminGrimoireGatheringPage({
                 <div className="form-grid">
                   <label>
                     Ticket label
-                    <input name="ticketLabel" placeholder="Weekend Pass" required type="text" />
+                    <input name="ticketLabel" placeholder="Event Pass" required type="text" />
                   </label>
                   <label>
                     Ticket display price
@@ -852,68 +801,6 @@ export default async function AdminGrimoireGatheringPage({
                 </p>
 
                 <hr className="ggcon-form-divider" />
-
-                <label className="ggcon-checkbox-row ggcon-template-checkbox-row">
-                  <input
-                    className="ggcon-template-toggle"
-                    defaultChecked
-                    name="useEventTimeSlotTemplate"
-                    type="checkbox"
-                  />
-                  <span>Use event time slot template</span>
-                </label>
-
-                <hr className="ggcon-form-divider" />
-
-                <div className="stack ggcon-standard-slot-section" style={{ gap: "0.75rem" }}>
-                  <div>
-                    <strong>Open game slots by time slot</strong>
-                    <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                      All event time slots use Mountain time. Each game slot is 4 hours long.
-                    </p>
-                  </div>
-                  <EventSlotCapacityFields />
-                </div>
-                <p className="muted ggcon-standard-slot-section" style={{ margin: 0 }}>
-                  Set how many tables DMs can fill in each standard event time slot.
-                </p>
-
-                <div className="stack ggcon-custom-slot-section" style={{ gap: "0.75rem" }}>
-                  <div>
-                    <strong>Create custom time slots</strong>
-                    <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                      Add custom Mountain-time slots with their own duration and available spaces.
-                    </p>
-                  </div>
-                  {[0, 1, 2, 3, 4, 5].map((index) => (
-                    <div className="ggcon-custom-slot-row" key={index}>
-                      <div className="form-grid">
-                        <DatePickerField
-                          label={`Slot ${index + 1} date`}
-                          name="customSlotDate"
-                          type="date"
-                        />
-                        <label>
-                          Start time
-                          <input name="customSlotStartTime" type="time" />
-                        </label>
-                        <label>
-                          Duration hours
-                          <input
-                            min="0.5"
-                            name="customSlotDurationHours"
-                            step="0.5"
-                            type="number"
-                          />
-                        </label>
-                        <label>
-                          Spaces
-                          <input min="0" name="customSlotCount" step="1" type="number" />
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
                 <button className="button-secondary" type="submit">
                   Create event
@@ -947,7 +834,7 @@ export default async function AdminGrimoireGatheringPage({
               </div>
             </div>
 
-            <form action={updateGrimoireEvent} className="form-stack" encType="multipart/form-data">
+            <form action={updateGrimoireEvent} className="form-stack">
               <input name="eventId" type="hidden" value={selectedEvent.id} />
 
               <label>
@@ -965,27 +852,18 @@ export default async function AdminGrimoireGatheringPage({
                 />
               </label>
 
-              <div className="form-grid">
-                <DatePickerField
-                  defaultValue={formatGrimoireEventDateInput(selectedEvent.date)}
-                  label="Weekend start date (Friday)"
-                  name="date"
-                  required
-                  type="date"
-                />
-                <label>
-                  Display date
-                  <input
-                    defaultValue={selectedEvent.displayDate}
-                    name="displayDate"
-                    required
-                    type="text"
-                  />
-                </label>
-              </div>
-              <p className="muted" style={{ margin: 0 }}>
-                Standard event time slots are fixed to Mountain time and run for 4 hours each.
-              </p>
+              <GrimoireEventScheduleFields
+                key={selectedEvent.id}
+                initialDate={formatGrimoireEventDateInput(selectedEvent.date)}
+                initialDisplayDate={selectedEvent.displayDate}
+                initialSlots={selectedEvent.slots.map((slot) => ({
+                  slotKey: slot.slotKey,
+                  date: formatGrimoireEventDateInput(slot.startAt),
+                  startTime: formatGrimoireEventTimeInput(slot.startAt),
+                  durationHours: (slot.endAt.getTime() - slot.startAt.getTime()) / 3600000,
+                  gameSlotCount: slot.gameSlotCount,
+                }))}
+              />
 
               <label>
                 Theme
@@ -1037,20 +915,6 @@ export default async function AdminGrimoireGatheringPage({
                   />
                 </label>
               </div>
-
-              <div className="stack" style={{ gap: "0.75rem" }}>
-                <div>
-                  <strong>Open game slots by time slot</strong>
-                  <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-                    Reduce a slot only if enough capacity remains for the games already assigned to
-                    it.
-                  </p>
-                </div>
-                <EventSlotCapacityFields slots={selectedEvent.slots} />
-              </div>
-              <p className="muted" style={{ margin: 0 }}>
-                Each number is the total number of tables available for that event time slot.
-              </p>
 
               <hr className="ggcon-form-divider" />
 
@@ -1119,7 +983,6 @@ export default async function AdminGrimoireGatheringPage({
             <form
               action={updateGrimoireEventPackPdf}
               className="form-stack"
-              encType="multipart/form-data"
             >
               <input name="eventId" type="hidden" value={selectedEvent.id} />
               <label>

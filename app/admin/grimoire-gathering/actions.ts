@@ -15,6 +15,7 @@ import {
   buildStandardGrimoireEventSlots,
   eventUsesStandardGrimoireSlotTemplate,
   getGrimoireSlotCapacityValidationErrors,
+  getGrimoireEventStartDate,
   readStandardGrimoireSlotCountsFromFormData,
 } from "@/lib/grimoire-slots";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
@@ -35,7 +36,11 @@ const moderationSchema = z.object({
 const eventFieldsSchema = z.object({
   label: z.string().trim().min(1).max(80),
   subtitle: z.string().trim().min(1).max(200),
-  date: z.string().trim().min(1),
+  date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day;
+  }, "Choose a valid event start date."),
   displayDate: z.string().trim().min(1).max(200),
   theme: z.string().trim().min(1).max(200),
   themeDetails: z.string().trim().min(1),
@@ -382,7 +387,7 @@ export async function createGrimoireEvent(formData: FormData) {
   if (!slots?.length) {
     redirect(
       buildGrimoireEventRedirect({
-        details: "Weekend start date: Choose a valid Friday date.",
+        details: "Event start date: Choose a valid date and create at least one time slot.",
         status: "invalid-fields",
       }),
     );
@@ -433,7 +438,7 @@ export async function createGrimoireEvent(formData: FormData) {
         id: generatedEventId,
         label: parsed.data.label,
         subtitle: parsed.data.subtitle,
-        date: slots[0].startAt,
+        date: getGrimoireEventStartDate(parsed.data.date)!,
         displayDate: parsed.data.displayDate,
         theme: parsed.data.theme,
         themeDetails: JSON.stringify(parseTextareaLines(parsed.data.themeDetails)),
@@ -627,9 +632,15 @@ export async function updateGrimoireEvent(formData: FormData) {
     );
   }
 
+  const useStandardSlotTemplate = eventUsesStandardGrimoireSlotTemplate(formData);
   const slotCounts = readStandardGrimoireSlotCountsFromFormData(formData);
-  const slotCapacityErrors = getGrimoireSlotCapacityValidationErrors(slotCounts);
-  const slots = buildStandardGrimoireEventSlots(parsed.data.date, slotCounts);
+  const customSlotResult = useStandardSlotTemplate ? null : buildCustomGrimoireEventSlots(formData);
+  const slotCapacityErrors = useStandardSlotTemplate
+    ? getGrimoireSlotCapacityValidationErrors(slotCounts)
+    : customSlotResult?.errors ?? [];
+  const slots = useStandardSlotTemplate
+    ? buildStandardGrimoireEventSlots(parsed.data.date, slotCounts)
+    : customSlotResult?.slots ?? null;
 
   if (slotCapacityErrors.length) {
     redirect(
@@ -645,7 +656,7 @@ export async function updateGrimoireEvent(formData: FormData) {
     redirect(
       buildGrimoireEventRedirect({
         editEventId: parsed.data.eventId,
-        details: "Weekend start date: Choose a valid Friday date.",
+        details: "Event start date: Choose a valid date and create at least one time slot.",
         status: "invalid-fields",
       }),
     );
@@ -721,6 +732,13 @@ export async function updateGrimoireEvent(formData: FormData) {
       ];
     });
 
+  for (const oldSlot of existingEvent.slots) {
+    const occupiedCount = occupiedCountsByStartAt.get(oldSlot.startAt.toISOString()) ?? 0;
+    if (occupiedCount > 0 && !slots.some((slot) => slot.slotKey === oldSlot.slotKey)) {
+      occupancyErrors.push(`${oldSlot.label}: Cannot remove a time slot with games or submissions assigned to it.`);
+    }
+  }
+
   if (occupancyErrors.length) {
     redirect(
       buildGrimoireEventRedirect({
@@ -770,7 +788,7 @@ export async function updateGrimoireEvent(formData: FormData) {
         data: {
           label: parsed.data.label,
           subtitle: parsed.data.subtitle,
-          date: slots[0].startAt,
+          date: getGrimoireEventStartDate(parsed.data.date)!,
           displayDate: parsed.data.displayDate,
           theme: parsed.data.theme,
           themeDetails: JSON.stringify(parseTextareaLines(parsed.data.themeDetails)),
@@ -792,7 +810,7 @@ export async function updateGrimoireEvent(formData: FormData) {
         await tx.grimoireDmSubmission.updateMany({
           where: {
             eventId: existingEvent.id,
-            slotStartAt: oldSlot.startAt,
+            id: { in: existingEvent.submissions.filter((submission) => submission.slotStartAt.getTime() === oldSlot.startAt.getTime()).map((submission) => submission.id) },
           },
           data: {
             slotStartAt: newSlot.startAt,
@@ -802,7 +820,7 @@ export async function updateGrimoireEvent(formData: FormData) {
         await tx.grimoireCuratedGame.updateMany({
           where: {
             eventId: existingEvent.id,
-            startAt: oldSlot.startAt,
+            id: { in: existingEvent.curatedGames.filter((game) => game.startAt.getTime() === oldSlot.startAt.getTime()).map((game) => game.id) },
           },
           data: {
             startAt: newSlot.startAt,
