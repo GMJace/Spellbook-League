@@ -10,25 +10,6 @@ import { getHomepageData } from "@/lib/data";
 import { QuestsGuidesSection } from "@/components/quests-guides-section";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
 
-function AdventurersLeagueLogo() {
-  return (
-    <span className="handbook-link-logo-swap" role="img" aria-label="Adventurers League logo">
-      <img
-        alt=""
-        aria-hidden="true"
-        className="handbook-link-logo handbook-link-logo-light"
-        src="/al-logo-black.png"
-      />
-      <img
-        alt=""
-        aria-hidden="true"
-        className="handbook-link-logo handbook-link-logo-dark"
-        src="/al-logo-white.png"
-      />
-    </span>
-  );
-}
-
 export default async function HomePage() {
   const discordIframeProps = {
     allowtransparency: "true",
@@ -130,6 +111,7 @@ export default async function HomePage() {
             />
             <strong>
               <RainbowSpellbook /> QUESTS
+              <small className="homepage-encounter-subtitle">(1SHOTS &amp; CAMPAIGNS)</small>
             </strong>
           </Link>
 
@@ -144,6 +126,7 @@ export default async function HomePage() {
             />
             <strong>
               <GrimoireGatheringsText />
+              <small className="homepage-encounter-subtitle">(ONLINE CONVENTIONS)</small>
             </strong>
           </Link>
 
@@ -158,87 +141,13 @@ export default async function HomePage() {
             />
             <strong>
               Hire a <RainbowSpellbook /> DM
+              <small className="homepage-encounter-subtitle">(CUSTOM ADVENTURES)</small>
             </strong>
           </Link>
         </div>
       </section>
 
       <QuestsGuidesSection />
-
-      <section className="card ledger-panel stack homepage-handbooks">
-        <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <div className="stack" style={{ gap: "0.25rem" }}>
-            <h2 style={{ margin: 0 }}>Adventurers&apos; League Guides</h2>
-            <p className="muted" style={{ margin: 0, fontSize: "0.95rem" }}>
-              Downloadable PDFs
-            </p>
-          </div>
-        </div>
-        <div className="handbook-link-grid">
-          <a
-            className="handbook-link-card"
-            href="/handbooks/adventurers-league-players-guide-v2026.4.pdf"
-            download
-            rel="noreferrer"
-            target="_blank"
-          >
-            <AdventurersLeagueLogo />
-            <strong>Player&apos;s Guide</strong>
-          </a>
-          <a
-            className="handbook-link-card"
-            href="/handbooks/adventurers-league-dm-guide-v2026.2.pdf"
-            download
-            rel="noreferrer"
-            target="_blank"
-          >
-            <AdventurersLeagueLogo />
-            <strong>DM&apos;s Guide</strong>
-          </a>
-          <a
-            className="handbook-link-card"
-            href="/handbooks/DD_Adventurers_League_Service_Rewards_v2026.1.pdf"
-            download
-            rel="noreferrer"
-            target="_blank"
-          >
-            <AdventurersLeagueLogo />
-            <strong>DM Service Awards</strong>
-          </a>
-        </div>
-        <div className="handbook-link-grid">
-          <a
-            className="handbook-link-card"
-            href="/handbooks/adventurers-league-adaptation-guide-v2026.2.pdf"
-            download
-            rel="noreferrer"
-            target="_blank"
-          >
-            <AdventurersLeagueLogo />
-            <strong>Adaptation Guide</strong>
-          </a>
-          <a
-            className="handbook-link-card"
-            href="/handbooks/adventurers-league-organizers-guide-v12.pdf"
-            download
-            rel="noreferrer"
-            target="_blank"
-          >
-            <AdventurersLeagueLogo />
-            <strong>Organizer&apos;s Guide</strong>
-          </a>
-          <a
-            className="handbook-link-card"
-            href="/handbooks/dungeoncraft-cc-v1.9c.pdf"
-            download
-            rel="noreferrer"
-            target="_blank"
-          >
-            <AdventurersLeagueLogo />
-            <strong>Dungeoncraft</strong>
-          </a>
-        </div>
-      </section>
 
       <section className="card ledger-panel stack homepage-open-games-section">
         <img

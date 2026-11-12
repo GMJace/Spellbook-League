@@ -352,6 +352,33 @@ button.button-small {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
+.site-role-switcher {
+  position: relative;
+}
+
+.site-role-trigger {
+  gap: 0.45rem;
+  cursor: pointer;
+  text-transform: none;
+}
+
+.site-role-dropdown {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  padding: 0.5rem;
+  background: var(--comic-paper);
+  border: 4px solid var(--comic-ink);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.site-role-dropdown:not([hidden]) {
+  display: grid;
+  gap: 0.5rem;
+}
+
 .site-actions {
   flex: 0 0 auto;
   flex-wrap: nowrap;
@@ -896,7 +923,6 @@ button.button-small {
   margin-top: 15px;
 }
 
-.homepage-handbooks,
 .homepage-discord,
 .homepage-encounters {
   margin-top: 0.25rem;
@@ -1107,8 +1133,7 @@ button.button-small {
   gap: 0.55rem;
 }
 
-.homepage-ggcon-link strong {
-  font-family: var(--font-comic-display);
+.homepage-ggcon-link .grimoire-gathering-text {
   font-size: 1.18rem;
   letter-spacing: 0.06em;
 }
@@ -1123,6 +1148,12 @@ button.button-small {
 
 .homepage-spellbook-link {
   gap: 0.55rem;
+}
+
+.homepage-encounter-subtitle {
+  display: block;
+  font-size: 0.8em;
+  text-transform: none;
 }
 
 .homepage-spellbook-icon {
@@ -3621,12 +3652,6 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.handbook-link-grid {
-  display: grid;
-  gap: 0.9rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .handbook-link-card {
   display: flex;
   flex-direction: column;
@@ -3645,34 +3670,6 @@ textarea {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transition: transform 160ms ease, border-color 160ms ease;
-}
-
-.handbook-link-logo {
-  width: min(100%, 3.2rem);
-  height: 2.1rem;
-  object-fit: contain;
-  display: block;
-}
-
-.handbook-link-logo-swap {
-  display: inline-grid;
-  place-items: center;
-}
-
-.handbook-link-logo-swap .handbook-link-logo {
-  grid-area: 1 / 1;
-}
-
-.handbook-link-logo-dark {
-  display: none;
-}
-
-:root[data-theme="dark"] body .handbook-link-logo-light {
-  display: none;
-}
-
-:root[data-theme="dark"] body .handbook-link-logo-dark {
-  display: block;
 }
 
 .handbook-link-card:hover {
@@ -4164,8 +4161,7 @@ body .store-publishing-button-logo,
 body .site-store-button-icon,
 body .homepage-spellbook-icon,
 body .homepage-ggcon-icon,
-body .homepage-character-log-icon,
-body .handbook-link-logo {
+body .homepage-character-log-icon {
   filter: drop-shadow(2px 2px 0 var(--comic-ink));
 }
 
@@ -4175,8 +4171,7 @@ body .handbook-link-logo {
   .site-store-button-icon,
   .homepage-spellbook-icon,
   .homepage-ggcon-icon,
-  .homepage-character-log-icon,
-  .handbook-link-logo
+  .homepage-character-log-icon
 ) {
   filter: none;
 }
@@ -4449,10 +4444,6 @@ body .homepage-roster-divider,
 body .homepage-banner-divider,
 body .store-section-divider {
   filter: drop-shadow(3px 3px 0 var(--comic-ink));
-}
-
-body .handbook-link-logo {
-  filter: none;
 }
 
 body :is(
@@ -4760,7 +4751,6 @@ body .search-row .button {
   .form-grid,
   .character-build-grid,
   .logsheet-grid,
-  .handbook-link-grid,
   .homepage-tv-grid,
   .homepage-encounters-grid,
   .homepage-activity-grid,
@@ -4845,6 +4835,14 @@ body .search-row .button {
     width: 100%;
     justify-content: center;
     gap: 1rem;
+  }
+
+  .site-role-switcher {
+    flex-direction: column;
+  }
+
+  .site-role-dropdown {
+    position: static;
   }
 
   .site-actions {

@@ -11,11 +11,14 @@ export function QuestsGuideShell({
   children: ReactNode;
 }) {
   const guide = questsGuides.find((entry) => entry.slug === slug)!;
+  const isPlayersGuide = slug === "players-guide";
 
   return (
     <div id="quests-guides-top" className="stack quests-guide-page">
       <header className="panel stack quests-guide-header">
-        <Link href="/#quests-guides">Back to QUESTS Guides</Link>
+        {slug === "adaptation-guide" && (
+          <Link href="/#quests-guides">Back to QUESTS Guides</Link>
+        )}
         <div className="quests-guide-title">
           <img src="/Q-book-logo.png" width="69" height="81" alt="" />
           <div>
@@ -34,6 +37,11 @@ export function QuestsGuideShell({
               {entry.label}
             </Link>
           ))}
+          {isPlayersGuide && (
+            <Link href="/league" className="button button-secondary button-small">
+              Find a QUEST
+            </Link>
+          )}
         </nav>
       </header>
       {children}

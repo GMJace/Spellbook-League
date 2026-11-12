@@ -13,7 +13,7 @@ export default async function LeaguePage() {
       <section className="card ledger-panel stack league-hero">
         <p className="eyebrow">Organized Play</p>
         <h1 style={{ margin: 0 }}>
-          Welcome to the <RainbowSpellbook /> Community
+          Welcome to the <RainbowSpellbook /> QUESTS Community
         </h1>
         <Link className="button secondary league-jump-button" href="#available-quests">
           Jump to Quests

@@ -7,8 +7,10 @@ export const metadata: Metadata = {
   description: "Create your ORDO character, prepare for QUESTS, and learn about loot, advancement, achievements, downtime, and trading.",
 };
 
+const askUsAnythingUrl = "https://discord.com/channels/744348925414080592/1314666583154757662";
+
 const contents = [
-  ["welcome", "Welcome to QUESTS"],
+  ["what-is-a-quest", "What is a QUEST?"],
   ["getting-started", "Getting started"],
   ["etiquette", "Etiquette and safety"],
   ["rules-sources", "Rules sources"],
@@ -31,13 +33,10 @@ const contents = [
 export default function QuestsPlayersGuidePage() {
   return (
     <QuestsGuideShell slug="players-guide">
-      <section className="panel stack quests-guide-copy">
-        <p className="eyebrow">ORDO Player&apos;s Guide · Working Draft v0.3</p>
-        <p>Adventure across the multiverse with the ORDO. Your reference for creating a character, joining QUESTS, and tracking the rewards that build your legend.</p>
-        <div className="inline-actions">
-          <a className="button button-small" href="/handbooks/spellbook-quests-ordo-players-guide-v0.3.pdf" download>Download Player&apos;s Guide PDF</a>
-          <Link className="button button-secondary button-small" href="/league">Find a QUEST</Link>
-        </div>
+      <section id="welcome" className="panel quests-guide-copy">
+        <h2>Welcome to SPELLBOOK QUESTS</h2>
+        <p>Join the ORDO, a guild of adventurers sworn to uphold balance, and find your next adventure on the QUESTBOARD. Your character can come from anywhere in the multiverse and explore every corner of it.</p>
+        <p>DMs may weave DMsGuild adventures, official Adventurers League modules, Legends of Greyhawk adventures, or homebrew campaigns into the ORDO&apos;s mission. A universal reward system connects these stories, letting you build your character and trade magic items with fellow players.</p>
       </section>
 
       <nav className="panel quests-guide-contents" aria-label="Player's Guide contents">
@@ -48,11 +47,8 @@ export default function QuestsPlayersGuidePage() {
       </nav>
 
       <article className="panel quests-guide-copy">
-        <section id="welcome">
-          <h2>Welcome to SPELLBOOK QUESTS</h2>
-          <p>Join the ORDO, a guild of adventurers sworn to uphold balance, and find your next adventure on the QUESTBOARD. Your character can come from anywhere in the multiverse and explore every corner of it.</p>
-          <p>DMs may weave DMsGuild adventures, official Adventurers League modules, Legends of Greyhawk adventures, or homebrew campaigns into the ORDO&apos;s mission. A universal reward system connects these stories, letting you build your character and trade magic items with fellow players.</p>
-          <h3>What is a QUEST?</h3>
+        <section id="what-is-a-quest">
+          <h2>What is a QUEST?</h2>
           <p>A QUEST is an adventure that may span one or more sessions. You do not need to finish the whole QUEST to earn session rewards. QUESTBOARD listings explain the adventure and planned number of sessions; for campaigns, discuss the expected length with your DM.</p>
           <p>Participate for at least <strong>three hours in a single session on the SPELLBOOK Discord</strong> to receive one chest code. Six hours earns two codes, nine hours earns three, and so on. Each Loot Chest has its own code. Unused hours do not carry over between sessions. WEAVER, the Discord bot, tracks gameplay sessions.</p>
         </section>
@@ -115,11 +111,11 @@ export default function QuestsPlayersGuidePage() {
             </tbody>
           </table></div>
           <dl>
-            <dt>Origin and setting</dt><dd>Choose a home world and background from anywhere in the multiverse. The ORDO operates from the City of Doors.</dd>
+            <dt>Origin and setting</dt><dd>Choose a home world and background from anywhere in the multiverse. The ORDO operates from the City of Doors which gives them access to pretty much anywhere and everywhere.</dd>
             <dt>Languages</dt><dd>You may select your heritage language if it is missing from the available choices, such as Infernal for a tiefling.</dd>
             <dt>Ability scores</dt><dd>Use Point Buy, then increase one ability score by 2 for specialized ORDO training. This bonus may exceed the normal character-creation maximum. You must have Intelligence or Wisdom of at least 10.</dd>
             <dt>Alignment</dt><dd>Choose an alignment compatible with your oath and party cooperation. Good or neutral are suggested. Discuss individual campaign expectations with your DM.</dd>
-            <dt>Deity</dt><dd>You may follow a deity from your home setting or elsewhere. Service to The Balance takes precedence over religious allegiance.</dd>
+            <dt>Deity</dt><dd>You may follow a deity from your home setting or elsewhere. As a member of the ORDO, service to The Balance and religious allegiance are often aligned.</dd>
             <dt>Starting equipment and gold</dt><dd>Begin with your standard starting equipment and gold, plus a <strong>1,000 gp stipend</strong> for joining the ORDO.</dd>
             <dt>Guilds and factions</dt><dd>Other memberships are allowed if you can honor your oath and cooperate with companions. They grant no automatic mechanical rewards. Your DM determines story benefits and consequences.</dd>
             <dt>Permanent class choices</dt><dd>Your class and subclass choices are permanent once made, including choices made when gaining additional class levels or selecting a subclass.</dd>
@@ -128,10 +124,23 @@ export default function QuestsPlayersGuidePage() {
 
         <section id="before-play">
           <h2>Before play</h2>
-          <p>Resolve character options flagged by the app before joining a game. Consult its approved source list, banned list, and FAQ, or ask for help in Discord&apos;s Ask Us Anything channel.</p>
+          <p>
+            Resolve character options flagged by the app before joining a game. Consult its approved source list, banned list, and FAQ, or ask for help in Discord&apos;s{" "}
+            <a href={askUsAnythingUrl} target="_blank" rel="noreferrer">
+              Ask Us Anything channel
+            </a>.
+          </p>
           <h3>Character checks and syncing</h3>
           <p>The app attempts to sync supported character data with D&amp;D Beyond when you open your character page and flags restricted options. Update your D&amp;D Beyond character link on that page.</p>
-          <p>A flag is a request to check or correct an option, not an accusation. If it appears incorrect, request a review in Ask Us Anything. A successful sync cannot verify every in-game effect or past reward; you remain responsible for character accuracy. Report errors, unexpected results, or suspected exploits in Report a Bug.</p>
+          <p>
+            A flag is a request to check or correct an option, not an accusation. If it appears incorrect, request a review in the{" "}
+            <a href={askUsAnythingUrl} target="_blank" rel="noreferrer">
+              Ask Us Anything channel
+            </a>. A successful sync cannot verify every in-game effect or past reward; you remain responsible for character accuracy. Report errors, unexpected results, or suspected exploits in the{" "}
+            <a href="https://discord.com/channels/744348925414080592/1569385200289452092" target="_blank" rel="noreferrer">
+              Report a Bug channel.
+            </a>
+          </p>
           <h3>Mustering for the game</h3>
           <p>Each DM has mustering and voice channels on Discord, with a thread for each game. Your app notifications provide the link when you purchase a ticket or your RSVP is confirmed.</p>
           <ol>
@@ -157,8 +166,9 @@ export default function QuestsPlayersGuidePage() {
           <h2>Earning treasure</h2>
           <p>You may use treasure found during a QUEST throughout its sessions. At the end of the QUEST, surrender it to the ORDO as evidence rather than keeping it as a permanent reward. Story-critical items may earn bonus coin at the DM&apos;s discretion.</p>
           <p>Qualifying sessions award codes for random Loot Chests containing coins, consumables, magic items, and limited-edition Magic Item Cards. Chests replace adventure-specific magic item rewards, encouraging you to choose stories and challenges rather than chase a particular item.</p>
+          <p>QUESTS does not award boons, charms, or blessings. Each qualifying session awards <strong>one Advancement Notch</strong>, regardless of length or number of chests.</p>
           <h3>Magic item carry limits</h3>
-          <p>You may own more items than you can carry. Additional items remain at your Bastion of Operations, the Keep.</p>
+          <p>You may own more items than you can carry. Additional items remain at your Bastion of Operations or the Keep.</p>
           <div className="table-wrap"><table className="quests-guide-carry-table">
             <caption>Magic item carry limits by character level</caption>
             <thead><tr><th scope="col">Level / tier</th><th scope="col">Carry limit</th></tr></thead>
@@ -172,7 +182,6 @@ export default function QuestsPlayersGuidePage() {
           <h3 style={{ paddingTop: "10px" }}>Loot Chest rewards</h3>
           <p>A code&apos;s rarity is determined by the adventure&apos;s level when earned, rather than your level when opening it. Gold rewards are random and based on your character&apos;s level when the code was earned.</p>
           <p>Cards may represent book items or feature additional properties, limited-edition art, or unique, one-of-one artwork autographed by the artist. Add cards pulled from chests to your collection. Magic items and consumables may also be purchased at the Mercantile Market.</p>
-          <p>QUESTS does not award boons, charms, or blessings. Each qualifying session awards <strong>one Advancement Notch</strong>, regardless of length or number of chests.</p>
           <div className="table-wrap"><table>
             <caption>Maximum Loot Chest rarity by adventure tier</caption>
             <thead><tr><th scope="col">Adventure tier</th><th scope="col">Maximum rarity</th></tr></thead>
@@ -188,13 +197,13 @@ export default function QuestsPlayersGuidePage() {
         <section id="loot-chests">
           <h2>Opening a Loot Chest</h2>
           <ol>
-            <li>Sign in and open your character page.</li>
-            <li>Scroll to <strong>Loot Chest Codes</strong>.</li>
-            <li>Select <strong>Copy Code</strong>, then <strong>Redeem</strong>.</li>
+            <li>Sign in and open the character page of the character you wish to open a chest with.</li>
+            <li>Scroll down to the <strong>Loot Chest Codes</strong> section.</li>
+            <li>Select <strong>Copy Code</strong>, then click <strong>Redeem</strong>.</li>
             <li>Paste the code into <strong>Redeem Chest Code</strong> on the Loot Chest page and select <strong>Redeem</strong>.</li>
-            <li>Review your treasure and Magic Item Cards. Accept the rewards or spend one Grim Tidings point to reroll.</li>
+            <li>Review your random pull of treasure and/or Magic Item Cards. You will be prompted to either accept the rewards or spend one Grim Tidings point to re-redeem the code.</li>
           </ol>
-          <p>Each chest may be rerolled only once, and the new results completely replace the original rewards. Redeem multiple codes separately.</p>
+          <p>Each chest may be re-redeemed only once, and the new results completely replace the original rewards. The only chance to re-redeem is that prompt.</p>
         </section>
 
         <section id="advancement">
@@ -206,10 +215,10 @@ export default function QuestsPlayersGuidePage() {
 
         <section id="grim-tidings">
           <h2>Grim Tidings</h2>
-          <p>Every paid QUESTBOARD ticket earns one Grim Tidings point. Free-to-play QUESTS do not award points. Tidings belong to you, the player, rather than an individual character, and are tracked in the app.</p>
+          <p>Every QUESTBOARD ticket earns one Grim Tidings point(GTpoint). Free-to-play QUESTS do not award GTpoints. Tidings belong to you, the player, rather than an individual character, and are tracked in the app.</p>
           <ul>
-            <li><strong>Chest rerolls:</strong> Spend one point on any one of your characters&apos; chests, once per chest. New results completely replace the old rewards.</li>
-            <li><strong>Special event games:</strong> Spend five or more points to join a special-edition adventure run by a SPELLBOOK resident DM.</li>
+            <li><strong>Chest rerolls:</strong> Spend one GTpoint on any one of your characters&apos; chests, once per chest.</li>
+            <li><strong>Special event games:</strong> Spend five or more GTpoints to join a special-edition adventure run by a SPELLBOOK resident DM.</li>
           </ul>
         </section>
 
@@ -237,8 +246,9 @@ export default function QuestsPlayersGuidePage() {
             <dt>Copying spells</dt><dd>Spend 1 DT per spell of levels 1–4, or 2 DT per spell of levels 5–9, to copy a spell found during an adventure. Meet the normal requirements and pay applicable gold costs.</dd>
             <dt>Crafting equipment</dt><dd>Follow approved crafting rules for time, costs, tools, and proficiency. Craft ammunition in the quantities in which it is normally sold.</dd>
             <dt>Scribing spell scrolls</dt><dd>Follow approved scribing rules for time, costs, and spellcasting. Scribe at the spell&apos;s base level, not a higher level.</dd>
+            <dt>Trading Magic Items</dt><dd>Each trade costs 5 DT, even between your own characters.</dd>
           </dl>
-          <p>Manage these activities through <strong>Downtime Activities</strong> on your character page. Select the activity and spend the required days; the app records the results. Magic item trade costs, including trades between your own characters, are handled in the <strong>Trade</strong> section instead.</p>
+          <p>Manage these activities through <strong>Downtime Activities</strong> on your character page. Select the activity and spend the required days; the app records the results. Magic item trade DT costs, including trades between your own characters, are handled in the <strong>Trade</strong> section of your player page instead.</p>
         </section>
 
         <section id="trading">
@@ -250,7 +260,7 @@ export default function QuestsPlayersGuidePage() {
             <li>You may trade between your own characters. Characters do not need to share an adventure or home world.</li>
             <li>Record the exchange on both characters. Ownership transfers completely, with no copy retained by the former owner.</li>
             <li>Expended uses remain expended if they are not rechargeable.</li>
-            <li>Trades have no gold fee. Downtime costs apply through the app&apos;s trading rules. Consumables cannot be traded.</li>
+            <li>Each trade costs 5 Downtime Days. There is no gold fee. Downtime costs apply through the app&apos;s trading rules. Consumables cannot be traded.</li>
           </ul>
           <p><Link href="/mercane-mercantile">Browse the Mercane Mercantile</Link></p>
         </section>
