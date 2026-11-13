@@ -1115,6 +1115,22 @@ button.button-small {
   width: 30%;
 }
 
+.quests-guide-copy .bastion-facility-table {
+  min-width: 30rem;
+}
+
+#agent-facilities > .table-wrap + .table-wrap {
+  margin-top: 1.5rem;
+}
+
+.bastion-facility-name {
+  width: 24%;
+}
+
+.bastion-facility-order {
+  width: 16%;
+}
+
 @media (max-width: 760px) {
   .quests-guide-contents ol {
     grid-template-columns: minmax(0, 1fr);
@@ -1203,6 +1219,7 @@ button.button-small {
 
 .homepage-mercane-callout {
   margin-top: 0.25rem;
+  row-gap: 0.75rem;
 }
 
 .homepage-mercane-grid {
@@ -1210,15 +1227,6 @@ button.button-small {
   gap: 1.25rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-}
-
-.homepage-mercane-copy {
-  gap: 1rem;
-  min-width: 0;
-}
-
-.homepage-mercane-copy-inner {
-  gap: 0.5rem;
 }
 
 .homepage-mercane-heading {
@@ -1235,6 +1243,22 @@ button.button-small {
 .homepage-mercane-actions {
   display: flex;
   justify-content: center;
+}
+
+:is(
+  .homepage-player-activity-card .homepage-character-roster-actions,
+  .homepage-mercane-actions,
+  .homepage-dm-roster-actions
+) > .button {
+  color: var(--comic-red);
+}
+
+:is(
+  .homepage-player-activity-card .homepage-character-roster-actions,
+  .homepage-mercane-actions,
+  .homepage-dm-roster-actions
+) > .button:is(:hover, :focus-visible) {
+  color: #0cff00;
 }
 
 .homepage-mercane-art {
@@ -4630,6 +4654,13 @@ body .search-row .button {
   width: 1rem;
   height: 1rem;
   flex: 0 0 auto;
+}
+
+:is(.homepage-player-activity-card, .homepage-dm-activity-card) .search-icon-button .search-icon {
+  color: #fff;
+  stroke: #000;
+  stroke-width: 1.5;
+  paint-order: stroke fill;
 }
 
 .player-dashboard-page .list-card:has(.homepage-character-roster-grid),

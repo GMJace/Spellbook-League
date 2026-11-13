@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   HomepageDmActivityCard,
   HomepagePlayerActivityCard,
@@ -9,6 +10,31 @@ import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
 import { getHomepageData } from "@/lib/data";
 import { QuestsGuidesSection } from "@/components/quests-guides-section";
 import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
+
+function HomepageCommunityCallout({
+  id,
+  title,
+  children,
+  action,
+}: {
+  id?: string;
+  title: string;
+  children: ReactNode;
+  action: { href: string; label: string };
+}) {
+  return (
+    <section id={id} className="stack">
+      <h2 className="homepage-mercane-heading">{title}</h2>
+      <p className="muted homepage-mercane-description">{children}</p>
+
+      <div className="homepage-mercane-actions">
+        <Link className="button button-secondary" href={action.href}>
+          {action.label}
+        </Link>
+      </div>
+    </section>
+  );
+}
 
 export default async function HomePage() {
   const discordIframeProps = {
@@ -76,14 +102,14 @@ export default async function HomePage() {
           <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-yellow" />
           <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-red" />
           <span className="homepage-intro-bubble-copy">
-            <span>Adventure from the comfort of your own home with a</span>
-            <span>welcoming online community and top-tier Dungeon Masters</span>
+            <span>Adventure from the comfort of your own home with a{" "}</span>
+            <span>welcoming online community and top-tier Dungeon Masters{" "}</span>
             <span>
               running official{" "}
               <strong>
                 <RainbowSpellbook />
               </strong>{" "}
-              QUESTS on Roll20.
+              QUESTS.
             </span>
           </span>
         </p>
@@ -157,7 +183,7 @@ export default async function HomePage() {
         />
 
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>Current open league games</h2>
+          <h2 style={{ margin: 0 }}>Current Open QUESTS</h2>
         </div>
 
         <div className="list-card stack">
@@ -257,6 +283,41 @@ export default async function HomePage() {
 
       <HomepagePlayerActivityCard playerRoster={playerRoster} />
 
+      <div className="card ledger-panel stack homepage-mercane-callout">
+        <div className="homepage-mercane-grid">
+          <div className="stack">
+            <HomepageCommunityCallout
+              title="Mercane Mercantile"
+              action={{ href: "/mercane-mercantile", label: "Browse Mercane Mercantile" }}
+            >
+              <strong>Mercane Mercantile</strong> is the QUESTS marketplace for trading magic item cards.
+              Browse other players’ listings, offer your own cards for trade, and find the items that bring
+              your character’s build together.
+            </HomepageCommunityCallout>
+
+            <HomepageCommunityCallout
+              id="the-keep"
+              title="The Keep"
+              action={{ href: "/quests/bastions", label: "Browse The Keep's Bastions" }}
+            >
+              Between QUESTS, return to the Keep in the City of Doors to research leads, commission gear,
+              or train for your next assignment. As your ORDO agent advances through the four tiers,
+              more Bastion facilities open to you. Log your Downtime spending in the character tracker.
+            </HomepageCommunityCallout>
+          </div>
+
+          <div className="homepage-mercane-art">
+            <img
+              alt="Mercane Mercantile artwork"
+              className="homepage-mercane-image"
+              src="/mercane-mercantile.png"
+            />
+          </div>
+        </div>
+
+        <img alt="" className="homepage-roster-divider" src="/divider4.png" />
+      </div>
+
       <section className="homepage-community-row">
         <HomepageDmActivityCard dmRoster={dmRoster} />
 
@@ -288,50 +349,6 @@ export default async function HomePage() {
             />
           </div>
         </section>
-      </section>
-
-      <section className="card ledger-panel stack homepage-mercane-callout">
-        <img
-          alt="Mercane Mercantile divider"
-          className="homepage-roster-divider"
-          src="/divider4.png"
-        />
-
-        <div className="homepage-mercane-grid">
-          <div className="stack homepage-mercane-copy">
-            <div className="stack homepage-mercane-copy-inner">
-              <p className="eyebrow" style={{ margin: 0 }}>
-                Community marketplace
-              </p>
-              <h2 className="homepage-mercane-heading">Mercane Mercantile</h2>
-              <p className="muted homepage-mercane-description">
-                <strong>Mercane Mercantile</strong> is the <RainbowSpellbook /> League marketplace for
-                adventurers looking to trade magic items. Browse what other players have listed,
-                discover rare and useful treasures, and post your own magic items for trade with the
-                community.
-              </p>
-            </div>
-            <div className="homepage-mercane-actions">
-              <Link className="button button-secondary" href="/mercane-mercantile">
-                Browse Mercane Mercantile
-              </Link>
-            </div>
-          </div>
-
-          <div className="homepage-mercane-art">
-            <img
-              alt="Mercane Mercantile artwork"
-              className="homepage-mercane-image"
-              src="/mercane-mercantile.png"
-            />
-          </div>
-        </div>
-
-        <img
-          alt="Mercane Mercantile divider"
-          className="homepage-roster-divider"
-          src="/divider4.png"
-        />
       </section>
 
       <section className="card ledger-panel stack homepage-tv-section">

@@ -247,6 +247,11 @@ export default function QuestsPlayersGuidePage() {
             <dt>Crafting equipment</dt><dd>Follow approved crafting rules for time, costs, tools, and proficiency. Craft ammunition in the quantities in which it is normally sold.</dd>
             <dt>Scribing spell scrolls</dt><dd>Follow approved scribing rules for time, costs, and spellcasting. Scribe at the spell&apos;s base level, not a higher level.</dd>
             <dt>Trading Magic Items</dt><dd>Each trade costs 5 DT, even between your own characters.</dd>
+            <dt>Orders at a Bastion</dt>
+            <dd>
+              Spend Downtime to place an order at a facility in the Keep if your agent meets its tier and prerequisites.{" "}
+              <Link href="/quests/bastions">Browse Bastions of the Keep</Link>.
+            </dd>
           </dl>
           <p>Manage these activities through <strong>Downtime Activities</strong> on your character page. Select the activity and spend the required days; the app records the results. Magic item trade DT costs, including trades between your own characters, are handled in the <strong>Trade</strong> section of your player page instead.</p>
         </section>

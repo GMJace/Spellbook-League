@@ -75,7 +75,7 @@ export function HomepagePlayerActivityCard({
   return (
     <section className="card ledger-panel stack homepage-player-activity-card">
       <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0 }}>Character roster</h2>
+        <h2 style={{ margin: 0 }}>Agent roster</h2>
       </div>
 
       <CharacterRosterGrid playerRoster={playerRoster} scrollable visibleRows={4} />
@@ -264,7 +264,7 @@ export function HomepageDmActivityCard({
   return (
     <section className="card ledger-panel stack homepage-dm-activity-card">
       <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0 }}>DM Roster</h2>
+        <h2 style={{ margin: 0 }}>SPELLBOOK DM Roster</h2>
       </div>
 
       <div className="list-card stack">
