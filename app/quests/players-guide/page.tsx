@@ -246,7 +246,11 @@ export default function QuestsPlayersGuidePage() {
             <dt>Copying spells</dt><dd>Spend 1 DT per spell of levels 1–4, or 2 DT per spell of levels 5–9, to copy a spell found during an adventure. Meet the normal requirements and pay applicable gold costs.</dd>
             <dt>Crafting equipment</dt><dd>Follow approved crafting rules for time, costs, tools, and proficiency. Craft ammunition in the quantities in which it is normally sold.</dd>
             <dt>Scribing spell scrolls</dt><dd>Follow approved scribing rules for time, costs, and spellcasting. Scribe at the spell&apos;s base level, not a higher level.</dd>
-            <dt>Trading Magic Items</dt><dd>Each trade costs 5 DT, even between your own characters.</dd>
+            <dt>Trading Magic Items</dt>
+            <dd>
+              Each trade costs 5 DT, even between your own characters.{" "}
+              <Link href="/mercane-mercantile">Browse the Mercantile Market</Link>.
+            </dd>
             <dt>Orders at a Bastion</dt>
             <dd>
               Spend Downtime to place an order at a facility in the Keep if your agent meets its tier and prerequisites.{" "}

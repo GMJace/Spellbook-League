@@ -5,6 +5,8 @@ import {
   HomepagePlayerActivityCard,
 } from "@/components/homepage-activity-board";
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
+import { HomepageSpeechBubble } from "@/components/homepage-speech-bubble";
+import { HomepageWizardArt } from "@/components/homepage-wizard-art";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
 import { getHomepageData } from "@/lib/data";
@@ -89,36 +91,28 @@ export default async function HomePage() {
       </section>
 
       <section className="homepage-banner">
-        <div className="homepage-banner-art">
-          <img
-            alt="SPELLBOOK homepage banner"
-            className="homepage-banner-image"
-            src="/wizard.svg"
-          />
-        </div>
-        <p className="homepage-intro-bubble">
-          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-green" />
-          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-blue" />
-          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-yellow" />
-          <span aria-hidden="true" className="homepage-intro-bubble-popout homepage-intro-bubble-popout-red" />
-          <span className="homepage-intro-bubble-copy">
-            <span>Adventure from the comfort of your own home with a{" "}</span>
-            <span>welcoming online community and top-tier Dungeon Masters{" "}</span>
-            <span>
-              running official{" "}
-              <strong>
-                <RainbowSpellbook />
-              </strong>{" "}
-              QUESTS.
-            </span>
-          </span>
-        </p>
+        <HomepageWizardArt />
         <img
           alt="Rainbow jewel border"
           className="homepage-banner-divider"
           src="/jewel-border-rainbow-sb.png"
         />
       </section>
+
+      <div className="homepage-warden-intro">
+        <HomepageSpeechBubble>
+          Adventure from the comfort of your own home with a welcoming online community
+          and top-tier Dungeon Masters running official{" "}
+          <strong><RainbowSpellbook /></strong> QUESTS.
+        </HomepageSpeechBubble>
+        <img
+          alt=""
+          className="homepage-warden-archon"
+          height="703"
+          src="/warden%20archon.png"
+          width="1198"
+        />
+      </div>
 
       <section className="card ledger-panel stack homepage-encounters">
         <div className="stack" style={{ gap: "0.6rem" }}>
@@ -294,6 +288,8 @@ export default async function HomePage() {
               Browse other players’ listings, offer your own cards for trade, and find the items that bring
               your character’s build together.
             </HomepageCommunityCallout>
+
+            <hr className="homepage-mercane-divider" />
 
             <HomepageCommunityCallout
               id="the-keep"
