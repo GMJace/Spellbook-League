@@ -188,9 +188,9 @@ export default async function HomePage({ searchParams }: {
           src="/dragon%20knight.png"
           width="1198"
         />
-        <p className="homepage-intro">
+        <HomepageSpeechBubble>
           Create your Agent of the ORDO; the multiversal guild that protects the balance in all its forms.
-        </p>
+        </HomepageSpeechBubble>
       </div>
 
       <QuestsGuidesSection />
