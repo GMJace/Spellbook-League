@@ -87,7 +87,7 @@ export function SiteHeader({
                 alt=""
                 aria-hidden="true"
                 className="site-store-button-icon"
-                src="/grim-book.png"
+                src="/grim-book.png?v=2"
               />
               STORE
             </Link>

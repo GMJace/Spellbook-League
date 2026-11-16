@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { SearchIcon } from "@/components/search-icon";
 import { TwoRowScrollableGrid } from "@/components/two-row-scrollable-grid";
 
@@ -37,6 +37,50 @@ type DmRow = {
 };
 
 const MIN_VISIBLE_ACTIVITY_ROWS = 10;
+// Keep this breakpoint in sync with the single-column DM grid in globals.css.
+const dmRosterMobileQuery = "(max-width: 860px)";
+
+function subscribeToDmRosterWidth(onChange: () => void) {
+  const media = window.matchMedia(dmRosterMobileQuery);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function RosterPagination({
+  label,
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  label: string;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav className="inline-actions" aria-label={label}>
+      <button
+        className="button button-secondary button-small"
+        type="button"
+        disabled={page === 1}
+        onClick={() => onPageChange(page - 1)}
+      >
+        Previous
+      </button>
+      <span aria-live="polite">Page {page} of {totalPages}</span>
+      <button
+        className="button button-secondary button-small"
+        type="button"
+        disabled={page === totalPages}
+        onClick={() => onPageChange(page + 1)}
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
 
 function filterPlayerRows(rows: PlayerRow[], query: string) {
   const normalized = query.trim().toLowerCase();
@@ -246,27 +290,12 @@ export function CharacterRosterGrid({
         </div>
       )}
 
-      {totalPages > 1 && (
-        <nav className="inline-actions" aria-label="Agent roster pagination">
-          <button
-            className="button button-secondary button-small"
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => setPage(currentPage - 1)}
-          >
-            Previous
-          </button>
-          <span aria-live="polite">Page {currentPage} of {totalPages}</span>
-          <button
-            className="button button-secondary button-small"
-            type="button"
-            disabled={currentPage === totalPages}
-            onClick={() => setPage(currentPage + 1)}
-          >
-            Next
-          </button>
-        </nav>
-      )}
+      <RosterPagination
+        label="Agent roster pagination"
+        page={currentPage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
 
       {showDivider ? (
         <img
@@ -286,11 +315,21 @@ export function HomepageDmActivityCard({
 }) {
   const [dmSearch, setDmSearch] = useState("");
   const [dmSearchDraft, setDmSearchDraft] = useState("");
+  const [page, setPage] = useState(1);
+  const singleColumn = useSyncExternalStore(
+    subscribeToDmRosterWidth,
+    () => window.matchMedia(dmRosterMobileQuery).matches,
+    () => true,
+  );
 
   const filteredDms = useMemo(
     () => filterDmRows(dmRoster, dmSearch),
     [dmRoster, dmSearch]
   );
+  const pageSize = singleColumn ? 2 : 6;
+  const totalPages = Math.max(1, Math.ceil(filteredDms.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const visibleDms = filteredDms.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <section className="card ledger-panel stack homepage-dm-activity-card">
@@ -304,6 +343,7 @@ export function HomepageDmActivityCard({
           onSubmit={(event) => {
             event.preventDefault();
             setDmSearch(dmSearchDraft);
+            setPage(1);
           }}
         >
           <input
@@ -319,10 +359,10 @@ export function HomepageDmActivityCard({
           </button>
         </form>
 
-        <TwoRowScrollableGrid className="homepage-dm-roster-grid">
-          {filteredDms.length ? (
-            filteredDms.map((row) => (
-              <article key={row.id} className="homepage-dm-roster-card" data-two-row-grid-item>
+        <div className="homepage-dm-roster-grid">
+          {visibleDms.length ? (
+            visibleDms.map((row) => (
+              <article key={row.id} className="homepage-dm-roster-card">
                 {row.profileImagePath ? (
                   <img
                     alt={`${row.name} profile`}
@@ -359,7 +399,13 @@ export function HomepageDmActivityCard({
           ) : (
             <div className="empty">No dungeon masters match your search.</div>
           )}
-        </TwoRowScrollableGrid>
+        </div>
+        <RosterPagination
+          label="DM roster pagination"
+          page={currentPage}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       </div>
     </section>
   );

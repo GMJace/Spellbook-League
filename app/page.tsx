@@ -170,7 +170,7 @@ export default async function HomePage({ searchParams }: {
             <img
               alt="Hire a SPELLBOOK DM icon"
               className="homepage-character-log-icon"
-              src="/grim-book.png"
+              src="/grim-book.png?v=2"
             />
             <strong>
               Hire a <RainbowSpellbook /> DM
