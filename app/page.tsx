@@ -5,13 +5,14 @@ import {
   HomepagePlayerActivityCard,
 } from "@/components/homepage-activity-board";
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
+import { HomepageQuestboard } from "@/components/homepage-questboard";
 import { HomepageSpeechBubble } from "@/components/homepage-speech-bubble";
 import { HomepageWizardArt } from "@/components/homepage-wizard-art";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
 import { getHomepageData } from "@/lib/data";
 import { QuestsGuidesSection } from "@/components/quests-guides-section";
-import { formatDateTime, formatTier, isPaidTicketPrice } from "@/lib/utils";
+import { questboardExamples } from "@/lib/questboard-preview";
 
 function HomepageCommunityCallout({
   id,
@@ -38,11 +39,23 @@ function HomepageCommunityCallout({
   );
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: {
+  searchParams: Promise<{ questboard?: string }>;
+}) {
   const discordIframeProps = {
     allowtransparency: "true",
   } as { allowtransparency: string };
   const { playerRoster, dmRoster, openLeagueGames } = await getHomepageData();
+  const previewQuestboard =
+    process.env.NODE_ENV === "development" && (await searchParams).questboard === "preview";
+  const openQuests = previewQuestboard
+    ? questboardExamples.map((quest) => ({ ...quest, href: `/league/games/preview/${quest.slug}` }))
+    : openLeagueGames.map((game) => ({
+        href: `/league/games/${game.id}`,
+        title: game.title,
+        gm: game.dm?.name ?? game.dmName ?? "SPELLBOOK DM",
+        dateTime: game.datePlayed.toISOString(),
+      }));
   const magicHeadline = [
     ["W", "#FF0000"],
     ["H", "#FF8C00"],
@@ -99,10 +112,10 @@ export default async function HomePage() {
         />
       </section>
 
-      <div className="homepage-warden-intro">
+      <div className="homepage-character-intro">
         <HomepageSpeechBubble>
           Adventure from the comfort of your own home with a welcoming online community
-          and top-tier Dungeon Masters running official{" "}
+          and top-tier Dungeon Masters running{" "}
           <strong><RainbowSpellbook /></strong> QUESTS.
         </HomepageSpeechBubble>
         <img
@@ -167,113 +180,22 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <div className="homepage-character-intro homepage-dragon-intro">
+        <img
+          alt=""
+          className="homepage-dragon-knight"
+          height="703"
+          src="/dragon%20knight.png"
+          width="1198"
+        />
+        <p className="homepage-intro">
+          Create your Agent of the ORDO; the multiversal guild that protects the balance in all its forms.
+        </p>
+      </div>
+
       <QuestsGuidesSection />
 
-      <section className="card ledger-panel stack homepage-open-games-section">
-        <img
-          alt="Open league games divider"
-          className="homepage-roster-divider"
-          src="/divider4.png"
-        />
-
-        <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>Current Open QUESTS</h2>
-        </div>
-
-        <div className="list-card stack">
-          <div className="homepage-open-games-grid">
-            {openLeagueGames.length ? (
-              openLeagueGames.map((game) => {
-                const signedUpCount = game._count.participants;
-                const canAddToCart = game.isGrimTidings || isPaidTicketPrice(game.ticketPrice);
-
-                return (
-                  <article key={game.id} className="homepage-open-game-card">
-                    {game.adventureImagePath ? (
-                      <img
-                        alt={`${game.title} cover art`}
-                        className="homepage-open-game-card-image"
-                        src={game.adventureImagePath}
-                      />
-                    ) : (
-                      <div className="homepage-open-game-card-image homepage-open-game-card-image-placeholder">
-                        <div className="ggcon-game-hero-placeholder-inner">
-                          <p className="eyebrow" style={{ margin: 0 }}>
-                            Adventure art
-                          </p>
-                          <strong>{game.title}</strong>
-                          <p className="muted" style={{ margin: 0 }}>
-                            Image placeholder
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="stack homepage-open-game-card-copy">
-                      <div className="stack" style={{ gap: "0.25rem" }}>
-                        <strong>{game.title}</strong>
-                        <span className="muted">{game.adventureCode}</span>
-                      </div>
-
-                      <dl className="homepage-open-game-card-details">
-                        <div>
-                          <dt>Date &amp; time</dt>
-                          <dd>{formatDateTime(game.datePlayed)}</dd>
-                        </div>
-                        <div>
-                          <dt>DM</dt>
-                          <dd>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</dd>
-                        </div>
-                        <div>
-                          <dt>Tier</dt>
-                          <dd>{formatTier(game.tier)}</dd>
-                        </div>
-                        <div>
-                          <dt>Price</dt>
-                          <dd>
-                            {game.isGrimTidings
-                              ? `${game.grimTidingCost} Tiding${game.grimTidingCost === 1 ? "" : "s"}`
-                              : game.ticketPrice}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Players</dt>
-                          <dd>{signedUpCount}/{game.seatCapacity}</dd>
-                        </div>
-                      </dl>
-
-                      <div className="homepage-open-game-card-actions">
-                        <Link
-                          className="button button-secondary button-small"
-                          href={`/league/games/${game.id}`}
-                        >
-                          View game
-                        </Link>
-                        {canAddToCart ? (
-                          <Link
-                            className="button button-small"
-                            href={`/league/cart?games=${encodeURIComponent(game.id)}`}
-                          >
-                            Add to cart
-                          </Link>
-                        ) : null}
-                      </div>
-                    </div>
-                  </article>
-                );
-              })
-            ) : (
-              <div className="empty">No open league games are scheduled right now.</div>
-            )}
-          </div>
-
-          <img
-            alt="Open league games divider"
-            className="homepage-roster-divider"
-            src="/divider4.png"
-          />
-        </div>
-      </section>
+      <HomepageQuestboard quests={openQuests} />
 
       <HomepagePlayerActivityCard playerRoster={playerRoster} />
 

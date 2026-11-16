@@ -78,19 +78,21 @@ export function HomepagePlayerActivityCard({
         <h2 style={{ margin: 0 }}>Agent roster</h2>
       </div>
 
-      <CharacterRosterGrid playerRoster={playerRoster} scrollable visibleRows={4} />
+      <CharacterRosterGrid playerRoster={playerRoster} pageSize={12} />
     </section>
   );
 }
 
 export function CharacterRosterGrid({
   emptyMessage = "No character activity matches your search.",
+  pageSize,
   playerRoster,
   scrollable = false,
   showDivider = true,
   visibleRows = 2,
 }: {
   emptyMessage?: string;
+  pageSize?: number;
   playerRoster: PlayerRow[];
   scrollable?: boolean;
   showDivider?: boolean;
@@ -98,11 +100,17 @@ export function CharacterRosterGrid({
 }) {
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerSearchDraft, setPlayerSearchDraft] = useState("");
+  const [page, setPage] = useState(1);
 
   const filteredPlayers = useMemo(
     () => filterPlayerRows(playerRoster, playerSearch),
     [playerRoster, playerSearch]
   );
+  const totalPages = pageSize ? Math.max(1, Math.ceil(filteredPlayers.length / pageSize)) : 1;
+  const currentPage = Math.min(page, totalPages);
+  const visiblePlayers = pageSize
+    ? filteredPlayers.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : filteredPlayers;
 
   return (
     <div className="list-card stack">
@@ -111,6 +119,7 @@ export function CharacterRosterGrid({
         onSubmit={(event) => {
           event.preventDefault();
           setPlayerSearch(playerSearchDraft);
+          setPage(1);
         }}
       >
         <input
@@ -186,8 +195,8 @@ export function CharacterRosterGrid({
         </TwoRowScrollableGrid>
       ) : (
         <div className="homepage-character-roster-grid">
-          {filteredPlayers.length ? (
-          filteredPlayers.map((row) => {
+          {visiblePlayers.length ? (
+          visiblePlayers.map((row) => {
             return (
               <article key={row.id} className="homepage-character-roster-card">
                 {row.tokenImagePath ? (
@@ -235,6 +244,28 @@ export function CharacterRosterGrid({
           <div className="empty">{emptyMessage}</div>
         )}
         </div>
+      )}
+
+      {totalPages > 1 && (
+        <nav className="inline-actions" aria-label="Agent roster pagination">
+          <button
+            className="button button-secondary button-small"
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => setPage(currentPage - 1)}
+          >
+            Previous
+          </button>
+          <span aria-live="polite">Page {currentPage} of {totalPages}</span>
+          <button
+            className="button button-secondary button-small"
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => setPage(currentPage + 1)}
+          >
+            Next
+          </button>
+        </nav>
       )}
 
       {showDivider ? (
@@ -288,10 +319,10 @@ export function HomepageDmActivityCard({
           </button>
         </form>
 
-        <div className="homepage-dm-roster-grid">
+        <TwoRowScrollableGrid className="homepage-dm-roster-grid">
           {filteredDms.length ? (
             filteredDms.map((row) => (
-              <article key={row.id} className="homepage-dm-roster-card">
+              <article key={row.id} className="homepage-dm-roster-card" data-two-row-grid-item>
                 {row.profileImagePath ? (
                   <img
                     alt={`${row.name} profile`}
@@ -328,7 +359,7 @@ export function HomepageDmActivityCard({
           ) : (
             <div className="empty">No dungeon masters match your search.</div>
           )}
-        </div>
+        </TwoRowScrollableGrid>
       </div>
     </section>
   );

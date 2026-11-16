@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Relief:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Relief:wght@400;700&family=Germania+One&display=swap");
 
 :root {
   --bg: #ffffff;
@@ -750,12 +750,17 @@ button.button-small {
   padding-bottom: 1.4rem;
 }
 
-.homepage-warden-intro {
+.homepage-character-intro {
+  --character-art-width: clamp(10rem, 34vw, 19rem);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(10rem, 34vw, 19rem);
+  grid-template-columns: minmax(0, 1fr) var(--character-art-width);
   align-items: end;
   gap: 1rem;
   margin-bottom: calc(-1 * var(--page-section-gap, 1rem));
+}
+
+.homepage-dragon-intro {
+  grid-template-columns: var(--character-art-width) minmax(0, 1fr);
 }
 
 .homepage-intro {
@@ -800,14 +805,29 @@ button.button-small {
   clip-path: polygon(0 0, 100% 68%, 0 100%);
 }
 
+.homepage-dragon-intro .homepage-intro {
+  width: 100%;
+  max-width: none;
+}
+
+.homepage-dragon-intro .homepage-intro::after {
+  left: auto;
+  right: 100%;
+  transform: scaleX(-1);
+}
+
 @media (max-width: 600px) {
-  .homepage-warden-intro {
+  .homepage-character-intro {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
 
   .homepage-intro {
     justify-self: stretch;
+  }
+
+  .homepage-dragon-intro .homepage-intro {
+    order: -1;
   }
 
   .homepage-intro::after {
@@ -817,6 +837,12 @@ button.button-small {
     width: 1.5rem;
     height: 1.75rem;
     clip-path: polygon(0 0, 100% 0, 78% 100%);
+  }
+
+  .homepage-dragon-intro .homepage-intro::after {
+    right: auto;
+    left: 3.5rem;
+    transform: scaleX(-1);
   }
 }
 
@@ -903,27 +929,27 @@ button.button-small {
   margin-top: 15px;
 }
 
-.homepage-discord {
-  margin-top: 0.25rem;
-}
-
 .homepage-encounters {
   margin-top: 0;
 }
 
-.homepage-warden-archon {
-  justify-self: end;
-  width: clamp(10rem, 34vw, 19rem);
+.homepage-warden-archon,
+.homepage-dragon-knight {
+  width: var(--character-art-width);
   height: auto;
   display: block;
   pointer-events: none;
+}
+
+.homepage-warden-archon {
+  justify-self: end;
 }
 
 .homepage-community-row {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
-  align-items: start;
+  align-items: stretch;
 }
 
 .homepage-encounters-grid {
@@ -1317,6 +1343,135 @@ button.button-small {
   line-height: 1.5;
 }
 
+.card.homepage-questboard-section {
+  position: relative;
+  justify-items: center;
+  padding-bottom: 0;
+  scroll-margin-top: 8rem;
+}
+
+.homepage-questboard-section h2 {
+  margin: 0;
+  justify-self: start;
+  text-align: left;
+}
+
+.homepage-questboard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1086 / 1449;
+  background: url("/Questboard.png") center / 100% 100% no-repeat;
+}
+
+.homepage-questboard-notices {
+  position: absolute;
+  inset: 29% 18% 15%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 4% 6%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 600px) {
+  .homepage-questboard-notices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .homepage-questboard:has(.homepage-questboard-notices > li:nth-child(7)) {
+    aspect-ratio: 9 / 17;
+  }
+
+  .homepage-questboard-notices:has(> li:nth-child(7)) {
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.homepage-quest-notice {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: center;
+  gap: 0.2rem;
+  width: 100%;
+  height: 100%;
+  padding: 12% 13%;
+  color: #281606;
+  font-family: "Germania One", Georgia, serif;
+  font-size: clamp(0.78rem, 1.8vw, 1.25rem);
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+  transform: rotate(-3deg);
+}
+
+.homepage-quest-notice::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--quest-parchment) center / 100% 100% no-repeat;
+}
+
+.homepage-questboard-notices > li:nth-child(n + 4):nth-child(-n + 6) .homepage-quest-notice::after {
+  transform: scaleX(-1);
+}
+
+.homepage-questboard-notices > li:nth-child(n + 7) .homepage-quest-notice::after {
+  transform: rotate(180deg);
+}
+
+.homepage-quest-notice strong {
+  font-size: 1.15em;
+  font-weight: inherit;
+}
+
+.homepage-quest-notice-time {
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.homepage-questboard-notices > li:nth-child(even) .homepage-quest-notice {
+  transform: rotate(3deg);
+}
+
+.homepage-quest-notice::before {
+  content: "";
+  position: absolute;
+  top: 9%;
+  left: 50%;
+  width: 0.35rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 32%, #ffe3a2, #805019 68%, #35200a);
+  transform: translateX(-50%);
+}
+
+.homepage-quest-notice:is(:hover, :focus-visible) strong {
+  text-decoration: underline;
+}
+
+.homepage-questboard-empty {
+  position: absolute;
+  inset: 29% 19% 15%;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: #fff8e9;
+  text-align: center;
+  text-shadow: 0 1px 3px #231306;
+}
+
+.homepage-questboard-more {
+  position: absolute;
+  inset-inline-start: calc(75% - 50px);
+  bottom: calc(0.35rem + 10px);
+  text-decoration: none;
+  translate: -50%;
+}
+
 .homepage-open-games-grid {
   display: grid;
   gap: 1rem;
@@ -1518,6 +1673,7 @@ button.button-small {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
   padding: 0 0.9rem 0.9rem 0;
 }
 
@@ -3950,6 +4106,25 @@ textarea {
   border-radius: 18px;
 }
 
+@media (width > 860px) {
+  .homepage-dm-activity-card {
+    align-content: start;
+  }
+
+  .homepage-discord {
+    grid-template-rows: auto auto minmax(9rem, 1fr);
+  }
+
+  .homepage-discord .discord-widget-wrap {
+    position: relative;
+  }
+
+  .homepage-discord .discord-widget-wrap iframe {
+    position: absolute;
+    height: 100%;
+  }
+}
+
 .admin-removal-steps {
   display: flex;
   gap: 0.75rem;
@@ -4486,7 +4661,7 @@ body .ggcon-flying-carpet-divider {
 }
 
 body,
-body * {
+body *:not(:where(.homepage-questboard)) {
   background-image: none !important;
 }
 
@@ -4655,7 +4830,7 @@ body .search-row .button {
 }
 
 :is(.homepage-player-activity-card, .homepage-dm-activity-card) .search-icon-button .search-icon {
-  color: #fff;
+  color: var(--comic-ink);
   stroke: #000;
   stroke-width: 1.5;
   paint-order: stroke fill;
