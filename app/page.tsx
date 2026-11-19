@@ -13,6 +13,7 @@ import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
 import { getHomepageData } from "@/lib/data";
 import { QuestsGuidesSection } from "@/components/quests-guides-section";
+import { LoreGuidesSection } from "@/components/lore-guides-section";
 import { questboardExamples } from "@/lib/questboard-preview";
 
 function HomepageCommunityCallout({
@@ -195,6 +196,23 @@ export default async function HomePage({ searchParams }: {
       </div>
 
       <QuestsGuidesSection />
+
+      <div className="homepage-character-intro">
+        <HomepageSpeechBubble>
+          Explore the lore of the <strong>ORDO</strong>, discover{" "}
+          <strong>Sigil, the City of Doors</strong>, and learn how to adapt both to any
+          campaign setting in the multiverse.
+        </HomepageSpeechBubble>
+        <img
+          alt="Arcanaloth"
+          className="homepage-character-art homepage-arcanaloth"
+          height="703"
+          src="/arcanaloth.png"
+          width="1198"
+        />
+      </div>
+
+      <LoreGuidesSection />
 
       <img alt="" className="homepage-community-divider" src="/divider4.png" />
 

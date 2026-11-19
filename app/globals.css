@@ -948,7 +948,8 @@ button.button-small {
   pointer-events: none;
 }
 
-.homepage-warden-archon {
+.homepage-warden-archon,
+.homepage-arcanaloth {
   justify-self: end;
 }
 
@@ -1035,6 +1036,27 @@ button.button-small {
   color: var(--comic-ink);
   text-decoration: underline;
   text-underline-offset: 0.2em;
+}
+
+.lore-guide-icon {
+  display: inline-grid;
+  place-items: center;
+}
+
+.lore-guide-icon > img {
+  grid-area: 1 / 1;
+}
+
+.lore-guide-icon-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .lore-guide-icon-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .lore-guide-icon-dark {
+  display: block;
 }
 
 .homepage-quests-guide-icon {
