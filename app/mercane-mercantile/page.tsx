@@ -467,7 +467,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
         ) : null}
         {query?.proposal === "guest-missing" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
-            That Mercane Mercantile listing is no longer available.
+            That Mercane Marketplace listing is no longer available.
           </p>
         ) : null}
         {query?.proposal === "guest-hosted" ? (
@@ -478,7 +478,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
         ) : null}
         {query?.listing === "guest-created" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
-            Guest Mercane Mercantile listing posted.
+            Guest Mercane Marketplace listing posted.
           </p>
         ) : null}
         {query?.listing === "guest-invalid" ? (
@@ -493,7 +493,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
               <p className="eyebrow" style={{ margin: 0 }}>
                 Public marketplace
               </p>
-              <h1 style={{ margin: 0 }}>Mercane Mercantile</h1>
+              <h1 style={{ margin: 0 }}>Mercane Marketplace</h1>
               <p className="muted" style={{ margin: 0 }}>
                 Browse what other players have listed, discover rare and useful treasures, and
                 make trade offers directly from the live market whether you are signed in or
@@ -649,7 +649,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
           ) : (
             <div className="empty">
               Try a different keyword or rarity filter, or check back once more items are listed in
-              the Mercane Mercantile.
+              the Mercane Marketplace.
             </div>
           )}
 

@@ -99,6 +99,7 @@ export default async function RootLayout({
             ) : null}
             {children}
           </main>
+          <img alt="" className="site-footer-divider" src="/divider4.png" />
           <footer className="site-footer" aria-label="Site disclaimer">
             <div className="social-links" aria-label="SPELLBOOK social media links">
               {socialLinks.map((link) => (

@@ -7,6 +7,7 @@ import {
 import { GrimoireGatheringsText } from "@/components/grimoire-gathering-text";
 import { HomepageQuestboard } from "@/components/homepage-questboard";
 import { HomepageSpeechBubble } from "@/components/homepage-speech-bubble";
+import { HomepageSigilArt } from "@/components/homepage-sigil-art";
 import { HomepageWizardArt } from "@/components/homepage-wizard-art";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SpellbookMonthlyForm } from "@/components/spellbook-monthly-form";
@@ -180,10 +181,29 @@ export default async function HomePage({ searchParams }: {
         </div>
       </section>
 
-      <div className="homepage-character-intro homepage-dragon-intro">
+      <div className="homepage-character-intro homepage-character-intro-left">
         <img
           alt=""
-          className="homepage-dragon-knight"
+          className="homepage-character-art"
+          height="703"
+          src="/dwarf%20wizard.png"
+          width="1198"
+        />
+        <HomepageSpeechBubble>
+          easy to use guides to turn any table into a SPELLBOOK QUESTS table.
+        </HomepageSpeechBubble>
+      </div>
+
+      <QuestsGuidesSection />
+
+      <img alt="" className="homepage-community-divider" src="/divider4.png" />
+
+      <HomepageQuestboard quests={openQuests} />
+
+      <div className="homepage-character-intro homepage-character-intro-left">
+        <img
+          alt=""
+          className="homepage-character-art"
           height="703"
           src="/dragon%20knight.png"
           width="1198"
@@ -193,20 +213,19 @@ export default async function HomePage({ searchParams }: {
         </HomepageSpeechBubble>
       </div>
 
-      <QuestsGuidesSection />
-
-      <HomepageQuestboard quests={openQuests} />
-
       <HomepagePlayerActivityCard playerRoster={playerRoster} />
 
+      <HomepageSigilArt />
+
       <div className="card ledger-panel stack homepage-mercane-callout">
+        <h2 style={{ margin: 0 }}>DOWNTIME ACTIVITIES</h2>
         <div className="homepage-mercane-grid">
           <div className="stack">
             <HomepageCommunityCallout
-              title="Mercane Mercantile"
-              action={{ href: "/mercane-mercantile", label: "Browse Mercane Mercantile" }}
+              title="Mercane Marketplace"
+              action={{ href: "/mercane-mercantile", label: "Browse Mercane Marketplace" }}
             >
-              <strong>Mercane Mercantile</strong> is the QUESTS marketplace for trading magic item cards.
+              <strong>Mercane Marketplace</strong> is the QUESTS marketplace for trading magic item cards.
               Browse other players’ listings, offer your own cards for trade, and find the items that bring
               your character’s build together.
             </HomepageCommunityCallout>
@@ -226,7 +245,7 @@ export default async function HomePage({ searchParams }: {
 
           <div className="homepage-mercane-art">
             <img
-              alt="Mercane Mercantile artwork"
+              alt="Mercane Marketplace artwork"
               className="homepage-mercane-image"
               src="/mercane-mercantile.png"
             />
@@ -235,6 +254,8 @@ export default async function HomePage({ searchParams }: {
 
         <img alt="" className="homepage-roster-divider" src="/divider4.png" />
       </div>
+
+      <img alt="" className="homepage-community-divider" src="/divider4.png" />
 
       <section className="homepage-community-row">
         <HomepageDmActivityCard dmRoster={dmRoster} />
@@ -268,6 +289,14 @@ export default async function HomePage({ searchParams }: {
           </div>
         </section>
       </section>
+
+      <img
+        alt="Wizard TV"
+        className="homepage-wizard-tv"
+        height="703"
+        src="/wizard%20tv.png"
+        width="1198"
+      />
 
       <section className="card ledger-panel stack homepage-tv-section">
         <h2 className="homepage-tv-heading">

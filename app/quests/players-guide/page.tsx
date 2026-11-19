@@ -181,7 +181,7 @@ export default function QuestsPlayersGuidePage() {
           </table></div>
           <h3 style={{ paddingTop: "10px" }}>Loot Chest rewards</h3>
           <p>A code&apos;s rarity is determined by the adventure&apos;s level when earned, rather than your level when opening it. Gold rewards are random and based on your character&apos;s level when the code was earned.</p>
-          <p>Cards may represent book items or feature additional properties, limited-edition art, or unique, one-of-one artwork autographed by the artist. Add cards pulled from chests to your collection. Magic items and consumables may also be purchased at the Mercantile Market.</p>
+          <p>Cards may represent book items or feature additional properties, limited-edition art, or unique, one-of-one artwork autographed by the artist. Add cards pulled from chests to your collection. Magic items and consumables may also be purchased at the Mercane Marketplace.</p>
           <div className="table-wrap"><table>
             <caption>Maximum Loot Chest rarity by adventure tier</caption>
             <thead><tr><th scope="col">Adventure tier</th><th scope="col">Maximum rarity</th></tr></thead>
@@ -249,7 +249,7 @@ export default function QuestsPlayersGuidePage() {
             <dt>Trading Magic Items</dt>
             <dd>
               Each trade costs 5 DT, even between your own characters.{" "}
-              <Link href="/mercane-mercantile">Browse the Mercantile Market</Link>.
+              <Link href="/mercane-mercantile">Browse the Mercane Marketplace</Link>.
             </dd>
             <dt>Orders at a Bastion</dt>
             <dd>
@@ -261,7 +261,7 @@ export default function QuestsPlayersGuidePage() {
         </section>
 
         <section id="trading">
-          <h2>Trading at the Mercane Mercantile</h2>
+          <h2>Trading at the Mercane Marketplace</h2>
           <p>Browse the community marketplace to discover other adventurers&apos; listings and offer your own magic item cards for trade.</p>
           <ul>
             <li>Trade one permanent magic item card for another of the <strong>same rarity</strong>.</li>
@@ -271,7 +271,7 @@ export default function QuestsPlayersGuidePage() {
             <li>Expended uses remain expended if they are not rechargeable.</li>
             <li>Each trade costs 5 Downtime Days. There is no gold fee. Downtime costs apply through the app&apos;s trading rules. Consumables cannot be traded.</li>
           </ul>
-          <p><Link href="/mercane-mercantile">Browse the Mercane Mercantile</Link></p>
+          <p><Link href="/mercane-mercantile">Browse the Mercane Marketplace</Link></p>
         </section>
 
         <section id="recovery">

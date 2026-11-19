@@ -218,7 +218,7 @@ export default function QuestsDmGuidePage() {
         <section id="downtime-and-trading">
           <h2>Downtime and Trading</h2>
           <p>Approve downtime undertaken during an ongoing adventure or campaign. One Downtime Day represents up to eight hours of work. Players manage copying spells, crafting equipment, and scribing scrolls through <strong>Downtime Activities</strong> on their character page, following the Player’s Guide and approved activity rules.</p>
-          <p>Magic item card trades are managed through the app’s <strong>Trade</strong> section and the <Link href="/mercane-mercantile">Mercane Mercantile</Link>. Each trade costs 5 Downtime Days, including exchanges between a player’s own characters. Permanent item cards are exchanged one-for-one at the same rarity, with valid records and appropriate carrying eligibility. Consumables cannot be traded. No gold fee applies.</p>
+          <p>Magic item card trades are managed through the app’s <strong>Trade</strong> section and the <Link href="/mercane-mercantile">Mercane Marketplace</Link>. Each trade costs 5 Downtime Days, including exchanges between a player’s own characters. Permanent item cards are exchanged one-for-one at the same rarity, with valid records and appropriate carrying eligibility. Consumables cannot be traded. No gold fee applies.</p>
         </section>
 
         <section id="after-the-session">

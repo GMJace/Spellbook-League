@@ -89,10 +89,10 @@ function mapNotification(
   return {
     id: notification.id,
     type: notification.type,
-    title: notification.title,
-    body: notification.body,
+    title: notification.title.replaceAll("Mercane Mercantile", "Mercane Marketplace"),
+    body: notification.body.replaceAll("Mercane Mercantile", "Mercane Marketplace"),
     details: parseDetails(notification.detailsJson),
-    actionLabel: notification.actionLabel,
+    actionLabel: notification.actionLabel?.replaceAll("Mercane Mercantile", "Mercane Marketplace") ?? null,
     actionHref: notification.actionHref,
     isRead: notification.isRead,
     createdAt: notification.createdAt.toISOString(),

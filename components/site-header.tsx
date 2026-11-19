@@ -58,7 +58,9 @@ export function SiteHeader({
             aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
             onClick={() => setMobileNavOpen((current) => !current)}
           >
-            {mobileNavOpen ? "^" : "v"}
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d={mobileNavOpen ? "M2 12 8 4l6 8Z" : "M2 4h12l-6 8Z"} />
+            </svg>
           </button>
         </div>
         <div className="site-nav-menu" id="site-mobile-menu">

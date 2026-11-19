@@ -238,14 +238,14 @@ export async function withdrawTradingPostListing(characterId: string, listingId:
           userId: proposal.proposerUserId!,
           createdByUserId: user.id,
           type: "ADMIN" as const,
-          title: `${character.name} removed an item from Mercane Mercantile`,
+          title: `${character.name} removed an item from Mercane Marketplace`,
           body: `${character.name} removed a ${formatTradingPostRarity(listing.rarity)} listing before the trade was completed.`,
           details: [
             { label: "Listing owner", value: character.name },
             { label: "Your character", value: proposal.proposerCharacter!.name },
             { label: "Item", value: listing.itemName || listing.item },
           ],
-          actionLabel: "Open Mercane Mercantile",
+          actionLabel: "Open Mercane Marketplace",
           actionHref: buildTradingPostHref(proposal.proposerCharacter!.id),
         })),
     );
@@ -355,8 +355,8 @@ export async function createTradingPostProposal(formData: FormData) {
       userId: listingUser.id,
       createdByUserId: user.id,
       type: "ADMIN",
-      title: `New Mercane Mercantile proposal for ${listingCharacter.name}`,
-      body: `${character.name} proposed a ${formatTradingPostRarity(listing.rarity)} item trade on your Mercane Mercantile listing.`,
+      title: `New Mercane Marketplace proposal for ${listingCharacter.name}`,
+      body: `${character.name} proposed a ${formatTradingPostRarity(listing.rarity)} item trade on your Mercane Marketplace listing.`,
       details: [
         { label: "Your listing", value: listing.itemName || listing.item },
         { label: "Offered by", value: character.name },
@@ -439,8 +439,8 @@ export async function createGuestTradingPostProposal(formData: FormData) {
     await createNotification(tx, {
       userId: listingUser.id,
       type: "ADMIN",
-      title: "New guest Mercane Mercantile proposal",
-      body: `${parsed.data.guestPlayerName} submitted a guest trade proposal on one of your Mercane Mercantile listings.`,
+      title: "New guest Mercane Marketplace proposal",
+      body: `${parsed.data.guestPlayerName} submitted a guest trade proposal on one of your Mercane Marketplace listings.`,
       details: [
         { label: "Guest player", value: parsed.data.guestPlayerName },
         { label: "Guest character", value: parsed.data.guestCharacterName },
@@ -594,7 +594,7 @@ export async function acceptTradingPostProposal(characterId: string, proposalId:
         userId: proposal.proposerUser.id,
         createdByUserId: user.id,
         type: "ADMIN",
-        title: `${proposalListingCharacter.name} accepted your Mercane Mercantile offer`,
+        title: `${proposalListingCharacter.name} accepted your Mercane Marketplace offer`,
         body: `${proposalListingCharacter.name} accepted your trade proposal, and the trade was added to both character trade logs.`,
         details: [
           { label: "Your item", value: proposal.itemName || proposal.item },
@@ -616,7 +616,7 @@ export async function acceptTradingPostProposal(characterId: string, proposalId:
           userId: sibling.proposerUserId!,
           createdByUserId: user.id,
           type: "ADMIN" as const,
-          title: `${proposalListingCharacter.name} accepted another Mercane Mercantile offer`,
+          title: `${proposalListingCharacter.name} accepted another Mercane Marketplace offer`,
           body: `${proposalListingCharacter.name} completed a different trade for this listing, so your proposal was closed.`,
           details: [
             {
@@ -625,7 +625,7 @@ export async function acceptTradingPostProposal(characterId: string, proposalId:
             },
             { label: "Your character", value: sibling.proposerCharacter!.name },
           ],
-          actionLabel: "Open Mercane Mercantile",
+          actionLabel: "Open Mercane Marketplace",
           actionHref: buildTradingPostHref(sibling.proposerCharacter!.id),
         })),
     );
@@ -701,7 +701,7 @@ export async function declineTradingPostProposal(characterId: string, proposalId
         userId: proposal.proposerUserId,
         createdByUserId: user.id,
         type: "ADMIN",
-        title: `${declineListingCharacter.name} declined your Mercane Mercantile offer`,
+        title: `${declineListingCharacter.name} declined your Mercane Marketplace offer`,
         body: `${declineListingCharacter.name} declined the trade proposal for this listing.`,
         details: [
           {
@@ -710,7 +710,7 @@ export async function declineTradingPostProposal(characterId: string, proposalId
           },
           { label: "Your character", value: proposal.proposerCharacter.name },
         ],
-        actionLabel: "Open Mercane Mercantile",
+        actionLabel: "Open Mercane Marketplace",
         actionHref: buildTradingPostHref(proposal.proposerCharacter.id),
       });
     }

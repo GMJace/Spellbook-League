@@ -333,10 +333,10 @@ export default async function CharacterTradingPostPage({
     <main className="page-shell character-workflow-page trading-post-page">
       <section className="stack">
         {query.listing === "created" ? (
-          <p style={{ color: "#ffffff", margin: 0 }}>Mercane Mercantile listing added.</p>
+          <p style={{ color: "#ffffff", margin: 0 }}>Mercane Marketplace listing added.</p>
         ) : null}
         {query.listing === "withdrawn" ? (
-          <p style={{ color: "#ffffff", margin: 0 }}>Mercane Mercantile listing removed.</p>
+          <p style={{ color: "#ffffff", margin: 0 }}>Mercane Marketplace listing removed.</p>
         ) : null}
         {query.listing === "invalid" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
@@ -345,7 +345,7 @@ export default async function CharacterTradingPostPage({
         ) : null}
         {query.listing === "missing" ? (
           <p style={{ color: "#ffffff", margin: 0 }}>
-            That Mercane Mercantile listing is no longer available.
+            That Mercane Marketplace listing is no longer available.
           </p>
         ) : null}
         {query.proposal === "sent" ? (
@@ -389,9 +389,9 @@ export default async function CharacterTradingPostPage({
         <div className="section-heading">
           <div className="stack" style={{ gap: "0.35rem" }}>
             <p className="eyebrow">Character logsheet</p>
-            <h1 style={{ margin: 0 }}>Mercane Mercantile for {character.name}</h1>
+            <h1 style={{ margin: 0 }}>Mercane Marketplace for {character.name}</h1>
             <p className="muted" style={{ margin: 0 }}>
-              Offer magic items for trade, browse the public Mercane Mercantile, and review trade
+              Offer magic items for trade, browse the public Mercane Marketplace, and review trade
               proposals for this character.
             </p>
           </div>
@@ -403,7 +403,7 @@ export default async function CharacterTradingPostPage({
         <section className="list-card stack">
           <div className="section-heading">
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <h2 style={{ margin: 0 }}>Post an item to Mercane Mercantile</h2>
+              <h2 style={{ margin: 0 }}>Post an item to Mercane Marketplace</h2>
               <p className="muted" style={{ margin: 0 }}>
                 Add the item details exactly as this character has them recorded.
               </p>
@@ -462,14 +462,14 @@ export default async function CharacterTradingPostPage({
 
             <div>
               <button className="button" type="submit">
-                Add item to Mercane Mercantile
+                Add item to Mercane Marketplace
               </button>
             </div>
           </form>
         </section>
 
         <img
-          alt="Mercane Mercantile divider"
+          alt="Mercane Marketplace divider"
           className="homepage-roster-divider"
           src="/divider4.png"
         />
@@ -477,7 +477,7 @@ export default async function CharacterTradingPostPage({
         <section className="list-card stack">
           <div className="section-heading">
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <h2 style={{ margin: 0 }}>Mercane Mercantile listings</h2>
+              <h2 style={{ margin: 0 }}>Mercane Marketplace listings</h2>
               <p className="muted" style={{ margin: 0 }}>
                 Browse active listings and offer another item of the same rarity.
               </p>
@@ -578,7 +578,7 @@ export default async function CharacterTradingPostPage({
             </div>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              No items are listed in Mercane Mercantile yet.
+              No items are listed in Mercane Marketplace yet.
             </p>
           )}
         </section>

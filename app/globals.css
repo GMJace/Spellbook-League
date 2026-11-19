@@ -195,6 +195,13 @@ button.button-small {
   gap: var(--page-section-gap);
 }
 
+.site-footer-divider {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 2rem;
+}
+
 .site-footer {
   margin-top: 2rem;
   padding: 1.5rem 1.25rem 0;
@@ -759,7 +766,7 @@ button.button-small {
   margin-bottom: calc(-1 * var(--page-section-gap, 1rem));
 }
 
-.homepage-dragon-intro {
+.homepage-character-intro-left {
   grid-template-columns: var(--character-art-width) minmax(0, 1fr);
 }
 
@@ -805,12 +812,12 @@ button.button-small {
   clip-path: polygon(0 0, 100% 68%, 0 100%);
 }
 
-.homepage-dragon-intro .homepage-intro {
+.homepage-character-intro-left .homepage-intro {
   width: 100%;
   max-width: none;
 }
 
-.homepage-dragon-intro .homepage-intro::after {
+.homepage-character-intro-left .homepage-intro::after {
   left: auto;
   right: 100%;
   transform: scaleX(-1);
@@ -826,7 +833,7 @@ button.button-small {
     justify-self: stretch;
   }
 
-  .homepage-dragon-intro .homepage-intro {
+  .homepage-character-intro-left .homepage-intro {
     order: -1;
   }
 
@@ -839,7 +846,7 @@ button.button-small {
     clip-path: polygon(0 0, 100% 0, 78% 100%);
   }
 
-  .homepage-dragon-intro .homepage-intro::after {
+  .homepage-character-intro-left .homepage-intro::after {
     right: auto;
     left: 3.5rem;
     transform: scaleX(-1);
@@ -934,7 +941,7 @@ button.button-small {
 }
 
 .homepage-warden-archon,
-.homepage-dragon-knight {
+.homepage-character-art {
   width: var(--character-art-width);
   height: auto;
   display: block;
@@ -1224,6 +1231,12 @@ button.button-small {
   margin: 0;
 }
 
+.homepage-community-divider {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .homepage-activity-grid {
   display: grid;
   gap: 1rem;
@@ -1232,6 +1245,48 @@ button.button-small {
 
 .homepage-tv-section {
   align-items: center;
+}
+
+.homepage-wizard-tv {
+  display: block;
+  justify-self: center;
+  width: min(100%, 38rem);
+  height: auto;
+  margin-bottom: calc(-1 * var(--page-section-gap, 1rem));
+}
+
+.homepage-sigil-art {
+  position: relative;
+  justify-self: center;
+  width: min(100%, 38rem);
+  margin-bottom: calc(-1 * (var(--page-section-gap, 1rem) + 0.25rem));
+}
+
+.homepage-sigil-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.homepage-dabus-speech {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  width: 58%;
+  height: auto;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.homepage-dabus-speech[data-speaking="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .homepage-dabus-speech {
+    transition: opacity 800ms ease-in-out;
+  }
 }
 
 .homepage-mercane-callout {
