@@ -1070,6 +1070,225 @@ button.button-small {
   min-width: 0;
 }
 
+.city-of-doors-header {
+  justify-items: center;
+  text-align: center;
+}
+.city-of-doors-life-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 1.5rem auto 0;
+}
+.city-of-doors-guide #life-in-sigil + section { margin-top: 0; }
+
+.city-of-doors-logo {
+  width: min(100%, 36rem);
+  margin: 0;
+}
+
+.city-of-doors-logo > img {
+  width: 100%;
+  height: auto;
+}
+
+.quests-guide-copy .city-of-doors-table {
+  min-width: 36rem;
+}
+
+.city-of-doors-table-name {
+  width: 24%;
+}
+
+.city-of-doors-guide .quests-guide-copy > section {
+  max-width: none;
+}
+
+.city-of-doors-guide .table-wrap {
+  max-width: 80ch;
+  margin-inline: auto;
+}
+
+.sigil-map {
+  margin: 1rem 0;
+}
+
+.sigil-map-preview {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  cursor: zoom-in;
+}
+
+.sigil-map-preview:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.sigil-map-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sigil-map figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.ordo-guide-header {
+  justify-items: center;
+  text-align: center;
+}
+
+.ordo-guide-logo {
+  width: min(100%, 28rem);
+  margin: 0;
+}
+
+.ordo-guide-logo > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ordo-guide .quests-guide-copy > section { max-width: none; }
+.ordo-guide .table-wrap { max-width: 80ch; margin-inline: auto; }
+.ordo-guide-table { width: 100%; min-width: 30rem; }
+.ordo-guide-table th { text-align: left; }
+.ordo-guide-table th[scope="row"] { width: 26%; }
+.ordo-guide .quests-guide-copy { overflow-wrap: anywhere; }
+.ordo-guide a.button { text-decoration: none; }
+.ordo-item { margin-top: 1.5rem; }
+.ordo-text-art-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+}
+.ordo-text-art-columns > div { min-width: 0; }
+.ordo-text-art-columns > img { display: block; width: 100%; height: auto; }
+@media (max-width: 640px) {
+  .ordo-text-art-columns { gap: 0.75rem; }
+}
+.ordo-guide-banner {
+  --banner-bleed: 1.25rem;
+  display: block;
+  width: calc(100% + var(--banner-bleed) * 2);
+  max-width: none;
+  height: auto;
+  margin: 1.5rem calc(-1 * var(--banner-bleed));
+}
+@media (max-width: 640px) {
+  .ordo-guide-banner { --banner-bleed: 0.85rem; }
+}
+.ordo-guide-sigil-heading { justify-content: space-between; }
+.ordo-guide-sigil-heading > h3 { margin: 0; }
+.ordo-guide-brass {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 1.5rem auto 0;
+}
+.ordo-guide #the-brass + section { margin-top: 0; }
+.ordo-guide-emblem {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+.ordo-diviospec {
+  margin-top: 2rem;
+  margin-inline: clamp(0.5rem, 2vw, 1.5rem);
+  padding-block: 0.75rem;
+}
+.ordo-guide .ordo-diviospec > h3 {
+  width: 100%;
+  text-align: center;
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
+  line-height: 1.2;
+  margin-bottom: 1.25rem;
+}
+.ordo-diviospec-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 1.5rem;
+  align-items: stretch;
+}
+.ordo-diviospec-columns > div { min-width: 0; }
+.ordo-diviospec-columns .ordo-guide-emblem {
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 640px) {
+  .ordo-diviospec-columns { gap: 0.75rem; }
+}
+.ordo-guide-planes {
+  --planes-bleed: 1.25rem;
+  display: block;
+  width: calc(100% + var(--planes-bleed) * 2);
+  max-width: none;
+  height: auto;
+  margin: 0 calc(-1 * var(--planes-bleed));
+}
+.ordo-guide-planes-divider {
+  width: 100%;
+  height: 0;
+  margin: 0 0 1.5rem;
+  border: 0;
+  border-top: 2px solid var(--comic-ink);
+}
+@media (max-width: 640px) {
+  .ordo-guide-planes { --planes-bleed: 0.85rem; }
+}
+
+.sigil-map-dialog {
+  width: min(95vw, 100rem);
+  max-width: calc(100vw - 1rem);
+  max-height: 92dvh;
+  padding: 1rem;
+  border: 4px solid var(--comic-ink);
+  border-radius: var(--radius);
+  background: var(--comic-paper);
+  color: var(--comic-ink);
+}
+
+.sigil-map-dialog::backdrop {
+  background: rgb(0 0 0 / 80%);
+}
+
+.sigil-map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.sigil-map-toolbar h2 {
+  margin: 0;
+}
+
+.sigil-map-help {
+  margin: 0.75rem 0;
+}
+
+.sigil-map-viewport {
+  overflow: auto;
+  max-height: 65dvh;
+  overscroll-behavior: contain;
+}
+
+.sigil-map-viewport img {
+  display: block;
+  max-width: none;
+  height: auto;
+}
+
 .quests-guide-title {
   display: flex;
   align-items: center;
@@ -1109,6 +1328,27 @@ button.button-small {
   scroll-margin-top: 10rem;
 }
 
+.quests-guide-copy > .city-of-doors-introduction {
+  display: flow-root;
+  max-width: none;
+}
+
+.city-of-doors-spire {
+  float: right;
+  width: 48%;
+  height: auto;
+  margin: 0 -1.25rem -2.5rem 0;
+  shape-outside: url("/sigil-art-large.png");
+  shape-image-threshold: 0.1;
+  shape-margin: 1rem;
+}
+
+@media (max-width: 640px) {
+  .city-of-doors-spire {
+    margin-right: -0.85rem;
+  }
+}
+
 .quests-guide-copy > section + section {
   margin-top: 2.5rem;
   padding-top: 1.5rem;
@@ -1128,6 +1368,10 @@ button.button-small {
 .quests-guide-contents a {
   text-decoration: underline;
   text-underline-offset: 0.2em;
+}
+
+.quests-guide-copy a.button {
+  text-decoration: none;
 }
 
 .quests-guide-copy li + li {
@@ -1282,6 +1526,10 @@ button.button-small {
   justify-self: center;
   width: min(100%, 38rem);
   margin-bottom: calc(-1 * (var(--page-section-gap, 1rem) + 0.25rem));
+}
+
+.city-of-doors-dabus .homepage-sigil-art {
+  margin: 1.5rem auto -2.5rem;
 }
 
 .homepage-sigil-image {

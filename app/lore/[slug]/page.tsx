@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loreGuides } from "@/lib/lore-guides";
+import { CityOfDoorsGuide } from "@/components/city-of-doors-guide";
+import { OrdoGuide } from "@/components/ordo-guide";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -16,6 +18,9 @@ export default async function LoreGuidePage({ params }: PageProps) {
   const { slug } = await params;
   const guide = loreGuides.find((entry) => entry.slug === slug);
   if (!guide) notFound();
+
+  if (slug === "city-of-doors-guide") return <CityOfDoorsGuide />;
+  if (slug === "ordo-guide") return <OrdoGuide />;
 
   return (
     <section className="panel stack quests-guide-copy">

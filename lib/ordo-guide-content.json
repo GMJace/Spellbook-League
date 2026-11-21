@@ -1,0 +1,623 @@
+[
+  {
+    "id": "introduction",
+    "title": "Introduction",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "Where the ropes of balance fray and the wounds of chaos fester—where fiendish contracts twist the natural order and forgotten pacts awaken ancient entities to claim old debts—the City of Sigil’s most secretive faction answers the call."
+      },
+      {
+        "type": "paragraph",
+        "text": "An elite guild of adventurers: operatives dispatched across the planes to correct disturbances too delicate for armies and too dangerous for scholars. You are members of this guild. This is one such mission."
+      }
+    ]
+  },
+  {
+    "id": "planescape-in-a-nutshell",
+    "title": "Planescape in a nutshell",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "Welcome, traveler. What plane did you tumble in from?"
+      },
+      {
+        "type": "paragraph",
+        "text": "The multiverse is vast beyond reckoning. Infinite planes spiral outward from the great hub of existence: Sigil, the City of Doors. This city—neutral ground to gods, fiends, celestials, and mortals alike—sits atop the Spire at the center of the Outlands, the plane of ultimate balance."
+      },
+      {
+        "type": "paragraph",
+        "text": "From Sigil, one can reach any realm, any reality, through hidden portals keyed to thought, item, or deed. These portals link to the infinite spokes of the Great Wheel: realms of elemental fury, philosophical extremes, and mythic grandeur. Each plane resonates with belief—because here, belief is power."
+      },
+      {
+        "type": "paragraph",
+        "text": "Some believe the multiverse is ruled by the gods. Others, by the Laws. And still others, by nothing at all. But no matter your convictions, the Factions of Sigil interpret and influence the multiverse in their own way."
+      },
+      {
+        "type": "paragraph",
+        "text": "Among these factions, there is one whose sole purpose is to maintain balance."
+      },
+      {
+        "type": "heading",
+        "text": "The Balanced Edge"
+      },
+      {
+        "type": "paragraph",
+        "text": "Funded by unknown benefactors and blessed by unknown patrons, a covert adventuring cadre moves in secret—the ORDO."
+      },
+      {
+        "type": "paragraph",
+        "text": "Its members are handpicked from across the planes. The literal best of the best. They operate outside the public gaze, resolving metaphysical anomalies, enforcing high-order balance, and tracking threats that slip through bureaucratic and philosophical cracks alike."
+      },
+      {
+        "type": "paragraph",
+        "text": "You are one such agent. Whether you solve mysteries by logic or blade, word or will, you are entrusted with the preservation of planar equilibrium. As a symbol of your office, you are issued a Sigil-wrought ORDO Signet Ring—crafted in the Hall of Records, engraved with the magic of the Netherese, and tuned to your harmonic frequency. It marks you as a servant of balance… and a weapon against entropy."
+      }
+    ]
+  },
+  {
+    "id": "a-multiverse-of-adventure",
+    "title": "A Multiverse of Adventure",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "The planes offer no end of mystery or danger. Infinite dominions echo with the prayers of gods and the screams of the damned. From the seething layers of the Abyss to the systematic dominions of Mechanus, adventures await in palaces of crystal, tombs of shattered time, and cities carved into the bones of dead titans."
+      },
+      {
+        "type": "paragraph",
+        "text": "Here, good and evil blur, law and chaos entwine, and even the purest soul might bargain with a fiend to protect a higher cause. There are treasures worth dying for. Secrets worth killing for. And truths that could rewrite the Wheel itself."
+      },
+      {
+        "type": "paragraph",
+        "text": "“Everyone is the hero in their own life’s story. But only some are remembered by the multiverse.”"
+      },
+      {
+        "type": "paragraph",
+        "text": "—Cipher MaximVI"
+      }
+    ]
+  },
+  {
+    "id": "good-and-evil",
+    "title": "Good and Evil",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "Across the planes, an eternal War of Ideals rages—a conflict not of nations, but of natures. Celestial hosts of radiant purpose clash with infernal legions born of hatred and tyranny. The Seven Mounting Heavens of Celestia stand as bastions of order and mercy, while the endless layers of the Abyss spew forth chaos and cruelty without measure. Between them grind the Nine Hells of Baator, a machine of perfect oppression locked in ceaseless rivalry with the howling madness of the Abyss. That conflict, vast beyond mortal reckoning, is known as the Blood War."
+      },
+      {
+        "type": "paragraph",
+        "text": "To many sages, the Blood War is more than a battle between devils and demons. It is a cosmic necessity, a terrible pressure valve that keeps the multiverse from drowning beneath the ambitions of either side. So long as Hell and the Abyss devour one another, the Upper Planes are granted time to endure, and the mortal worlds are spared the full attention of powers that would otherwise swallow them whole. But this uneasy balance has never been clean. The war spills across neutral planes, stains forgotten worlds, corrupts mortal empires, and recruits souls by bargain, coercion, or despair."
+      },
+      {
+        "type": "paragraph",
+        "text": "And even amid such absolutes, good and evil are rarely pure in practice. Many a radiant servant has fallen not in a single act of wickedness, but through compromise—accepting tyranny for the sake of order, cruelty for the sake of victory, silence for the sake of peace. Likewise, there are whispered tales of fiends who have hesitated at the brink of atrocity, who have guarded a promise for reasons even they could not explain, or who have glimpsed, however briefly, the unbearable weight of what they are. Redemption among fiends is rare enough to be called miraculous. Corruption among celestials is rare enough to be called tragic. Yet both are possible, and it is in those exceptions that some of the most dangerous stories begin."
+      },
+      {
+        "type": "heading",
+        "text": "The ORDO and the Blood War"
+      },
+      {
+        "type": "paragraph",
+        "text": "The ORDO teaches that the Blood War is not merely a distant conflict of monstrous armies. It is a battlefield of influence, secrets, and long designs. Entire worlds have been maneuvered into becoming supply lines, breeding grounds, or testing chambers for infernal and abyssal schemes. Holy relics vanish from sanctified vaults only to surface in devil-held fortresses. Demon princes seed cults on orderly worlds not to conquer them outright, but to destabilize infernal treaties. Archdevils offer aid to celestial commanders against mutual enemies, only to bind them in hidden obligations that echo for centuries. In the Blood War, a sword stroke may kill a soldier, but a whispered bargain can damn a civilization."
+      },
+      {
+        "type": "image",
+        "src": "/blood-war-banner.jpg",
+        "alt": "The Blood War across the planes",
+        "width": 2170,
+        "height": 642,
+        "fullWidth": true
+      },
+      {
+        "type": "paragraph",
+        "text": "For this reason, ORDO agents are warned never to mistake the front line for the whole of the war. The truest battle may be found in a sealed archive on Sigil, a cathedral whose miracles have gone strangely silent, a dead world drifting in Avernus with its cities intact, or a noble court in the Material Realm suddenly divided by impossible dreams. Wherever good and evil seem too simple, the hand of the Blood War may already be present."
+      }
+    ]
+  },
+  {
+    "id": "the-keepers-of-balance",
+    "title": "The Keepers of Balance",
+    "blocks": [
+      {
+        "type": "heading",
+        "text": "Structure"
+      },
+      {
+        "type": "paragraph",
+        "text": "The ORDO does not rule, nor do they preach. Their charge is not to shepherd nations or sway faiths, but to act in the silent margins where others cannot. To fulfill this, the guild is divided into Diviospecs—specialized branches dedicated to distinct threats that imperil the multiverse. Each Diviospec commands its own hierarchy of principles, who in turn direct Senior-Officers entrusted with the guild’s seal of authority."
+      },
+      {
+        "type": "paragraph",
+        "text": "Beneath them, the lifeblood of the ORDO flows: the officers. Organized into color-coded detachments, these squads embody the guild’s breadth of skill—espionage, battlecraft, diplomacy, counter-hereticum, planar negotiation, and more. Every squad answers to a Senior-Officer, whose word bears the weight of the guild’s oath and whose seal grants the power to instigate hunts and judgments without waiting for the sanction of kings or courts."
+      },
+      {
+        "type": "paragraph",
+        "text": "Rotations are constant, for stagnation breeds weakness. One mission may see a squad dispatched to a remote Prime world, rooting out a festering corruption no local order dares confront. The next may thrust them into a fortified planar citadel where rival factions barter with gods, or into the labyrinthine alleys of Sigil where whispers can collapse empires. This ceaseless movement ensures both loyalty to the creed and continuity of purpose, binding every Officer to the whole by shared burden and shared secrecy."
+      }
+    ]
+  },
+  {
+    "id": "the-diviospecs-the-big-five",
+    "title": "The Diviospecs — The Big Five",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "Five divisions dominate the ORDO’s power:"
+      },
+      {
+        "type": "heading",
+        "text": "Tabulastra —Keepers of the Currents"
+      },
+      {
+        "type": "image",
+        "src": "/ordo/tabulastra.png",
+        "alt": "Tabulastra Diviospec emblem",
+        "width": 1024,
+        "height": 1411
+      },
+      {
+        "type": "paragraph",
+        "text": "Charged with charting the astral tides and guarding the gates of Lastra Porta, the Tabulastra are the pathfinders of the multiverse. Charismatic negotiators, gifted diviners, and deft enchanters thrive here, often entangled with the mercantile guild elites whose caravans they shadow. Where astral trade flows, the Tabulastra are never far behind—watching, guiding, and ensuring no door opens without the ORDO’s seal."
+      },
+      {
+        "type": "heading",
+        "text": "Monvenüm —Hunters of the Impossible"
+      },
+      {
+        "type": "image",
+        "src": "/ordo/monvenum.png",
+        "alt": "Monvenüm Diviospec emblem",
+        "width": 1024,
+        "height": 1411
+      },
+      {
+        "type": "paragraph",
+        "text": "The Monvenüm stalk aberrations, titans, and threats that gnaw at the Veil itself. Survivalists, rangers, and hardened warriors—they live for months aboard Arcships or in deep wilderness watches, returning only to resupply before the next hunt. To cross the Monvenüm’s path is to meet the last line between mortal realms and that which should never have been."
+      },
+      {
+        "type": "heading",
+        "text": "Magilex —Law of the Weave"
+      },
+      {
+        "type": "image",
+        "src": "/ordo/magilex.png",
+        "alt": "Magilex Diviospec emblem",
+        "width": 1024,
+        "height": 1411
+      },
+      {
+        "type": "paragraph",
+        "text": "Enforcers of arcane law, the Magilex pursue rogue casters, void-touched sorcery, and forbidden spellcraft. Their squads wield wards, counter-sigils, and specialized bounty gear, trained to strike with unrelenting precision. To defy the edicts of the Magilex is to find one’s spellbook sealed, one’s soul contract voided, and one’s name erased from every ledger that matters."
+      },
+      {
+        "type": "heading",
+        "text": "Custofurious —Keepers of True Names"
+      },
+      {
+        "type": "image",
+        "src": "/ordo/custofurious.png",
+        "alt": "Custofurious Diviospec emblem",
+        "width": 1024,
+        "height": 1411
+      },
+      {
+        "type": "paragraph",
+        "text": "Against the eternal contagion of fiends, the Custofurious stand as wardens and binders. Masters of true names, contracts, and the infernal tongue, they bargain, bind, and banish to preserve balance in the endless war between good and evil. Ushers of the Blood War—their oath is simple: never surrender a soul to Hell nor Heaven, but guard the mortal middle from both."
+      },
+      {
+        "type": "heading",
+        "text": "Lexurgy —Inquisitors of Faith and Flame"
+      },
+      {
+        "type": "image",
+        "src": "/ordo/lexurgy.png",
+        "alt": "Lexurgy Diviospec emblem",
+        "width": 1024,
+        "height": 1411
+      },
+      {
+        "type": "paragraph",
+        "text": "The Lexurgy are inquisitors of thought, creed, and corruption. They silence cults, unravel false prophets, and mete judgment without regard for station—be it priest, noble, or emperor. Where doctrine twists into heresy, the Lexurgy are already at work, shadows in the nave, fire in the sanctum."
+      }
+    ]
+  },
+  {
+    "id": "the-brass",
+    "title": "The Brass",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "Beneath the banners of the Diviospecs lies a deeper stratum of command known only to the highest tiers of the ORDO: the Brass. To the rank-and-file agent, “the Brass” is a catchword for senior officers and command staff, but in truth it denotes something far older, stranger, and more deliberate."
+      },
+      {
+        "type": "paragraph",
+        "text": "The secretive members of the Brass are the hidden architects of the guild’s will. They do not wear insignia, and no rolls of membership are ever seen outside the Chamber of Balance in the Keep. Each is drawn from the Big Five Diviospecs or from one of the lesser, more clandestine branches, elevated not only for their deeds but for their willingness to carry secrets too dangerous for the eyes of citizenry."
+      },
+      {
+        "type": "paragraph",
+        "text": "Some within the ORDO believe the Brass does more than govern—that it remembers threats long erased from official history and prepares for wars not yet visible to the planes. Others whisper that its members are chosen as much by the Keep itself as by any living hand, marked for service by forces within the guild older than rank or office."
+      },
+      {
+        "type": "heading",
+        "text": "Optants of the ORDO"
+      },
+      {
+        "type": "paragraph",
+        "text": "Among the ranks of the ORDO, few are more feared in courts, temples, or noble halls than the Optants. They do not lead armies or pronounce judgment openly. Their power lies in perception: reading what is unsaid, weighing silence as heavily as speech, and uncovering what others would conceal."
+      },
+      {
+        "type": "paragraph",
+        "text": "Trained in rhetoric, law, and interrogation, and sharpened by sanctioned rites and arc-tec implants, Optants perceive what others miss. Dreams leave traces, objects retain echoes, and lies disturb the Weave in ways only they can sense."
+      },
+      {
+        "type": "paragraph",
+        "text": "Where an Optant walks, hidden truths seldom remain hidden. Corruption withers beneath their scrutiny, cults fear them as Unmaskers, and even allies choose their words carefully. Their charge is not cruelty, but clarity."
+      },
+      {
+        "type": "paragraph",
+        "text": "Within the ORDO, Optant is more than a title. From the old Netherese optare, “to choose” or “to discern,” it marks one who chooses truth over comfort, clarity over illusion, and the Balance above all lesser loyalties."
+      }
+    ]
+  },
+  {
+    "id": "the-keep",
+    "title": "The Keep",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "The Keep is the veiled heart of the ORDO, a fortress unmarked on any map and unknown to all but the sworn. Hidden in plain sight within Sigil, its entrances masquerade as alleyways, shadows, and forgotten thresholds, each one a passage to elsewhere. To the common eye, the Keep does not exist. To the initiated, those doors shift and open, drawing the faithful into a demiplane citadel of stone and starlight."
+      },
+      {
+        "type": "paragraph",
+        "text": "Within its walls, impossibility reigns. Spires twist against reason, angles fold inward upon themselves, and runes older than giant-kind flicker with secret fire, visible only to those who bear the guild’s seal. Here, the architecture is not merely unnatural—it is deliberate, as though the fortress itself was built to defy intrusion, understanding, and escape in equal measure."
+      },
+      {
+        "type": "paragraph",
+        "text": "Within this shifting bastion, the Big Five Diviospecs maintain their command halls and archives: the Tabulastra, with its charts of astral currents; the Monvenüm, whose vaults hold titanic trophies; the Magilex, keeper of reliquaries bound in warded iron; the Custofurious, whose tomes record true names and forbidden reckonings; and the Lexurgy, whose black-marble Court of Cages stands as both tribunal and warning. Above them all, the Chamber of Balance convenes in secret to direct the guild’s will, its judgments echoing silently across planes and empires."
+      },
+      {
+        "type": "paragraph",
+        "text": "Yet the Keep is more than architecture. Its foundations sink into a planar junction buried deep within the Weave, granting the ORDO hidden portals that bridge the multiverse. The fortress itself lives—its halls like veins and arteries, drinking from the Weave to sustain its endless vigilance."
+      },
+      {
+        "type": "paragraph",
+        "text": "Here, an ORDO officer’s oaths are sworn, their seals bestowed, and their loyalty weighed. Every agent knows the truth of the place:"
+      },
+      {
+        "type": "paragraph",
+        "text": "The Keep remembers."
+      },
+      {
+        "type": "heading",
+        "text": "The City of Sigil"
+      },
+      {
+        "type": "paragraph",
+        "text": "Sigil is the impossible city at the center of the planes: a torus of stone and secrets balanced atop an infinite spire in the Outlands, where every street may lead to somewhere else entirely. Known as the City of Doors and, in less reverent tongues, the Cage, it is the one place in the multiverse where angels, fiends, merchants, prophets, killers, and exiles may pass within arm’s reach of one another beneath the same curved sky."
+      },
+      {
+        "type": "paragraph",
+        "text": "Here, empires bargain in whispers, gods are denied entry, and secrets are traded with more care than gold. Over it all drifts the shadow of the Lady of Pain, the silent and inscrutable ruler of the city, whose displeasure is swifter than law and far more final."
+      }
+    ]
+  },
+  {
+    "id": "recruitment-into-the-watch",
+    "title": "Recruitment Into the Watch",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "No one applies to the ORDO. The guild does not post summons, raise markers, or seek volunteers. It watches. Across worlds and centuries, its unseen eyes linger on those whose choices carry weight—those who act with courage when none would know, or resist when power would sway most."
+      },
+      {
+        "type": "paragraph",
+        "text": "The ORDO’s strength lies not in prophecy, but in foresight. Through centuries of observation, pattern, and disciplined study, its Diviospecs have learned to sense the fault lines of history before they break. They see when empires tremble, when faith decays, and when a single life may alter the course of many. At such moments, the ORDO moves."
+      },
+      {
+        "type": "paragraph",
+        "text": "Recruitment is never chance. Every initiate is observed long before the summons comes. Their choices are tested, their loyalties measured, their failures remembered. When the call finally arrives, it feels less like opportunity and more like recognition."
+      },
+      {
+        "type": "paragraph",
+        "text": "An Officer of the ORDO, often hidden behind another name or face, studies the candidate through trial and loss, weighing not only skill, but intent. Some are watched for years. Others are found in the ashes of catastrophe, when only purpose remains."
+      },
+      {
+        "type": "paragraph",
+        "text": "When a candidate is judged ready, the Officer delivers the summons. Accepting it is the first choice. Stepping through the portal it opens is the second—and the last they make as the person they once were."
+      },
+      {
+        "type": "paragraph",
+        "text": "Those who refuse are not punished. They are simply forgotten."
+      },
+      {
+        "type": "paragraph",
+        "text": "Those who accept are brought to the Keep in Sigil, where they learn the truth the ORDO has always known:"
+      },
+      {
+        "type": "paragraph",
+        "text": "You were chosen because you were already serving the Balance. You simply did not yet know its name."
+      }
+    ]
+  },
+  {
+    "id": "creating-an-officer",
+    "title": "Creating an Officer",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "The ORDO recruits from among the rare few who have faced the impossible—and survived with both conviction and conscience intact. Officers are not born to the role; they are tempered by it."
+      },
+      {
+        "type": "paragraph",
+        "text": "Some were soldiers who witnessed the cost of blind obedience and swore to serve balance instead of banners. Others were scholars who uncovered truths too dangerous to publish, or mystics who gazed too far into the Weave and returned with purpose instead of madness. Many were outlaws once branded traitors, redeemed through quiet service in the shadows of greater wars. All share one thing in common: they act where others cannot."
+      },
+      {
+        "type": "paragraph",
+        "text": "An ORDO Officer is equal parts investigator, diplomat, and executioner. One day they might negotiate with an angel to avert a holy war; the next, they dismantle a cult that has learned to bend reality through worship. They are trained to think independently yet act in concert, to question every creed—including their own—and to walk the razor’s edge between Law and Chaos without losing themselves to either."
+      },
+      {
+        "type": "paragraph",
+        "text": "To create an Officer, consider who your character was before the ORDO found them. What act drew the guild’s attention? What belief—or betrayal—earned their place among the Balancekeepers?"
+      },
+      {
+        "type": "paragraph",
+        "text": "Did they agree to service, or were they given no choice at all?"
+      },
+      {
+        "type": "heading",
+        "text": "Who Becomes an Officer"
+      },
+      {
+        "type": "paragraph",
+        "text": "ORDO Officers are not bound by race, creed, or class. They are defined instead by temperament—by the willingness to walk the knife-edge between virtue and necessity. A few of the many archetypes include:"
+      },
+      {
+        "type": "list",
+        "text": "The Disillusioned Soldier: Veterans who have seen the folly of conquest, yet cannot lay down the sword."
+      },
+      {
+        "type": "list",
+        "text": "The Scholar of Forbidden Truths: Arcanists and historians who uncovered what should never have been known, and live now under the guild’s protection—or its leash."
+      },
+      {
+        "type": "list",
+        "text": "The Repentant Heretic: Former zealots who turned against the gods they once served, now seeking redemption in impartial service to Balance."
+      },
+      {
+        "type": "list",
+        "text": "The Boundless Wanderer: Planewalkers, traders, or mercenaries who have glimpsed the vastness of the multiverse and realized no single order can hold it."
+      },
+      {
+        "type": "list",
+        "text": "The Silent Watcher: Spies, inquisitors, or prophets drawn to the ORDO’s cause by visions of catastrophe no one else would believe"
+      }
+    ]
+  },
+  {
+    "id": "firearms",
+    "title": "Firearms",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "If it suits your character, an ORDO officer may be proficient with firearms and equipped with sanctioned Arc-tec firearm magic items."
+      },
+      {
+        "type": "paragraph",
+        "text": "An arcane focus may also be flavored as a firearm, with spells and spell slots serving as its ammunition. Arc-tec firearms used by ORDO agents are powered by arc-tec cells."
+      }
+    ]
+  },
+  {
+    "id": "ordo-specific-equipment",
+    "title": "ORDO Specific Equipment",
+    "blocks": [
+      {
+        "type": "heading",
+        "text": "ORDO Signet Ring"
+      },
+      {
+        "type": "paragraph",
+        "text": "Ring, artifact"
+      },
+      {
+        "type": "paragraph",
+        "text": "A twisted dark grey metal ring, its metal appearing both polished and unnervingly organic, as if shaped by unseen hands rather than forged. The ORDO’s sigil is etched into a gem on the face, a stark reminder of its wearer’s duty. Given only to sworn agents of the ORDO, this ring is both a symbol of office and a tool of silent authority. While wearing this ring, you are immune to magic that allows other creatures to read your thoughts, determine whether you are lying, know your alignment, or know your creature type. Creatures can telepathically communicate with you only if you allow it."
+      },
+      {
+        "type": "paragraph",
+        "text": "You can take a Magic action to cause the ring to become imperceptible until you take another Magic action to make it perceptible, until you remove the ring, or until you die."
+      },
+      {
+        "type": "paragraph",
+        "text": "If you die while wearing the ring, your soul enters it, unless it already houses a soul. You can remain in the ring or depart for the afterlife. As long as your soul is in the ring, you can telepathically communicate with any creature wearing it. A wearer can’t prevent this telepathic communication."
+      },
+      {
+        "type": "list",
+        "text": "Key (Minor Property): The ring can unlock containers, chambers, vaults, or doors of Imperial Standard Protection. The ORDO embeds a universal cipher in its rings, ensuring agents can access restricted areas when necessary. This does not bypass all magical locks or divine barriers."
+      },
+      {
+        "type": "list",
+        "text": "ORDO Authority: The ring is recognized as an official insignia of the ORDO. In civilized Imperial sectors, the bearer may receive deference, wary respect, or immediate suspicion based on the political climate."
+      },
+      {
+        "type": "paragraph",
+        "text": "Additional Lore: Each ORDO Signet Ring is forged in secrecy beneath the Keep and warded against replication. Upon the death of an agent, the ring is retrieved and returned—or, if left behind, it is said to whisper, guiding its way back to the ORDO’s hand. If a non-ORDO agent attempts to wear the ring without authorization, the sigil burns cold, a warning against any who try it on. The ring will do 1d4 cold damage for every second the ring is worn by a non-agent (21 or 6d4 Cold Damage per 6 second round)."
+      },
+      {
+        "type": "heading",
+        "text": "Arc-Tec Armory"
+      },
+      {
+        "type": "heading",
+        "text": "Meeginz at the Keep"
+      },
+      {
+        "type": "paragraph",
+        "text": "Within the Keep’s vaulted halls, in a workshop that hums with gears, runes, and the occasional explosion, works Meeginz, the gobbognome artificer whose genius borders on the absurd. Equal parts eccentric tinkerer and meticulous quartermaster, Meeginz is the ORDO’s indispensable mind behind mission support."
+      },
+      {
+        "type": "paragraph",
+        "text": "Meeginz ensures every agent is equipped for success. Depending on mission severity and budget allocations, he authorizes leases of rare, often experimental Arc-Tec. His signature is the final seal on a great many requisitions."
+      },
+      {
+        "type": "paragraph",
+        "text": "Agents know one thing for certain: if their mission calls for something unusual, ingenious, or wildly impractical—Meeginz can make it."
+      },
+      {
+        "type": "heading",
+        "text": "ORDO Sending Stones"
+      },
+      {
+        "type": "paragraph",
+        "text": "Wondrous item, uncommon"
+      },
+      {
+        "type": "paragraph",
+        "text": "ORDO Sending Stones come in sets instead of pairs, with each stone carved to match the other so the set is easily recognized. While you touch one stone, you can expend a charge to cast Sending from it. The target is a bearer of one or more of the other stones in the set. If no creature bears another stone, you know that fact as soon as you use the stone, and you don’t cast the spell."
+      },
+      {
+        "type": "paragraph",
+        "text": "You can also expend three charges to cast Magic Mouth from it."
+      },
+      {
+        "type": "paragraph",
+        "text": "Each stone in the set has three charges that recharge daily at dawn. If one of the stones in the set is destroyed, the others remain magical."
+      },
+      {
+        "type": "heading",
+        "text": "ORDO Satchel Pocket"
+      },
+      {
+        "type": "paragraph",
+        "text": "Wondrous item, rare"
+      },
+      {
+        "type": "paragraph",
+        "text": "The ORDO Satchel Pocket magically send and receive documents to and from Head Office through the pocket’s opening. Your pocket magically produces prewritten and signature-ready contracts or statements at your request. It also produces useful information, changes in mission parameters or other requests from the Brass. This pocket is enchanted into a commonly worn garment, satchel, wallet or some other similar suitable pocket."
+      },
+      {
+        "type": "heading",
+        "text": "Pocket of Holding"
+      },
+      {
+        "type": "paragraph",
+        "text": "Your pocket functions as a bag of holding with a 12 inch diameter."
+      },
+      {
+        "type": "heading",
+        "text": "Scroll File"
+      },
+      {
+        "type": "paragraph",
+        "text": "Your pocket has a dedicated extradimensional space that can hold up to thirty documents or spell scrolls. Placing a single document into the scroll humidor is an action. Drawing forth a desired scroll is a bonus action."
+      },
+      {
+        "type": "heading",
+        "text": "D&D Beyond Inventory"
+      },
+      {
+        "type": "paragraph",
+        "text": "For a complete list of homebrew magic items allowed in your campaign, see the Arc-Tec Magic Items supplement, or search Arc-Tec in the inventory section of your DnDBeyond character sheet."
+      }
+    ]
+  },
+  {
+    "id": "ordobots",
+    "title": "ORDOBots",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "ORDOBots are the mechanical servitors of the ORDO, each built for a specific function but all sharing a common trait: within their mostly engineered frames resides something perilously close to artificial intelligence. Some serve in humble capacities as attendants, scribes, or custodians, while others act as pilots, crew-support units, enforcers, or information keepers tasked with memory, records, and analysis. Certain models are assigned to accompany ORDO squads in the field, providing support, protection, or logistical aid, while others remain fixed to stations, vaults, ships, or command halls where their purpose is constant and unyielding. Though their forms and duties vary, all ORDOBots are designed to extend the reach of the guild with tireless precision, cold efficiency, and a presence that often feels just a little too aware."
+      }
+    ]
+  },
+  {
+    "id": "matriarch-class-ships",
+    "title": "Matriarch Class Ships",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "A towering marvel of arcane engineering, the Matriarch-class war galleon is equal parts fortress, warship, and mobile command post. These vessels stand at the pinnacle of magical and technological integration—capable of traversing oceans, skies, and the Astral Sea with ease."
+      },
+      {
+        "type": "paragraph",
+        "text": "Equipped with four forward-mounted arcane bolters and 36 broadside cannons across twin-tiered gun decks, the Matriarch can unleash volleys powerful enough to devastate enemy fleets or bring down airborne titans."
+      },
+      {
+        "type": "paragraph",
+        "text": "Among its most distinctive features is the onboard aviary, which houses flying mounts used as aerial cavalry—capable of rapid deployment, mid-air combat, and high-altitude reconnaissance."
+      },
+      {
+        "type": "paragraph",
+        "text": "Blending overwhelming firepower with unmatched versatility, the Matriarch-class galleon is feared and revered across land, sea, and star."
+      },
+      {
+        "type": "heading",
+        "text": "S. A. M. Systems"
+      },
+      {
+        "type": "paragraph",
+        "text": "S. A. M. Systems are a rare marvel of spelljamming craft, developed by the mysterious Mercane—those blue-skinned traders who guard the secrets of Wildspace’s greatest enchantments. Known formally as Structure for Assistive Magic, S. A. M. was first unveiled as a command solution for capital-class spelljammers. True to Mercane style, it is never sold lightly; such systems appear only aboard ships of immense wealth, power, or destiny."
+      },
+      {
+        "type": "paragraph",
+        "text": "On these vessels, S. A. M. manifests as a floating crystal orb of glassy latticework and silver filigree, glowing faintly with inner starlight. It speaks in a calm, measured voice and can converse in any language known among its crew. Within its crystalline core rests centuries of navigational and tactical data drawn from mercane archives, bound directly into the ship’s helm and arcane conduits."
+      },
+      {
+        "type": "paragraph",
+        "text": "S. A. M. governs critical systems: gravity planes, air envelopes, siege weapons, and arcane defenses. Any figure recognized as the vessel’s commander may issue orders, which S. A. M. executes with unfailing precision. To crews, it serves as quartermaster, helmsman, and trusted advisor—yet its allegiance ultimately belongs to the Mercane who forged it."
+      }
+    ]
+  },
+  {
+    "id": "final-word",
+    "title": "Final Word",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "To bear the seal of the ORDO is to accept a burden few in the multiverse will ever understand. You are not merely an adventurer, nor simply a servant of law or creed. You are an officer of the Balance, entrusted to walk where others cannot, to see what others refuse, and to act when hesitation would doom worlds."
+      },
+      {
+        "type": "paragraph",
+        "text": "Within these pages are the customs, expectations, and privileges of your station, but no handbook can fully prepare you for the weight of the oath you carry. Beyond the Keep lie endless doors, hidden wars, compromised truths, and choices that will rarely present themselves in clean moral lines. Such is the nature of ORDO service."
+      },
+      {
+        "type": "paragraph",
+        "text": "Carry your seal with vigilance. Keep your records in order. Know your tools, your squad, and your duty. The multiverse is vast, and its fractures are many, but the ORDO endures because its officers endure."
+      },
+      {
+        "type": "paragraph",
+        "text": "Stand ready. Watch closely. Keep the Balance."
+      },
+      {
+        "type": "paragraph",
+        "text": "—The Spellbook Team www.spellbookpublishing.com"
+      }
+    ]
+  },
+  {
+    "id": "the-ordo-protects",
+    "title": "The ORDO Protects",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "To serve the ORDO is to walk willingly into uncertainty, to stand where law, faith, ambition, and ruin collide, and to choose the Balance when easier powers call for surrender. An officer is not measured only by strength of arms or cunning of mind, but by the will to endure hard truths, carry forbidden burdens, and act when no one else can. Beyond the Keep, beyond Sigil, and beyond the sight of those who sleep safely because of its vigilance, the ORDO endures. Its watch is unending, its purpose absolute, and now, by oath and deed, that purpose is yours"
+      },
+      {
+        "type": "paragraph",
+        "text": "Find more SPELLBOOK Adventurers’ League Books and Resources at www.spellbookpublishing.com."
+      }
+    ]
+  },
+  {
+    "id": "legal-and-attribution",
+    "title": "Legal and Attribution",
+    "blocks": [
+      {
+        "type": "paragraph",
+        "text": "DUNGEONS & DRAGONS, D&D, Spelljammer, Wizards of the Coast, Forgotten Realms, the dragon ampersand, Player’s Handbook, Monster Manual, Dungeon Master’s Guide, D&D Adventurers League, all other Wizards of the Coast product names, and their respective logos are trademarks of Wizards of the Coast in the USA and other countries. All characters and their distinctive likenesses are property of Wizards of the Coast. The materials described in this statement are protected under the copyright laws of the United States of America and around the world under international intellectual property treaties. Any reproduction or unauthorized use of the materials contained herein or artwork contained herein is prohibited without the express written permission of Wizards of the Coast. ©2022 Wizards of the Coast LLC, PO Box 707, Renton, WA 98057-0707, USA. Manufactured by Hasbro SA, Rue Emile-Boéchat 31, 2800 Delémont, CH. Represented by Hasbro, De Entrée 240, 1101 EE Amsterdam, NL. Hasbro UK Ltd., P . O. Box 43 Newport, NP19 4YH, UK. This work includes material from the System Reference Document 5.2 (“SRD 5.2”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode."
+      }
+    ]
+  }
+]
