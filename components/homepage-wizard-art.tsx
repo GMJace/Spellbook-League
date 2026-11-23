@@ -49,6 +49,7 @@ export function HomepageWizardArt() {
         src="/wizard_large.png"
         width="1536"
         height="1024"
+        style={{ height: "auto" }}
         ref={(image) => {
           if (image?.complete && image.naturalWidth > 0) setLoaded(true);
         }}
