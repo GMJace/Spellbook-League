@@ -4578,6 +4578,25 @@ textarea {
 .mercane-hero-card {
   gap: 1rem;
 }
+.mercane-hero-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+.mercane-hero-layout > .mercane-hero-card { min-width: 0; }
+.mercane-hero-layout .mercane-filter-grid { grid-template-columns: minmax(0, 1fr); }
+.mercane-wizard-staff {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 44rem;
+  object-fit: contain;
+}
+@media (max-width: 860px) {
+  .mercane-hero-layout { grid-template-columns: minmax(0, 1fr); }
+  .mercane-wizard-staff { max-height: 30rem; }
+}
 
 .mercane-filter-grid {
   display: grid;

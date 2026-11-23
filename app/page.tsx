@@ -89,6 +89,15 @@ export default async function HomePage({ searchParams }: {
 
   return (
     <main className="stack">
+      <section className="homepage-banner">
+        <HomepageWizardArt />
+        <img
+          alt="Rainbow jewel border"
+          className="homepage-banner-divider"
+          src="/jewel-border-rainbow-sb.png"
+        />
+      </section>
+
       <section className="homepage-magic-heading" aria-label="WHERE THE MAGIC IS WRITTEN">
         <h1>
           {magicHeadline.map(([letter, color], index) =>
@@ -103,15 +112,6 @@ export default async function HomePage({ searchParams }: {
             )
           )}
         </h1>
-      </section>
-
-      <section className="homepage-banner">
-        <HomepageWizardArt />
-        <img
-          alt="Rainbow jewel border"
-          className="homepage-banner-divider"
-          src="/jewel-border-rainbow-sb.png"
-        />
       </section>
 
       <div className="homepage-character-intro">
@@ -191,7 +191,7 @@ export default async function HomePage({ searchParams }: {
           width="1198"
         />
         <HomepageSpeechBubble>
-          easy to use guides to turn any table into a SPELLBOOK QUESTS table.
+          easy to use guides to turn any table into a <RainbowSpellbook /> QUESTS table.
         </HomepageSpeechBubble>
       </div>
 

@@ -487,6 +487,7 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
           </p>
         ) : null}
 
+        <div className="mercane-hero-layout">
         <section className="card ledger-panel stack mercane-hero-card">
           <div className="section-heading">
             <div className="stack" style={{ gap: "0.35rem" }}>
@@ -565,6 +566,15 @@ export default async function MercaneMercantilePage({ searchParams }: PageProps)
             </div>
           </form>
         </section>
+
+        <img
+          className="mercane-wizard-staff"
+          src="/wizard%20staff.png"
+          alt="Wizard holding a staff"
+          width="907"
+          height="1733"
+        />
+        </div>
 
         <section className="list-card stack" id="mercane-market-listings">
           <div className="section-heading">

@@ -46,7 +46,9 @@ export function HomepageWizardArt() {
       <img
         alt="SPELLBOOK homepage banner"
         className="homepage-banner-image"
-        src="/wizard.svg"
+        src="/wizard_large.png"
+        width="1536"
+        height="1024"
         ref={(image) => {
           if (image?.complete && image.naturalWidth > 0) setLoaded(true);
         }}
