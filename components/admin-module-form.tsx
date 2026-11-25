@@ -180,7 +180,7 @@ export function AdminModuleForm({
 
       <div className="form-grid">
         <label>
-          Source (DM's Guild link)
+          Source (web link)
           <input defaultValue={initialValues.sourceSheet} name="sourceSheet" type="text" />
         </label>
         <label>

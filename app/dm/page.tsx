@@ -1,5 +1,7 @@
 // @ts-nocheck
 import Link from "next/link";
+import { DmModuleCatalog } from "@/components/dm-module-catalog";
+import { HomepageSpeechBubble } from "@/components/homepage-speech-bubble";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SearchIcon } from "@/components/search-icon";
@@ -88,14 +90,24 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        <div className="list-card stack dashboard-account-details">
-          <dl className="dashboard-account-info">
-            <div><dt>Display name:</dt><dd>{user.name ?? "Not provided"}</dd></div>
-            <div><dt>Email:</dt><dd>{user.email}</dd></div>
-            <div><dt>Discord handle:</dt><dd>{user.discordHandle || "Not provided"}</dd></div>
-            <div><dt>Games played:</dt><dd>{gamesPlayedCount}</dd></div>
-            <div><dt>Service Hours:</dt><dd>{totalServiceHours.toLocaleString("en-US", { maximumFractionDigits: 2 })}</dd></div>
-          </dl>
+        <div className="dashboard-account-layout">
+          <div className="list-card stack dashboard-account-details">
+            <dl className="dashboard-account-info">
+              <div><dt>Display name:</dt><dd>{user.name ?? "Not provided"}</dd></div>
+              <div><dt>Email:</dt><dd>{user.email}</dd></div>
+              <div><dt>Discord handle:</dt><dd>{user.discordHandle || "Not provided"}</dd></div>
+              <div><dt>Games played:</dt><dd>{gamesPlayedCount}</dd></div>
+              <div><dt>Service Hours:</dt><dd>{totalServiceHours.toLocaleString("en-US", { maximumFractionDigits: 2 })}</dd></div>
+            </dl>
+          </div>
+          <div className="dashboard-account-character">
+            <HomepageSpeechBubble>Welcome Weaver!</HomepageSpeechBubble>
+            <img
+              alt=""
+              className="dashboard-account-wizard"
+              src="/wizard_medium.png"
+            />
+          </div>
         </div>
       </section>
 
@@ -151,8 +163,17 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
         </div>
       </section>
 
+      <DmModuleCatalog />
+
       <section className="card ledger-panel stack dm-dashboard-games-shell">
-        <div className="inline-actions dm-dashboard-actions" style={{ justifyContent: "flex-end" }}>
+        <div className="inline-actions" style={{ justifyContent: "space-between" }}>
+          <div>
+            <p className="eyebrow">Weaver dashboard</p>
+            <h1>Your QUESTS</h1>
+          </div>
+        </div>
+
+        <div className="inline-actions dm-dashboard-actions" style={{ justifyContent: "center" }}>
           <Link href="/dm/players" className="button button-secondary button-small">
             Player roster
           </Link>
@@ -166,15 +187,8 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
             Service awards
           </Link>
           <Link href="/dm/games/new" className="button button-small">
-            Create/Log Game
+            Create/Log Quest
           </Link>
-        </div>
-
-        <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <div>
-            <p className="eyebrow">DM dashboard</p>
-            <h1>Your games</h1>
-          </div>
         </div>
 
         <form className="search-row dm-dashboard-search-row" method="get" style={{ marginTop: "1rem" }}>
@@ -198,7 +212,7 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
         <div className="dm-dashboard-games-divider" />
 
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>Current DM games</h2>
+          <h2 style={{ margin: 0 }}>Current open QUESTS</h2>
         </div>
         {games.length ? (
           <TwoRowScrollableGrid className="homepage-open-games-grid">

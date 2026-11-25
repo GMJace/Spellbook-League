@@ -155,7 +155,7 @@ export default async function PlayerGameLogDetailPage({
               </div>
             ) : null}
             <div className="stack" style={{ gap: "0.35rem" }}>
-              <span className="muted character-game-log-detail-label">Source (DM&apos;s Guild link):</span>
+              <span className="muted character-game-log-detail-label">Source (web link):</span>
               <strong style={{ wordBreak: "break-word" }}>
                 {formatOptionalText(participant.game.source)}
               </strong>

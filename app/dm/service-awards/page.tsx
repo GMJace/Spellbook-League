@@ -119,7 +119,7 @@ export default async function DmServiceAwardsPage({ searchParams }: PageProps) {
       key: `game-${game.id}`,
       title: game.title,
       adventureCode: game.adventureCode,
-      notes: "Logged from Create/Log Game.",
+      notes: "Logged from Create/Log Quest.",
       totalHours: game.serviceHours,
     })),
   ].sort((a, b) => b.date.getTime() - a.date.getTime());

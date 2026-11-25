@@ -242,7 +242,7 @@ export function PlayerGameLogForm({
         </div>
         <div className="stack" style={fieldBlockStyle}>
           <label>
-            Source (DM's Guild link)
+            Source (web link)
             <input
               readOnly={metadataLocked}
               value={sourceValue}

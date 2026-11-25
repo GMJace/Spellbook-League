@@ -41,7 +41,7 @@ type PageProps = {
 function renderSignupMessage(signupState: string | undefined) {
   switch (signupState) {
     case "success":
-      return "You are signed up for this free league game.";
+      return "You are signed up for this free QUESTS game.";
     case "already":
       return "You are already signed up for this game.";
     case "full":
@@ -51,7 +51,7 @@ function renderSignupMessage(signupState: string | undefined) {
     case "paid":
       return "This game requires checkout through the cart.";
     case "grim-tidings-cart":
-      return "This Grim Tidings game must be claimed from the league cart.";
+      return "This Grim Tidings game must be claimed from the QUESTS cart.";
     case "choose-character":
       return "Please choose one of your characters or select TBD to sign up.";
     case "invalid-character":
@@ -76,7 +76,7 @@ function renderLeaveMessage(leaveState: string | undefined, supportEmail: string
     case "success":
       return "You have been removed from this game.";
     case "paid-refund-only":
-      return "Paid league tickets now use the Request refund action instead of the standard leave button.";
+      return "Paid QUESTS tickets now use the Request refund action instead of the standard leave button.";
     case "refund-window-closed":
       return `Paid ticket refund requests close ${PAID_GAME_REFUND_WINDOW_HOURS} hours before the scheduled start time. This game is now inside that window, so no online refund requests are being accepted. Please use the SPELLBOOK Discord if you want to sell or give away your ticket.`;
     case "not-signed-up":
@@ -196,7 +196,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
       <section className="stack">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">League Game</p>
+            <p className="eyebrow">QUEST</p>
             <h1 style={{ margin: "0.35rem 0 0" }}>{game.title}</h1>
           </div>
 
@@ -206,7 +206,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
             </Link>
             {canAddToCart ? (
               <Link className="button" href={`/league/cart?games=${encodeURIComponent(game.id)}`}>
-                {game.isGrimTidings ? "Add to league cart" : "Add ticket to cart"}
+                {game.isGrimTidings ? "Add to QUESTS cart" : "Add ticket to cart"}
               </Link>
             ) : null}
           </div>
@@ -238,7 +238,6 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
 
             <div className="stack">
               <div className="stack" style={{ gap: "0.45rem" }}>
-                <p className="eyebrow">Game Snapshot</p>
                 {parsedGameSummary.isStructured ? (
                   <div className="stack" style={{ gap: "0.75rem" }}>
                     {parsedGameSummary.gameSummary ? (
@@ -285,7 +284,13 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 </p>
               </div>
 
-              <div className="ggcon-summary-metrics">
+            </div>
+          </div>
+
+          <hr style={{ width: "100%", margin: "0.5rem 0", border: 0, borderTop: "1px solid var(--line)" }} />
+
+          <div className="stack" style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+              <div className="stack">
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
                   <span className="muted">Dungeon Master</span>
                   <strong>{game.dm?.name ?? game.dmName ?? "SPELLBOOK DM"}</strong>
@@ -303,12 +308,12 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   </strong>
                   {game.isGrimTidings ? (
                     <span className="muted ggcon-meta-note">
-                      Claim this seat from the league cart by spending Tidings from your player
+                      Claim this seat from the QUESTS cart by spending Tidings from your player
                       account.
                     </span>
                   ) : game.ticketAccessCodeHash ? (
                     <span className="muted ggcon-meta-note">
-                      Have an access code? Redeem it from the league cart.
+                      Have an access code? Redeem it from the QUESTS cart.
                     </span>
                   ) : null}
                 </div>
@@ -317,7 +322,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   <strong>{game.duration || "TBD"}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
-                  <span className="muted">Source (DM&apos;s Guild link)</span>
+                  <span className="muted">Source (web link)</span>
                   <strong>{game.source || "Not recorded"}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
@@ -340,11 +345,11 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 <div className="list-card stack" style={{ gap: "0.5rem" }}>
                   <strong>Grim Tidings access</strong>
                   <p className="muted" style={{ margin: 0 }}>
-                    This limited-access league game costs{" "}
+                    This limited-access QUESTS game costs{" "}
                     <strong>
                       {game.grimTidingCost} Tiding{game.grimTidingCost === 1 ? "" : "s"}
                     </strong>{" "}
-                    to join through the league cart.
+                    to join through the QUESTS cart.
                   </p>
                   {tidingSummary ? (
                     <p style={{ margin: 0 }}>
@@ -372,7 +377,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                 <div className="list-card stack" style={{ gap: "0.5rem" }}>
                   <strong>Paid ticket refund policy</strong>
                   <p className="muted" style={{ margin: 0 }}>
-                    Paid league game refund requests are eligible until{" "}
+                    Paid QUESTS game refund requests are eligible until{" "}
                     <strong>{PAID_GAME_REFUND_WINDOW_HOURS} hours before the scheduled start time</strong>.
                   </p>
                   <p className="muted" style={{ margin: 0 }}>
@@ -500,7 +505,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                     <strong>Grim Tidings signup</strong>
                     <p className="muted" style={{ margin: 0 }}>
                       This seat costs {game.grimTidingCost} Tiding
-                      {game.grimTidingCost === 1 ? "" : "s"} and must be claimed from the league
+                      {game.grimTidingCost === 1 ? "" : "s"} and must be claimed from the QUESTS
                       cart.
                     </p>
                   </div>
@@ -511,7 +516,7 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   {canAddToCart ? (
                     <div>
                       <Link className="button" href={`/league/cart?games=${encodeURIComponent(game.id)}`}>
-                        Add to league cart
+                        Add to QUESTS cart
                       </Link>
                     </div>
                   ) : session?.user?.id && !isPlayer ? (
@@ -605,7 +610,6 @@ export default async function LeagueGameDetailPage({ params, searchParams }: Pag
                   )}
                 </div>
               ) : null}
-            </div>
           </div>
         </div>
 

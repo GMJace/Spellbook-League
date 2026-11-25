@@ -24,7 +24,7 @@ export const PLAYER_LOGSHEET_IMPORT_COLUMNS = [
   },
   {
     key: "source",
-    header: "Source (DM's Guild link)",
+    header: "Source (web link)",
     description: "Optional.",
   },
   {
@@ -68,7 +68,7 @@ const DETAILED_PLAYER_LOGSHEET_TEMPLATE_HEADERS = [
   "Date",
   "Game Title",
   "Adventure Code",
-  "Source (DM's Guild Link)",
+  "Source (web link)",
   "DM",
   "Tier",
   "Downtime Days Awarded",
@@ -114,7 +114,7 @@ export const PLAYER_LOGSHEET_IMPORT_HEADER_ALIASES: Record<
   datePlayed: ["date", "date played"],
   title: ["game title", "title"],
   adventureCode: ["adventure code", "code"],
-  source: ["source", "source (dm's guild link)", "dms guild link", "dm's guild link"],
+  source: ["source", "source (web link)", "source (dm's guild link)", "dms guild link", "dm's guild link"],
   tier: ["tier"],
   dmName: ["dungeon master", "dm", "dm name"],
   rewardsSummary: [

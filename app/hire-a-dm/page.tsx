@@ -57,6 +57,7 @@ export default async function HireADmPage() {
         id: dm.id,
         name: dm.name,
         email: dm.email,
+        profileImagePath: dm.profileImagePath,
         isListed: rosterEntryMap.has(dm.id),
         rating: ratingSummaryMap.get(dm.id)?.rating ?? rosterEntryMap.get(dm.id)?.rating ?? 5,
         specialties: rosterEntryMap.get(dm.id)?.specialties ?? null,

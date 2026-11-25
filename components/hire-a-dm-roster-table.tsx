@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { ProfileAvatar } from "@/components/profile-avatar";
 import { RainbowSpellbook } from "@/components/rainbow-spellbook";
 import { SearchIcon } from "@/components/search-icon";
 import { formatStarRating } from "@/lib/utils";
@@ -11,6 +12,7 @@ export type HireDmRosterRow = {
   id: string;
   name: string;
   email: string;
+  profileImagePath: string | null;
   isListed: boolean;
   rating: number;
   specialties: string | null;
@@ -66,76 +68,45 @@ export function HireDmRosterTable({ roster }: { roster: HireDmRosterRow[] }) {
         </form>
       </div>
 
-      <div className="table-wrap">
-        <table className="ledger-table">
-          <thead>
-            <tr>
-              <th>Dungeon Master</th>
-              <th>Rating</th>
-              <th>Experience</th>
-              <th>Profile</th>
-              <th>Hire DM</th>
-              <th>Rate DM</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roster.length === 0 ? (
-              <tr>
-                <td className="muted" colSpan={6}>
-                  The <RainbowSpellbook /> DM roster is empty right now.
-                </td>
-              </tr>
-            ) : filteredRoster.length ? (
-              filteredRoster.map((dm: HireDmRosterRow) => (
-                <tr key={dm.id}>
-                  <td>{dm.name}</td>
-                  <td>{formatStarRating(dm.rating)}</td>
-                  <td>
-                    {dm.gamesLogged} games, {dm.playersHosted} players hosted
-                  </td>
-                  <td>
-                    <Link
-                      className="button button-secondary button-small"
-                      href={`/hire-a-dm/${dm.id}`}
-                    >
-                      View profile
+      <div className="hire-dm-roster-cards">
+        {roster.length === 0 ? (
+          <p className="muted">
+            The <RainbowSpellbook /> DM roster is empty right now.
+          </p>
+        ) : filteredRoster.length ? (
+          filteredRoster.map((dm: HireDmRosterRow) => (
+            <article className="list-card stack" key={dm.id} aria-label={dm.name}>
+              <ProfileAvatar name={dm.name} src={dm.profileImagePath} size={96} />
+              <dl className="dashboard-account-info">
+                <div><dt>Dungeon Master:</dt><dd>{dm.name}</dd></div>
+                <div><dt>Rating:</dt><dd>{formatStarRating(dm.rating)}</dd></div>
+                <div><dt>Experience:</dt><dd>{dm.gamesLogged} games, {dm.playersHosted} players hosted</dd></div>
+              </dl>
+              <div className="inline-actions">
+                <Link
+                  className="button button-secondary button-small"
+                  href={`/hire-a-dm/${dm.id}`}
+                >
+                  View profile
+                </Link>
+                {dm.isListed ? (
+                  <>
+                    <Link className="button button-small" href={`/hire-a-dm/${dm.id}/hire`}>
+                      Hire DM
                     </Link>
-                  </td>
-                  <td>
-                    {dm.isListed ? (
-                      <Link
-                        className="button button-small"
-                        href={`/hire-a-dm/${dm.id}/hire`}
-                      >
-                        Hire DM
-                      </Link>
-                    ) : (
-                      <span className="muted">Not listed</span>
-                    )}
-                  </td>
-                  <td>
-                    {dm.isListed ? (
-                      <Link
-                        className="button button-secondary button-small"
-                        href={`/hire-a-dm/${dm.id}/rate`}
-                      >
-                        Rate DM
-                      </Link>
-                    ) : (
-                      <span className="muted">Not listed</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td className="muted" colSpan={6}>
-                  No DMs match that search.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                    <Link className="button button-secondary button-small" href={`/hire-a-dm/${dm.id}/rate`}>
+                      Rate DM
+                    </Link>
+                  </>
+                ) : (
+                  <span className="muted">Not listed</span>
+                )}
+              </div>
+            </article>
+          ))
+        ) : (
+          <p className="muted">No DMs match that search.</p>
+        )}
       </div>
     </div>
   );

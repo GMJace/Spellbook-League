@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomepageSpeechBubble } from "@/components/homepage-speech-bubble";
 import { CharacterRosterGrid, type PlayerRow } from "@/components/homepage-activity-board";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { TwoRowScrollableGrid } from "@/components/two-row-scrollable-grid";
@@ -144,24 +145,34 @@ export default async function PlayerDashboardPage({
           </div>
         </div>
 
-        <div className="list-card stack dashboard-account-details">
-          <dl className="dashboard-account-info">
-            <div><dt>Display name:</dt><dd>{user.name ?? "Not provided"}</dd></div>
-            <div><dt>Email:</dt><dd>{user.email}</dd></div>
-            <div><dt>Discord handle:</dt><dd>{user.discordHandle || "Not provided"}</dd></div>
-            <div><dt>Gameplay:</dt><dd>{gamesPlayedCount} games played</dd></div>
-            {availableStoreCreditUsd > 0 && <div><dt>Account credit:</dt><dd>{formatUsd(availableStoreCreditUsd)}</dd></div>}
-          </dl>
-          <h3 className="player-tiding-heading">TIDING POINTS</h3>
-          <dl className="dashboard-account-info">
-            <div><dt>Earned:</dt><dd>{tidingSummary.earnedCount}</dd></div>
-            <div><dt>Available:</dt><dd>{tidingSummary.availableCount}</dd></div>
-            <div><dt>Spent:</dt><dd>{tidingSummary.spentCount}</dd></div>
-          </dl>
+        <div className="dashboard-account-layout">
+          <div className="list-card stack dashboard-account-details">
+            <dl className="dashboard-account-info">
+              <div><dt>Display name:</dt><dd>{user.name ?? "Not provided"}</dd></div>
+              <div><dt>Email:</dt><dd>{user.email}</dd></div>
+              <div><dt>Discord handle:</dt><dd>{user.discordHandle || "Not provided"}</dd></div>
+              <div><dt>Gameplay:</dt><dd>{gamesPlayedCount} games played</dd></div>
+              {availableStoreCreditUsd > 0 && <div><dt>Account credit:</dt><dd>{formatUsd(availableStoreCreditUsd)}</dd></div>}
+            </dl>
+            <h3 className="player-tiding-heading">TIDING POINTS</h3>
+            <dl className="dashboard-account-info">
+              <div><dt>Earned:</dt><dd>{tidingSummary.earnedCount}</dd></div>
+              <div><dt>Available:</dt><dd>{tidingSummary.availableCount}</dd></div>
+              <div><dt>Spent:</dt><dd>{tidingSummary.spentCount}</dd></div>
+            </dl>
+          </div>
+          <div className="dashboard-account-character">
+            <HomepageSpeechBubble>Welcome Agent!</HomepageSpeechBubble>
+            <img
+              alt=""
+              className="dashboard-account-wizard"
+              src="/wizard_medium.png"
+            />
+          </div>
         </div>
       </section>
 
-      <section className="card ledger-panel stack">
+      <section className="card ledger-panel stack player-dashboard-roster-section">
         <img
           alt="Character roster divider"
           className="ggcon-table-divider"
@@ -200,6 +211,9 @@ export default async function PlayerDashboardPage({
           </div>
         )}
 
+      </section>
+
+      <section className="card ledger-panel stack player-dashboard-quests-section">
         <img
           alt="Current open games divider"
           className="ggcon-table-divider"
@@ -207,7 +221,7 @@ export default async function PlayerDashboardPage({
         />
 
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>Current open league games</h2>
+          <h2 style={{ margin: 0 }}>Current open QUESTS</h2>
         </div>
 
         <div className="list-card stack player-open-games-card">
@@ -297,7 +311,7 @@ export default async function PlayerDashboardPage({
                 );
               })
             ) : (
-              <div className="empty">No open league games are scheduled right now.</div>
+              <div className="empty">No QUESTS are scheduled right now.</div>
             )}
           </TwoRowScrollableGrid>
         </div>

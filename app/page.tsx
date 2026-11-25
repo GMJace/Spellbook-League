@@ -247,17 +247,6 @@ export default async function HomePage({ searchParams }: {
         <div className="homepage-mercane-grid">
           <div className="stack">
             <HomepageCommunityCallout
-              title="Mercane Marketplace"
-              action={{ href: "/mercane-mercantile", label: "Browse Mercane Marketplace" }}
-            >
-              <strong>Mercane Marketplace</strong> is the QUESTS marketplace for trading magic item cards.
-              Browse other players’ listings, offer your own cards for trade, and find the items that bring
-              your character’s build together.
-            </HomepageCommunityCallout>
-
-            <hr className="homepage-mercane-divider" />
-
-            <HomepageCommunityCallout
               id="the-keep"
               title="The Keep"
               action={{ href: "/quests/bastions", label: "Browse The Keep's Bastions" }}
@@ -265,6 +254,17 @@ export default async function HomePage({ searchParams }: {
               Between QUESTS, return to the Keep in the City of Doors to research leads, commission gear,
               or train for your next assignment. As your ORDO agent advances through the four tiers,
               more Bastion facilities open to you. Log your Downtime spending in the character tracker.
+            </HomepageCommunityCallout>
+
+            <hr className="homepage-mercane-divider" />
+
+            <HomepageCommunityCallout
+              title="Mercane Marketplace"
+              action={{ href: "/mercane-mercantile", label: "Browse Mercane Marketplace" }}
+            >
+              <strong>Mercane Marketplace</strong> is the QUESTS marketplace for trading magic item cards.
+              Browse other players’ listings, offer your own cards for trade, and find the items that bring
+              your character’s build together.
             </HomepageCommunityCallout>
           </div>
 

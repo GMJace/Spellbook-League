@@ -567,7 +567,7 @@ export default async function AdminModulesPage({
                       color: "rgba(255, 255, 255, 0.7)",
                     }}
                   >
-                    Source (DM&apos;s Guild link)
+                    Source (web link)
                   </th>
                   <th
                     style={{

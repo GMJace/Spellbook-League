@@ -195,7 +195,7 @@ export default async function DmGameDetailPage({ params }: PageProps) {
                   <strong>{game.duration || "TBD"}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
-                  <span className="muted">Source (DM&apos;s Guild link)</span>
+                  <span className="muted">Source (web link)</span>
                   <strong>{game.source || "Not recorded"}</strong>
                 </div>
                 <div className="list-card stack" style={{ gap: "0.35rem" }}>
