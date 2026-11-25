@@ -856,6 +856,12 @@ button.button-small {
 .homepage-magic-heading {
   text-align: center;
 }
+.homepage-magic-logo {
+  display: block;
+  width: min(100%, 40rem);
+  height: auto;
+  margin: 0 auto 1.25rem;
+}
 
 .homepage-magic-heading h1 {
   margin: 0;
@@ -3583,6 +3589,82 @@ th {
   color: #ffffff;
   text-decoration: underline;
   text-underline-offset: 0.16em;
+}
+
+.dm-game-catalog-divider {
+  border-bottom: 2px solid var(--comic-ink);
+}
+.dm-game-adventure-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+.dm-game-adventure-character {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  align-self: stretch;
+}
+.dm-game-adventure-character .homepage-intro {
+  bottom: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 1.5rem;
+}
+.dm-game-adventure-character .homepage-intro::after {
+  top: 100%;
+  left: auto;
+  right: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  clip-path: polygon(0 0, 100% 0, 78% 100%);
+}
+.dm-game-adventure-warden {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 860px) {
+  .dm-game-adventure-layout { grid-template-columns: minmax(0, 1fr); }
+  .dm-game-adventure-warden { width: 33.333%; }
+  .dm-game-adventure-character .homepage-intro::after { right: 16.666%; }
+}
+.dm-game-form :is(input[type="text"], input[type="search"], textarea) {
+  margin-bottom: 10px;
+}
+.dm-game-details :is(input:not([type="checkbox"]):not([type="hidden"]), select, textarea),
+.dm-game-calendar-button {
+  margin-bottom: 10px;
+}
+.dm-game-details .form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+body .dm-game-form .dm-game-section-heading,
+body .dm-game-form .game-reward-section-card,
+body .dm-game-form .dm-game-player-search {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.dm-game-details :is(input:not([type="checkbox"]):not([type="hidden"]), select, textarea) {
+  width: 100%;
+  box-sizing: border-box;
+}
+.dm-game-setup-card {
+  width: 50%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+body .card.dm-game-setup-card {
+  border: 0;
+  box-shadow: none;
+}
+body .dm-game-creation-page > .panel {
+  border: 5px solid var(--comic-ink) !important;
+}
+@media (max-width: 860px) {
+  .dm-game-setup-card { width: 100%; }
 }
 
 .form-grid,

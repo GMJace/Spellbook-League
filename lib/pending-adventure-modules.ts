@@ -143,6 +143,11 @@ export async function syncPendingAdventureModuleFromPlayerLog(input: {
   title: string;
   tier: Tier;
   source: string;
+  duration?: string;
+  gameSummary?: string;
+  adventureImagePath?: string | null;
+  serviceHours?: number;
+  downtimeDaysAwarded?: number;
   dmName: string;
   datePlayed: string;
   rewardsSummary: string;
@@ -150,7 +155,7 @@ export async function syncPendingAdventureModuleFromPlayerLog(input: {
   consumablesAwarded: string;
   spellbookAwarded: string;
   sessionNotes: string;
-  reportedByUserId: string;
+  reportedByUserId?: string;
 }) {
   const lookupCode = normalizeAdventureLookupValue(input.adventureCode);
   const lookupTitle = normalizeAdventureLookupValue(input.title);
@@ -221,6 +226,11 @@ export async function syncPendingAdventureModuleFromPlayerLog(input: {
         lookupTitle,
         tier: input.tier,
         sourceSheet: input.source,
+        duration: input.duration ?? "",
+        gameSummary: input.gameSummary ?? "",
+        adventureImagePath: input.adventureImagePath ?? null,
+        serviceHours: input.serviceHours ?? 0,
+        downtimeDaysAwarded: input.downtimeDaysAwarded ?? 0,
         gold: input.rewardsSummary,
         spellbook: input.spellbookAwarded,
         storyAwards: input.sessionNotes,
@@ -254,6 +264,11 @@ export async function syncPendingAdventureModuleFromPlayerLog(input: {
       adventureCode: input.adventureCode,
       title: input.title,
       sourceSheet: pendingModule.sourceSheet || input.source,
+      duration: input.duration ?? pendingModule.duration,
+      gameSummary: input.gameSummary ?? pendingModule.gameSummary,
+      adventureImagePath: input.adventureImagePath ?? pendingModule.adventureImagePath,
+      serviceHours: input.serviceHours ?? pendingModule.serviceHours,
+      downtimeDaysAwarded: input.downtimeDaysAwarded ?? pendingModule.downtimeDaysAwarded,
       gold: pendingModule.gold || input.rewardsSummary,
       spellbook: pendingModule.spellbook || input.spellbookAwarded,
       storyAwards: pendingModule.storyAwards || input.sessionNotes,

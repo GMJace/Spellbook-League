@@ -10,6 +10,7 @@ export async function GET(request: Request) {
 
   try {
     const match = await findAdventureCatalogAutofill({
+      catalogId: searchParams.get("catalogId") ?? undefined,
       adventureCode,
       title,
       tier,

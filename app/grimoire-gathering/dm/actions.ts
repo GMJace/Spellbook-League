@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { auth } from "@/auth";
+import { normalizeAdventureLookupValue } from "@/lib/adventure-catalog";
+import { syncPendingAdventureModuleFromPlayerLog } from "@/lib/pending-adventure-modules";
 
 import {
   buildStoredGameRewardStrings,
@@ -17,6 +20,8 @@ const submissionSchema = z.object({
   discord: z.string().trim().optional(),
   title: z.string().trim().min(1),
   gameCode: z.string().trim().min(1),
+  source: z.string().trim().max(160).optional(),
+  duration: z.string().trim().max(160).optional(),
   eventId: z.string().trim().min(1),
   eventSlotId: z.string().trim().min(1),
   tier: z.enum(["TIER_1", "TIER_2", "TIER_3", "TIER_4"]),
@@ -33,6 +38,8 @@ const submissionSchema = z.object({
 });
 
 function formatSubmissionNotes(data: {
+  source?: string;
+  duration?: string;
   serviceHours?: string;
   downtimeDaysAwarded?: string;
   rewardsSummary?: string;
@@ -43,6 +50,8 @@ function formatSubmissionNotes(data: {
   notes?: string;
 }) {
   const sections = [
+    data.source ? `Source (web link): ${data.source}` : null,
+    data.duration ? `Duration: ${data.duration}` : null,
     data.serviceHours ? `Service hours (AL DM rewards): ${data.serviceHours}` : null,
     data.downtimeDaysAwarded
       ? `Downtime days awarded: ${data.downtimeDaysAwarded}`
@@ -73,6 +82,8 @@ export async function createGrimoireDmSubmission(formData: FormData) {
     discord: String(formData.get("discord") ?? ""),
     title: String(formData.get("title") ?? ""),
     gameCode: String(formData.get("gameCode") ?? ""),
+    source: String(formData.get("source") ?? ""),
+    duration: String(formData.get("duration") ?? ""),
     eventId: String(formData.get("eventId") ?? ""),
     eventSlotId: String(formData.get("eventSlotId") ?? ""),
     tier: String(formData.get("tier") ?? "TIER_1"),
@@ -94,7 +105,7 @@ export async function createGrimoireDmSubmission(formData: FormData) {
 
   const event = await getGrimoireEventById(parsed.data.eventId);
 
-  if (!event) {
+  if (!event || new Date(event.date).getTime() < Date.now()) {
     return { error: "Please choose one of the published Grimoire events." };
   }
 
@@ -109,7 +120,7 @@ export async function createGrimoireDmSubmission(formData: FormData) {
     },
   });
 
-  if (!selectedSlot || selectedSlot.eventId !== event.id) {
+  if (!selectedSlot || selectedSlot.eventId !== event.id || selectedSlot.startAt.getTime() <= Date.now()) {
     return { error: "Please choose one of the listed event time slots." };
   }
 
@@ -138,6 +149,16 @@ export async function createGrimoireDmSubmission(formData: FormData) {
     };
   }
 
+  if (formData.get("catalogSelectionMode") === "existing") {
+    const catalogId = String(formData.get("catalogId") ?? "");
+    const selectedModule = await prisma.adventureCatalog.findFirst({ where: {
+      ...(catalogId ? { id: catalogId } : {}), isActive: true,
+      lookupCode: normalizeAdventureLookupValue(parsed.data.gameCode),
+      lookupTitle: normalizeAdventureLookupValue(parsed.data.title),
+    } });
+    if (!selectedModule) return { error: "Select an active module from the catalog, or create a new module." };
+  }
+
   await prisma.grimoireDmSubmission.create({
     data: {
       name: parsed.data.name,
@@ -154,6 +175,31 @@ export async function createGrimoireDmSubmission(formData: FormData) {
       status: "PENDING",
     },
   });
+
+  if (formData.get("catalogSelectionMode") === "new") {
+    const session = await auth();
+    const serviceHours = Number(parsed.data.serviceHours || 0);
+    const downtimeDays = Number(parsed.data.downtimeDaysAwarded || 0);
+    await syncPendingAdventureModuleFromPlayerLog({
+      adventureCode: parsed.data.gameCode,
+      title: parsed.data.title,
+      tier: parsed.data.tier,
+      source: parsed.data.source ?? "",
+      duration: parsed.data.duration ?? "",
+      gameSummary: String(formData.get("gameSummary") ?? parsed.data.summary),
+      adventureImagePath: String(formData.get("reuseAdventureImagePath") ?? "") || null,
+      serviceHours: Number.isFinite(serviceHours) && serviceHours >= 0 ? serviceHours : 0,
+      downtimeDaysAwarded: Number.isInteger(downtimeDays) && downtimeDays >= 0 ? downtimeDays : 0,
+      dmName: parsed.data.name,
+      datePlayed: selectedSlot.startAt.toISOString(),
+      rewardsSummary: parsed.data.rewardsSummary ?? "",
+      magicItemsAwarded: rewardStrings.magicItemsAwarded,
+      consumablesAwarded: rewardStrings.consumablesAwarded,
+      spellbookAwarded: parsed.data.spellbookAwarded ?? "",
+      sessionNotes: parsed.data.sessionNotes ?? "",
+      reportedByUserId: session?.user?.id,
+    });
+  }
 
   revalidatePath("/admin/grimoire-gathering");
   revalidatePath("/grimoire-gathering/dm");

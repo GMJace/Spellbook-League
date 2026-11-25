@@ -1,11 +1,13 @@
 import type { AdventureCatalogAutofillPayload } from "@/lib/adventure-catalog";
 
 export async function lookupAdventureCatalogAutofill(params: {
+  catalogId?: string;
   adventureCode?: string;
   title?: string;
   tier?: "TIER_1" | "TIER_2" | "TIER_3" | "TIER_4";
 }) {
   const searchParams = new URLSearchParams();
+  if (params.catalogId) searchParams.set("catalogId", params.catalogId);
 
   if (params.adventureCode?.trim()) {
     searchParams.set("adventureCode", params.adventureCode.trim());

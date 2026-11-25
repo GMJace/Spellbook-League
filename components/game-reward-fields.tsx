@@ -395,7 +395,7 @@ export function GameRewardFields({
         />
         <h2 style={{ margin: 0 }}>Legal reward selections</h2>
         <p className="muted" style={{ margin: "0.35rem 0 0" }}>
-          Pick rewards from the current league legal lists. Any older or custom notes stay in
+          Pick rewards from the current legal lists. Any older or custom notes stay in
           the additional notes boxes below.
         </p>
       </div>

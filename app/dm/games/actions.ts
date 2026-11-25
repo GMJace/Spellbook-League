@@ -15,6 +15,8 @@ import {
 } from "@/lib/game-reward-selections";
 import { convertImageFileToDataUrl } from "@/lib/image-data-url";
 import { syncPendingAdventureModuleFromPlayerLog } from "@/lib/pending-adventure-modules";
+import { gameDateToUtc } from "@/lib/game-time-zone";
+import { normalizeAdventureLookupValue } from "@/lib/adventure-catalog";
 import { prisma } from "@/lib/prisma";
 import { rebuildTidingAwards } from "@/lib/tidings";
 import { sendNewGameSignupAlertEmail } from "@/lib/transactional-email";
@@ -301,7 +303,23 @@ async function saveAdventureImage(file: File) {
   return { path: await convertImageFileToDataUrl(file) } as const;
 }
 
-async function parseGameForm(formData: FormData) {
+async function parseGameForm(formData: FormData, originalGameDate?: Date) {
+  if (originalGameDate && formData.get("preserveOriginalGameTime") === "true") {
+    // Keep the database instant when only other fields were edited, even if
+    // browser and server timezone databases use different future DST rules.
+    formData.set("datePlayed", originalGameDate.toISOString());
+  } else if (formData.has("timeZone")) {
+    try {
+      formData.set("datePlayed", gameDateToUtc(
+        String(formData.get("datePlayedLocal") ?? ""),
+        String(formData.get("timeZone") ?? ""),
+        String(formData.get("originalDatePlayed") ?? ""),
+      ));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Choose a valid date, time, and timezone.";
+      return { error: message, fieldErrors: { datePlayed: message } };
+    }
+  }
   const rewardStrings = hasStructuredGameRewardSelectionFields(formData)
     ? buildStoredGameRewardStrings(readGameRewardSelectionsFromFormData(formData))
     : {
@@ -490,7 +508,17 @@ export async function createGame(formData: FormData) {
   const parsed = await parseGameForm(formData);
 
   if ("error" in parsed) {
-    return { error: parsed.error };
+    return { error: parsed.error, fieldErrors: parsed.fieldErrors };
+  }
+
+  if (formData.get("catalogSelectionMode") === "existing") {
+    const catalogId = String(formData.get("catalogId") ?? "");
+    const selected = await prisma.adventureCatalog.findFirst({ where: {
+      ...(catalogId ? { id: catalogId } : {}), isActive: true,
+      lookupCode: normalizeAdventureLookupValue(parsed.data.adventureCode),
+      lookupTitle: normalizeAdventureLookupValue(parsed.data.title),
+    } });
+    if (!selected) return { error: "Select an active module from the catalog, or create a new module.", fieldErrors: { adventureCode: "Select a catalog module or check the new module option." } };
   }
 
   const ticketAccessCodeHash = await resolveTicketAccessCodeHash({
@@ -694,11 +722,17 @@ export async function createGame(formData: FormData) {
     );
   }
 
+  if (formData.get("catalogSelectionMode") !== "existing") {
   await syncPendingAdventureModuleFromPlayerLog({
     adventureCode: parsed.data.adventureCode,
     title: parsed.data.title,
     tier: parsed.data.tier,
     source: parsed.data.source,
+    duration: parsed.data.duration,
+    gameSummary: parsed.data.gameSummary,
+    adventureImagePath,
+    serviceHours: parsed.data.serviceHours,
+    downtimeDaysAwarded: parsed.data.downtimeDaysAwarded,
     dmName: user.name,
     datePlayed: parsed.data.datePlayed,
     rewardsSummary: parsed.data.rewardsSummary,
@@ -708,6 +742,7 @@ export async function createGame(formData: FormData) {
     sessionNotes: parsed.data.sessionNotes,
     reportedByUserId: user.id,
   });
+  }
 
   await rebuildTidingAwards();
 
@@ -722,10 +757,10 @@ export async function updateGame(formData: FormData) {
   }
 
   const { currentUser, game } = await requireOwnedGame(gameId);
-  const parsed = await parseGameForm(formData);
+  const parsed = await parseGameForm(formData, game.datePlayed);
 
   if ("error" in parsed) {
-    return { error: parsed.error };
+    return { error: parsed.error, fieldErrors: parsed.fieldErrors };
   }
 
   const ticketAccessCodeHash = await resolveTicketAccessCodeHash({
@@ -932,11 +967,17 @@ export async function updateGame(formData: FormData) {
 
   await rebuildTidingAwards();
 
+  if (formData.get("catalogSelectionMode") !== "existing") {
   await syncPendingAdventureModuleFromPlayerLog({
     adventureCode: parsed.data.adventureCode,
     title: parsed.data.title,
     tier: parsed.data.tier,
     source: parsed.data.source,
+    duration: parsed.data.duration,
+    gameSummary: parsed.data.gameSummary,
+    adventureImagePath,
+    serviceHours: parsed.data.serviceHours,
+    downtimeDaysAwarded: parsed.data.downtimeDaysAwarded,
     dmName: currentUser.name,
     datePlayed: parsed.data.datePlayed,
     rewardsSummary: parsed.data.rewardsSummary,
@@ -946,6 +987,7 @@ export async function updateGame(formData: FormData) {
     sessionNotes: parsed.data.sessionNotes,
     reportedByUserId: currentUser.id,
   });
+  }
 
   redirect(`/dm/games/${game.id}`);
 }

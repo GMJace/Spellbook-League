@@ -99,6 +99,13 @@ export default async function HomePage({ searchParams }: {
       </section>
 
       <section className="homepage-magic-heading" aria-label="WHERE THE MAGIC IS WRITTEN">
+        <img
+          className="homepage-magic-logo"
+          src="/Spellbook-Logo.png"
+          alt="SPELLBOOK"
+          width="800"
+          height="200"
+        />
         <h1>
           {magicHeadline.map(([letter, color], index) =>
             letter === " " ? (

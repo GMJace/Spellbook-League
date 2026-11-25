@@ -1,10 +1,12 @@
 "use client";
+import type { ReactNode } from "react";
 
 import { createGame } from "@/app/dm/games/actions";
 import { GameForm, type GameFormInitialValues } from "@/components/game-form";
 import type { LegalRewardOptions } from "@/lib/game-reward-selections";
 
 type CreateGameFormProps = {
+  setupHeader?: ReactNode;
   initialValuesJson?: string;
   legalRewardsJson: string;
   playersJson: string;
@@ -12,6 +14,7 @@ type CreateGameFormProps = {
 };
 
 export function CreateGameForm({
+  setupHeader,
   initialValuesJson,
   legalRewardsJson,
   playersJson,
@@ -29,6 +32,7 @@ export function CreateGameForm({
 
   return (
     <GameForm
+      setupHeader={setupHeader}
       initialValues={initialValues}
       legalBlessingOptions={legalRewards.legalBlessingOptions}
       legalBoonOptions={legalRewards.legalBoonOptions}

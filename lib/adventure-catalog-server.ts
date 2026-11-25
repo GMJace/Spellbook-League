@@ -41,10 +41,15 @@ function mapAdventureCatalogRow(row: AdventureCatalog): AdventureCatalogRecord {
 }
 
 export async function findAdventureCatalogAutofill(params: {
+  catalogId?: string;
   adventureCode?: string;
   title?: string;
   tier?: AdventureCatalog["tier"] | string;
 }): Promise<AdventureCatalogAutofillPayload | null> {
+  if (params.catalogId) {
+    const selected = await prisma.adventureCatalog.findFirst({ where: { id: params.catalogId, isActive: true } });
+    return selected ? buildAdventureCatalogAutofillPayload(mapAdventureCatalogRow(selected)) : null;
+  }
   const lookupCode = normalizeAdventureLookupValue(params.adventureCode ?? "");
   const lookupTitle = normalizeAdventureLookupValue(params.title ?? "");
   const tier =

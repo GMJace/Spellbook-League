@@ -35,9 +35,8 @@ export function DmGameCreationSwitcher({
 }: DmGameCreationSwitcherProps) {
   const [mode, setMode] = useState<CreationMode>("league");
 
-  return (
-    <div className="stack">
-      <div className="inline-actions" style={{ flexWrap: "wrap" }}>
+  const modeControls = (
+    <div className="inline-actions" style={{ flexWrap: "wrap" }}>
         <button
           className={mode === "league" ? "button" : "button secondary"}
           onClick={() => {
@@ -45,7 +44,7 @@ export function DmGameCreationSwitcher({
           }}
           type="button"
         >
-          Regular league game
+          SPELLBOOK QUESTS game
         </button>
         <button
           className={mode === "event" ? "button" : "button secondary"}
@@ -57,15 +56,20 @@ export function DmGameCreationSwitcher({
           Grimoire Event Game
         </button>
       </div>
+  );
+
+  return (
+    <div className="stack">
+
 
       {mode === "league" ? (
         <div className="stack">
-          <p className="muted" style={{ margin: 0 }}>
+          <CreateGameForm
+            setupHeader={<>{modeControls}<p className="muted" style={{ margin: 0 }}>
             {initialGameValues
               ? "Duplicate a previous league game, update the new date and any details you want to change, then save it as a fresh signup."
-              : "Create or log a standard league game with participants, rewards, and session notes."}
-          </p>
-          <CreateGameForm
+              : "Create or log a SPELLBOOK QUEST or GRIMOIRE Game"}
+          </p></>}
             initialValuesJson={
               initialGameValues ? JSON.stringify(initialGameValues) : undefined
             }
@@ -75,37 +79,14 @@ export function DmGameCreationSwitcher({
           />
         </div>
       ) : (
-        <div className="stack">
-          {eventOptions.length ? (
-            <>
-              <p className="muted" style={{ margin: 0 }}>
-                Submit a curated event game for any published Grimoire event. Choose the event,
-                then pick one of its published time slots for admin review.
-              </p>
-              <div className="list-card stack dm-game-section-heading">
-                  <p className="eyebrow" style={{ margin: 0 }}>Event Submission</p>
-                  <h2 style={{ margin: "0.35rem 0 0" }}>Published Grimoire events</h2>
-                  <p className="muted" style={{ margin: "0.5rem 0 0" }}>
-                    Choose one of the published events, then select one of that event&apos;s
-                    published slots and submit your table for admin review.
-                  </p>
-              </div>
-              <section className="list-card stack">
-              <GrimoireDmSubmissionForm
-                events={eventOptions}
-                initialEventId={initialEventId}
-                initialValues={dmProfile}
-                legalRewardsJson={legalRewardsJson}
-                slotsByEvent={slotsByEvent}
-              />
-              </section>
-            </>
-          ) : (
-            <div className="empty">
-              There is no upcoming Grimoire event open for curated event-game submissions yet.
-            </div>
-          )}
-        </div>
+        <GrimoireDmSubmissionForm
+          setupHeader={<>{modeControls}<p className="muted" style={{ margin: 0 }}>Create or log a SPELLBOOK QUEST or GRIMOIRE Game</p></>}
+          events={eventOptions}
+          initialEventId={initialEventId}
+          initialValues={dmProfile}
+          legalRewardsJson={legalRewardsJson}
+          slotsByEvent={slotsByEvent}
+        />
       )}
     </div>
   );

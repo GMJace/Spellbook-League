@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
+import type { ReactNode } from "react";
 
 import { lookupAdventureCatalogAutofill } from "@/lib/adventure-catalog-client";
 import { BulletTextarea } from "@/components/bullet-textarea";
+import { formatGameDateInZone, gameDateToUtc } from "@/lib/game-time-zone";
 import { DatePickerField } from "@/components/date-picker-field";
 import { GameRewardFields } from "@/components/game-reward-fields";
+import { HomepageSpeechBubble } from "@/components/homepage-speech-bubble";
 import { SearchIcon } from "@/components/search-icon";
 import { parseStoredGameSummary, serializeGameSummarySections } from "@/lib/game-summary";
 import {
@@ -55,6 +58,11 @@ export type GameFormInitialValues = {
 };
 
 type GameFormProps = {
+  setupHeader?: ReactNode;
+  eventMode?: boolean;
+  eventDetails?: ReactNode;
+  eventNotes?: ReactNode;
+  submissionDisabled?: boolean;
   allowCancelledStatus?: boolean;
   initialValues?: GameFormInitialValues;
   legalBlessingOptions?: string[];
@@ -187,6 +195,11 @@ async function resizeAdventureImage(file: File) {
 }
 
 export function GameForm({
+  setupHeader,
+  eventMode = false,
+  eventDetails,
+  eventNotes,
+  submissionDisabled = false,
   allowCancelledStatus = false,
   initialValues,
   legalBlessingOptions = [],
@@ -205,6 +218,51 @@ export function GameForm({
     () => parseStoredGameSummary(initialValues?.gameSummary),
     [initialValues?.gameSummary]
   );
+  const [phase, setPhase] = useState<1 | 2>(1);
+  const [newModule, setNewModule] = useState(false);
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogMatches, setCatalogMatches] = useState<Array<{ id: string; adventureCode: string; title: string; tier: string }>>([]);
+  const [catalogStatus, setCatalogStatus] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [selectedCatalogId, setSelectedCatalogId] = useState("");
+  const [selectionLoading, setSelectionLoading] = useState(false);
+  const [timeZone, setTimeZone] = useState("UTC");
+  const [gameTimeChanged, setGameTimeChanged] = useState(false);
+  const [timeZones, setTimeZones] = useState<string[]>(["UTC"]);
+  const initialInstant = initialValues?.datePlayed?.endsWith("Z") ? initialValues.datePlayed : "";
+  const [dateValue, setDateValue] = useState(initialInstant ? formatGameDateInZone(initialInstant, "UTC") : initialValues?.datePlayed ?? "");
+  const phaseHeadingRef = useRef<HTMLHeadingElement>(null);
+  const phaseHeadingId = useId();
+  useEffect(() => {
+    const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const supported = (Intl as typeof Intl & { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.("timeZone") ?? ["America/Edmonton", "America/New_York", "America/Los_Angeles", "Europe/London", "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"];
+    setTimeZones([...new Set([browserZone, "UTC", ...supported])]);
+    setTimeZone(browserZone);
+    if (initialInstant) setDateValue(formatGameDateInZone(initialInstant, browserZone));
+  }, [initialInstant]);
+  useEffect(() => {
+    if (newModule || phase !== 1 || catalogQuery.trim().length < 2) {
+      setCatalogMatches([]); setCatalogLoading(false); setCatalogStatus(""); return;
+    }
+    const controller = new AbortController();
+    setCatalogMatches([]);
+    setCatalogStatus("");
+    setCatalogLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/adventure-catalog/search?q=" + encodeURIComponent(catalogQuery), { signal: controller.signal });
+        if (!response.ok) throw new Error("Unable to search the module catalog. Please try again.");
+        const data = await response.json();
+        if (!controller.signal.aborted) {
+          setCatalogMatches(data.matches);
+          setCatalogStatus(data.matches.length ? "Select a module below." : "No modules found. Try another title or code, or create a new module.");
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) setCatalogStatus(error instanceof Error ? error.message : "Unable to search the catalog.");
+      } finally { if (!controller.signal.aborted) setCatalogLoading(false); }
+    }, 300);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [catalogQuery, newModule, phase]);
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
   const [titleValue, setTitleValue] = useState(initialValues?.title ?? "");
@@ -276,12 +334,14 @@ export function GameForm({
     adventureCode = adventureCodeValue,
     showNoMatch = true,
     title = titleValue,
+    catalogId,
   }: {
     adventureCode?: string;
+    catalogId?: string;
     showNoMatch?: boolean;
     title?: string;
   } = {}) {
-    if (!title.trim() && !adventureCode.trim()) {
+    if (!catalogId && !title.trim() && !adventureCode.trim()) {
       setAutofillMessage("");
       return;
     }
@@ -292,6 +352,7 @@ export function GameForm({
       const { match } = await lookupAdventureCatalogAutofill({
         adventureCode,
         title,
+        catalogId,
       });
 
       if (requestId !== lookupRequestRef.current) {
@@ -305,6 +366,9 @@ export function GameForm({
         return;
       }
 
+      setSelectedCatalogId(catalogId ?? "");
+      setCatalogMatches([]);
+      setCatalogQuery("");
       setTitleValue(match.title);
       setAdventureCodeValue(match.adventureCode);
       setSourceValue(match.source);
@@ -349,23 +413,15 @@ export function GameForm({
     }
   }
 
-  useEffect(() => {
-    lookupRequestRef.current += 1;
-
-    if (!adventureCodeValue.trim()) {
-      return;
+  function continueToDetails() {
+    if (selectionLoading) return;
+    if (!titleValue.trim() || !adventureCodeValue.trim()) { setError("Enter an adventure code and game title."); return; }
+    if (!newModule && !selectedCatalogId && !(initialValues?.title === titleValue && initialValues?.adventureCode === adventureCodeValue)) {
+      setError("Select a module from the catalog, or check the option to create a new module."); return;
     }
-
-    const timeoutId = window.setTimeout(() => {
-      void autofillAdventureDetails({
-        adventureCode: adventureCodeValue,
-        showNoMatch: false,
-        title: "",
-      });
-    }, 500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [adventureCodeValue]);
+    setError(""); setPhase(2);
+    requestAnimationFrame(() => phaseHeadingRef.current?.focus());
+  }
 
   function getFieldError(name: GameFormFieldName) {
     return fieldErrors[name] ?? "";
@@ -399,15 +455,20 @@ export function GameForm({
 
   return (
     <form
-      className="form-stack"
+      className="form-stack dm-game-form"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
+        if (phase === 1) { continueToDetails(); return; }
+        const form = event.currentTarget;
+        if (!form.checkValidity()) { form.reportValidity(); return; }
         setError("");
         setFieldErrors({});
 
         startTransition(async () => {
           try {
-            const formData = new FormData(event.currentTarget);
+            const formData = new FormData(form);
+            if (!eventMode) formData.set("datePlayed", initialInstant && !gameTimeChanged ? initialInstant : gameDateToUtc(dateValue, timeZone, initialInstant));
             formData.set("participants", JSON.stringify(participants));
             formData.set(
               "gameSummary",
@@ -437,6 +498,7 @@ export function GameForm({
 
             if (result?.fieldErrors) {
               setFieldErrors(result.fieldErrors);
+              if (result.fieldErrors.title || result.fieldErrors.adventureCode) setPhase(1);
             }
 
             if (result?.error) {
@@ -463,20 +525,33 @@ export function GameForm({
         />
       ) : null}
 
+      {setupHeader && <section className="card stack dm-game-setup-card">{setupHeader}</section>}
+      {phase === 2 && <h2 id={phaseHeadingId} ref={phaseHeadingRef} tabIndex={-1}>Enter game details</h2>}
+      <input type="hidden" name="catalogSelectionMode" value={newModule ? "new" : "existing"} />
+      <input type="hidden" name="catalogId" value={selectedCatalogId} />
+      <fieldset className="form-stack" style={{ border: 0, padding: 0, margin: 0, display: phase === 1 ? "grid" : "none" }} aria-labelledby={phaseHeadingId}>
+      <div>
+      <div className="dm-game-adventure-layout">
+      <div className="stack">
+      {phase === 1 && <h2 id={phaseHeadingId} ref={phaseHeadingRef} tabIndex={-1}>Choose your adventure</h2>}
+      <label style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+        <input style={{ width: "1.1rem", height: "1.1rem", padding: 0, margin: 0, boxShadow: "none", flexShrink: 0 }} type="checkbox" checked={newModule} onChange={(event) => { lookupRequestRef.current++; setNewModule(event.target.checked); setSelectedCatalogId(""); setCatalogQuery(""); setAutofillMessage(""); }} />
+        <span>Adventure is not in the catalog — create a new module</span>
+      </label>
+      {newModule && <p className="muted">Enter a new code and title, then complete the game details. Saving the game submits the module to the pending catalog for review.</p>}
       <div className="form-grid">
         <div className="stack" style={fieldBlockStyle}>
           <label>
-            <span>Adventure code <small className="muted">populates from module catalog</small></span>
+            <span>Adventure code</span>
             <input
               aria-invalid={Boolean(getFieldError("adventureCode"))}
               value={adventureCodeValue}
               name="adventureCode"
-              onBlur={() => {
-                void autofillAdventureDetails();
-              }}
               onChange={(event) => {
                 lookupRequestRef.current += 1;
                 setAdventureCodeValue(event.target.value);
+                setSelectedCatalogId("");
+                setCatalogQuery(event.target.value);
                 clearFieldError("adventureCode");
                 setAutofillMessage("");
               }}
@@ -495,11 +570,11 @@ export function GameForm({
               aria-invalid={Boolean(getFieldError("title"))}
               value={titleValue}
               name="title"
-              onBlur={() => {
-                void autofillAdventureDetails();
-              }}
               onChange={(event) => {
+                lookupRequestRef.current++;
                 setTitleValue(event.target.value);
+                setSelectedCatalogId("");
+                setCatalogQuery(event.target.value);
                 clearFieldError("title");
                 setAutofillMessage("");
               }}
@@ -509,9 +584,33 @@ export function GameForm({
           </label>
           {getFieldError("title") ? <p style={errorTextStyle}>{getFieldError("title")}</p> : null}
         </div>
+      </div>
+      </div>
+      <div className="dm-game-adventure-character">
+        {phase === 1 && <HomepageSpeechBubble>Search by adventure code or game title, then select a catalog match to populate both fields and the adventure details.</HomepageSpeechBubble>}
+        <img className="dm-game-adventure-warden" src="/warden%20archon.png" alt="Warden archon" width="1198" height="703" />
+      </div>
+      </div>
+      <div className="dm-game-catalog-divider" />
+      </div>
+      {!newModule && <div className="stack" aria-busy={catalogLoading || selectionLoading}>
+        <p role="status">{catalogLoading ? "Searching the catalog…" : catalogStatus}</p>
+        {catalogMatches.map((match) => <button key={match.id} type="button" className="button-secondary" disabled={selectionLoading} onClick={async () => {
+          setSelectionLoading(true);
+          await autofillAdventureDetails({ catalogId: match.id });
+          setSelectionLoading(false);
+        }}>{match.adventureCode} — {match.title} · {match.tier.replace("TIER_", "Tier ")}</button>)}
+      </div>}
+      {autofillMessage && <p role="status">{autofillMessage}</p>}
+      <button type="button" onClick={continueToDetails} disabled={selectionLoading}>Continue to game details</button>
+      </fieldset>
+      <fieldset className="form-stack dm-game-details" style={{ border: 0, padding: 0, margin: 0, display: phase === 2 ? "grid" : "none" }} aria-labelledby={phaseHeadingId}>
+      <p><strong>{adventureCodeValue} — {titleValue}</strong></p>
+      {eventDetails}
+      <div className="form-grid">
         <div className="stack" style={fieldBlockStyle}>
           <label>
-            Source (DM's Guild link)
+            Source (web link)
             <input
               aria-invalid={Boolean(getFieldError("source"))}
               value={sourceValue}
@@ -525,9 +624,11 @@ export function GameForm({
           </label>
           {getFieldError("source") ? <p style={errorTextStyle}>{getFieldError("source")}</p> : null}
         </div>
+        {!eventMode && <>
+        <div className="stack">
         <div className="stack" style={fieldBlockStyle}>
           <label>
-            Price
+            Seat Price
             <select
               aria-invalid={Boolean(getFieldError("ticketPrice"))}
               name="ticketPrice"
@@ -659,19 +760,34 @@ export function GameForm({
             ) : null}
           </div>
         ) : null}
+        </div>
+        </>}
+        {!eventMode && <>
         <div className="stack" style={fieldBlockStyle}>
           <DatePickerField
+            buttonClassName="button button-secondary dm-game-calendar-button"
             aria-invalid={Boolean(getFieldError("datePlayed"))}
-            defaultValue={initialValues?.datePlayed ?? ""}
+            value={dateValue}
+            onChange={(event) => { setDateValue(event.target.value); setGameTimeChanged(true); clearFieldError("datePlayed"); }}
             label="Date and time"
             name="datePlayed"
             required
             type="datetime-local"
           />
+          <label>Timezone
+            <select aria-label="Timezone" name="timeZone" value={timeZone} onChange={(event) => { setTimeZone(event.target.value); setGameTimeChanged(true); }}>
+              {timeZones.map((zone) => <option key={zone} value={zone}>{zone.replaceAll("_", " ")}</option>)}
+            </select>
+          </label>
+          <input type="hidden" name="datePlayedLocal" value={dateValue} />
+          <input type="hidden" name="originalDatePlayed" value={initialInstant} />
+          <input type="hidden" name="preserveOriginalGameTime" value={initialInstant && !gameTimeChanged ? "true" : "false"} />
+          <small className="muted">During a repeated daylight-saving hour, the first occurrence is used.</small>
           {getFieldError("datePlayed") ? (
             <p style={errorTextStyle}>{getFieldError("datePlayed")}</p>
           ) : null}
         </div>
+        </>}
         <div className="stack" style={fieldBlockStyle}>
           <label>
             Duration
@@ -718,7 +834,7 @@ export function GameForm({
             <input
               aria-invalid={Boolean(getFieldError("seatCapacity"))}
               defaultValue={initialValues?.seatCapacity ?? "6"}
-              max="12"
+              max={eventMode ? 8 : 12}
               min="1"
               name="seatCapacity"
               type="number"
@@ -728,6 +844,7 @@ export function GameForm({
             <p style={errorTextStyle}>{getFieldError("seatCapacity")}</p>
           ) : null}
         </div>
+        {!eventMode && <>
         <div className="stack" style={fieldBlockStyle}>
           <label>
             Status
@@ -747,13 +864,11 @@ export function GameForm({
             <p style={errorTextStyle}>{getFieldError("status")}</p>
           ) : null}
         </div>
-        <div className="metric">
-          <div className="metric-label">Number of players</div>
-          <div className="metric-value">{participants.length}</div>
-        </div>
+        </>}
       </div>
       {autofillMessage ? <p className="muted" style={{ margin: 0 }}>{autofillMessage}</p> : null}
 
+      {!eventMode && <>
       <label>
         Adventure cover / badge
         <input
@@ -780,6 +895,7 @@ export function GameForm({
         </div>
       ) : null}
 
+      </>}
       <label>
         <span
           style={{
@@ -798,6 +914,7 @@ export function GameForm({
           aria-invalid={Boolean(getFieldError("gameSummary"))}
           value={gameSummaryValue}
           name="gameSummaryText"
+          required={eventMode}
           onChange={(event) => {
             setGameSummaryValue(event.target.value);
             clearFieldError("gameSummary");
@@ -867,9 +984,9 @@ export function GameForm({
             gap: "0.45rem",
           }}
         >
-          <span>Service hours (AL DM rewards)</span>
+          <span>Service hours</span>
           <span className="muted" style={helperLabelNoteStyle}>
-            Optional. Enter the Adventurers League service hours earned for running this game.
+            Optional. SPELLBOOK DM service hours earned for running this game.
             Decimals like 2.5 are fine.
           </span>
         </span>
@@ -893,7 +1010,7 @@ export function GameForm({
       <div className="form-grid">
         <div className="stack" style={fieldBlockStyle}>
           <label>
-            Downtime days awarded
+            Downtime days awarded to players
             <input
               aria-invalid={Boolean(getFieldError("downtimeDaysAwarded"))}
               value={downtimeDaysAwardedValue}
@@ -915,7 +1032,7 @@ export function GameForm({
 
         <div className="stack" style={fieldBlockStyle}>
           <label>
-            Awarded Gold (Total in GP)
+            <span>Awarded Coin (Total in GP) <small className="muted">Optional. Can be variable.</small></span>
             <input
               aria-invalid={Boolean(getFieldError("rewardsSummary"))}
               value={rewardsSummaryValue}
@@ -972,17 +1089,18 @@ export function GameForm({
         Each line is a bullet point.
       </p>
 
+      {!eventMode && <>
       <div className="list-card stack dm-game-section-heading">
           <h2>Participants</h2>
           <p className="muted">
-            Search league players, then select one of their characters or mark them as TBD before
+            Search Player Roster, then select one of their characters or mark them as TBD before
             adding them to the game.
           </p>
           {getFieldError("participants") ? (
             <p style={errorTextStyle}>{getFieldError("participants")}</p>
           ) : null}
       </div>
-      <div className="panel stack">
+      <div className="panel stack dm-game-player-search">
         <div className="form-grid">
           <div className="stack" style={fieldBlockStyle}>
             <span>Search players</span>
@@ -1144,11 +1262,17 @@ export function GameForm({
         </div>
       </div>
 
-      {error ? <p style={errorTextStyle}>{error}</p> : null}
+      </>}
+      {eventNotes}
+      </fieldset>
+      {error ? <p role="alert" style={errorTextStyle}>{error}</p> : null}
 
-      <button type="submit" disabled={isPending}>
+      {phase === 2 && <div className="inline-actions">
+      <button type="button" className="button-secondary" onClick={() => setPhase(1)} disabled={isPending}>Back to adventure</button>
+      <button type="submit" disabled={isPending || submissionDisabled}>
         {isPending ? pendingLabel : submitLabel}
       </button>
+      </div>}
     </form>
   );
 }
