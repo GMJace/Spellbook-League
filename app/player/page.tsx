@@ -141,61 +141,23 @@ export default async function PlayerDashboardPage({
               <p className="eyebrow">Player Account</p>
               <h2 style={{ margin: 0 }}>{user.name ?? "Unnamed player"}</h2>
             </div>
-            <p className="muted" style={{ margin: 0 }}>
-              Your registered player account details and current access.
-            </p>
           </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gap: "1rem",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          }}
-        >
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Display name:</span>
-            <strong>{user.name ?? "Not provided"}</strong>
-          </div>
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Email:</span>
-            <strong>{user.email}</strong>
-          </div>
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Discord handle:</span>
-            <strong>{user.discordHandle || "Not provided"}</strong>
-          </div>
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Gameplay:</span>
-            <strong>{gamesPlayedCount} games played</strong>
-          </div>
-          {availableStoreCreditUsd > 0 ? (
-            <div className="list-card stack" style={{ gap: "0.35rem" }}>
-              <span className="muted">Account credit:</span>
-              <strong>{formatUsd(availableStoreCreditUsd)}</strong>
-            </div>
-          ) : null}
-          <div className="list-card stack" style={{ gap: "0.5rem" }}>
-            <span className="muted">Tidings:</span>
-            <div
-              style={{
-                display: "flex",
-                gap: "1rem",
-                flexWrap: "wrap",
-              }}
-            >
-              <span>
-                <strong>Earned:</strong> {tidingSummary.earnedCount}
-              </span>
-              <span>
-                <strong>Spent:</strong> {tidingSummary.spentCount}
-              </span>
-              <span>
-                <strong>Available:</strong> {tidingSummary.availableCount}
-              </span>
-            </div>
-          </div>
+        <div className="list-card stack dashboard-account-details">
+          <dl className="dashboard-account-info">
+            <div><dt>Display name:</dt><dd>{user.name ?? "Not provided"}</dd></div>
+            <div><dt>Email:</dt><dd>{user.email}</dd></div>
+            <div><dt>Discord handle:</dt><dd>{user.discordHandle || "Not provided"}</dd></div>
+            <div><dt>Gameplay:</dt><dd>{gamesPlayedCount} games played</dd></div>
+            {availableStoreCreditUsd > 0 && <div><dt>Account credit:</dt><dd>{formatUsd(availableStoreCreditUsd)}</dd></div>}
+          </dl>
+          <h3 className="player-tiding-heading">TIDING POINTS</h3>
+          <dl className="dashboard-account-info">
+            <div><dt>Earned:</dt><dd>{tidingSummary.earnedCount}</dd></div>
+            <div><dt>Available:</dt><dd>{tidingSummary.availableCount}</dd></div>
+            <div><dt>Spent:</dt><dd>{tidingSummary.spentCount}</dd></div>
+          </dl>
         </div>
       </section>
 

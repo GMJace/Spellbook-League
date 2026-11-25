@@ -269,7 +269,7 @@ export const DND_FEAT_GROUPS = [
   },
   {
     title: "Player's Handbook (2014)",
-    note: "The AL guide specifically retains these two feats because they had not yet received updated versions.",
+    note: "The QUESTS guide specifically retains these two feats because they had not yet received updated versions.",
     feats: ["Dungeon Delver", "Martial Adept"],
   },
   {

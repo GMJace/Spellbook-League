@@ -1100,7 +1100,7 @@ export function CharacterForm({
           placeholder="https://..."
           defaultValue={initialValues?.characterSheetLink ?? ""}
         />
-        <span id="character-sheet-link-help" className="muted">A public D&amp;D Beyond link refreshes character details and the full inventory when the log opens. League rewards, gold, trades, and notes stay in SPELLBOOK.</span>
+        <span id="character-sheet-link-help" className="muted">A public D&amp;D Beyond link refreshes character details and the full inventory when the log opens. QUESTS rewards, gold, trades, and notes stay in SPELLBOOK.</span>
       </label>
 
       <label className="checkbox-row compact-checkbox-row">

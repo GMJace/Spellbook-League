@@ -21,7 +21,7 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
   const query = resolvedSearchParams?.q?.trim() ?? "";
   const dmName = user.name ?? user.email ?? "Dungeon Master";
 
-  const [dmProfile, gamesPlayedCount, games] = await Promise.all([
+  const [dmProfile, gamesPlayedCount, games, gameServiceHours, loggedServiceHours] = await Promise.all([
     getProDmRosterEntry(user.id),
     prisma.game.count({
       where: {
@@ -54,7 +54,19 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
       },
       orderBy: { datePlayed: "desc" },
     }),
+    prisma.game.aggregate({
+      where: {
+        serviceHours: { gt: 0 },
+        OR: [{ dmId: user.id }, { loggedByUserId: user.id }],
+      },
+      _sum: { serviceHours: true },
+    }),
+    prisma.dmServiceLog.aggregate({
+      where: { userId: user.id },
+      _sum: { totalHours: true },
+    }),
   ]);
+  const totalServiceHours = (gameServiceHours._sum.serviceHours ?? 0) + (loggedServiceHours._sum.totalHours ?? 0);
 
   return (
     <main className="stack dm-dashboard-page">
@@ -73,44 +85,26 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
               <p className="eyebrow">DM account</p>
               <h2 style={{ margin: 0 }}>{user.name ?? "Unnamed DM"}</h2>
             </div>
-            <p className="muted" style={{ margin: 0 }}>
-              Your registered DM details and public profile summary.
-            </p>
           </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gap: "1rem",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          }}
-        >
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Display name:</span>
-            <strong>{user.name ?? "Not provided"}</strong>
-          </div>
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Email:</span>
-            <strong>{user.email}</strong>
-          </div>
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Discord handle:</span>
-            <strong>{user.discordHandle || "Not provided"}</strong>
-          </div>
-          <div className="list-card stack" style={{ gap: "0.35rem" }}>
-            <span className="muted">Games played:</span>
-            <strong>{gamesPlayedCount}</strong>
-          </div>
+        <div className="list-card stack dashboard-account-details">
+          <dl className="dashboard-account-info">
+            <div><dt>Display name:</dt><dd>{user.name ?? "Not provided"}</dd></div>
+            <div><dt>Email:</dt><dd>{user.email}</dd></div>
+            <div><dt>Discord handle:</dt><dd>{user.discordHandle || "Not provided"}</dd></div>
+            <div><dt>Games played:</dt><dd>{gamesPlayedCount}</dd></div>
+            <div><dt>Service Hours:</dt><dd>{totalServiceHours.toLocaleString("en-US", { maximumFractionDigits: 2 })}</dd></div>
+          </dl>
         </div>
+      </section>
 
-        <div className="store-line-divider" />
-
+      <section className="card ledger-panel stack dm-dashboard-public-profile" aria-labelledby="dm-public-profile-heading">
         <div className="inline-actions" style={{ justifyContent: "space-between" }}>
           <div className="stack" style={{ gap: "0.35rem" }}>
             <div>
               <p className="eyebrow">Public profile</p>
-              <h2 style={{ margin: 0 }}>Professional DM profile</h2>
+              <h2 id="dm-public-profile-heading" style={{ margin: 0 }}>Professional DM profile</h2>
             </div>
             <p className="muted" style={{ margin: 0 }}>
               This is the profile players will see if you are added to the public{" "}

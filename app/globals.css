@@ -1763,6 +1763,16 @@ button.button-small {
   font-size: 0.9em;
   overflow-wrap: anywhere;
 }
+@media (max-width: 600px) {
+  .homepage-quest-notice {
+    font-size: clamp(0.5rem, 2.4vw, 0.85rem);
+    line-height: 1.1;
+    gap: 0.06rem;
+    padding: 8% 10%;
+    overflow-wrap: anywhere;
+  }
+  .homepage-quest-notice strong { font-size: 1.05em; }
+}
 
 .homepage-questboard-notices > li:nth-child(even) .homepage-quest-notice {
   transform: rotate(3deg);
@@ -5262,6 +5272,26 @@ body .search-row .button {
   paint-order: stroke fill;
 }
 
+.dashboard-account-details {
+  width: 50%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-right: auto;
+  overflow-wrap: anywhere;
+}
+.dashboard-account-info {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+}
+.dashboard-account-info > div { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.dashboard-account-info dt { color: var(--muted); }
+.dashboard-account-info dd { margin: 0; font-weight: 700; }
+.player-tiding-heading { margin: 0.75rem 0 0; }
+@media (max-width: 860px) {
+  .dashboard-account-details { width: 100%; }
+}
+
 .player-dashboard-page .list-card:has(.homepage-character-roster-grid),
 .player-dashboard-page .player-open-games-card {
   border: 0 !important;
@@ -5296,6 +5326,12 @@ body .search-row .button {
 .dm-dashboard-account-shell .list-card {
   border: 5px solid var(--comic-ink) !important;
   background: var(--comic-paper) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+body .dm-dashboard-public-profile,
+body .dm-dashboard-public-profile .list-card {
+  border: 5px solid var(--comic-ink) !important;
   box-shadow: var(--shadow) !important;
 }
 
@@ -5826,7 +5862,7 @@ body .search-row .button {
 }
 
 .import-logsheet-upload-card {
-  border-bottom: 0 !important;
+  border: 5px solid var(--comic-ink) !important;
 }
 
 @media (min-width: 900px) {
@@ -6050,13 +6086,13 @@ body .character-logsheet-form .character-form-heading {
 }
 
 body .character-workflow-page .import-logsheet-upload-card {
-  border-bottom: 0 !important;
+  border: 5px solid var(--comic-ink) !important;
   box-shadow: none !important;
 }
 
 body .player-game-log-form > .list-card.form-grid,
 body .player-game-log-form .dm-game-section-heading {
-  border-bottom: 0 !important;
+  border: 5px solid var(--comic-ink) !important;
   box-shadow: none !important;
 }
 
@@ -6080,7 +6116,7 @@ body .player-game-log-form .game-reward-section-card {
 }
 
 body .player-game-log-form .player-game-session-notes-card {
-  border-bottom: 0 !important;
+  border: 5px solid var(--comic-ink) !important;
   box-shadow: none !important;
 }
 
@@ -6160,7 +6196,7 @@ body .character-workflow-page .downtime-rules-card {
 }
 
 body .character-workflow-page .downtime-entry-form {
-  border-bottom: 0 !important;
+  border: 5px solid var(--comic-ink) !important;
   box-shadow: none !important;
 }
 
