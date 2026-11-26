@@ -162,11 +162,11 @@ export default async function PlayerDashboardPage({
             </dl>
           </div>
           <div className="dashboard-account-character">
-            <HomepageSpeechBubble>Welcome Agent!</HomepageSpeechBubble>
+            <HomepageSpeechBubble>Welcome Agent! Add your characters to the roster to track gameplay progress, trade at the marketplace, perform downtime activities, open loot chests and facilitate joining SPELLBOOK QUESTS.</HomepageSpeechBubble>
             <img
               alt=""
               className="dashboard-account-wizard"
-              src="/wizard_medium.png"
+              src="/agent%20party.png"
             />
           </div>
         </div>

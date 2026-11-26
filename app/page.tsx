@@ -123,9 +123,8 @@ export default async function HomePage({ searchParams }: {
 
       <div className="homepage-character-intro">
         <HomepageSpeechBubble>
-          Adventure from the comfort of your own home with a welcoming online community
-          and top-tier Dungeon Masters running{" "}
-          <strong><RainbowSpellbook /></strong> QUESTS.
+          Play in <strong><RainbowSpellbook /></strong> QUESTS from the comfort of home,
+          join a welcoming Discord community, and adventure with top-tier Dungeon Masters.
         </HomepageSpeechBubble>
         <img
           alt=""
@@ -198,7 +197,8 @@ export default async function HomePage({ searchParams }: {
           width="1198"
         />
         <HomepageSpeechBubble>
-          easy to use guides to turn any table into a <RainbowSpellbook /> QUESTS table.
+          Any D&amp;D game can become a <RainbowSpellbook /> QUESTS game with these{" "}
+          <strong>easy-to-use guides for turning any table into a <RainbowSpellbook /> QUESTS table.</strong>
         </HomepageSpeechBubble>
       </div>
 
@@ -206,9 +206,10 @@ export default async function HomePage({ searchParams }: {
 
       <div className="homepage-character-intro">
         <HomepageSpeechBubble>
-          Explore the lore of the <strong>ORDO</strong>, discover{" "}
-          <strong>Sigil, the City of Doors</strong>, and learn how to adapt both to any
-          campaign setting in the multiverse.
+          Explore the lore of the <strong>ORDO</strong>, a guild dedicated to preserving
+          balance across the multiverse. Discover <strong>Sigil, the City of Doors</strong>,
+          where portals open to worlds across the planes. Learn how to bring the ORDO
+          and Sigil into any campaign setting.
         </HomepageSpeechBubble>
         <img
           alt="Arcanaloth"
@@ -234,7 +235,9 @@ export default async function HomePage({ searchParams }: {
           width="1198"
         />
         <HomepageSpeechBubble>
-          Create your Agent of the ORDO; the multiversal guild that protects the balance in all its forms.
+          Create your character and become an Agent of the ORDO, a guild sworn to protect
+          the balance in all its forms. Join the player roster, find a party, and take on{" "}
+          <RainbowSpellbook /> QUESTS across the multiverse.
         </HomepageSpeechBubble>
       </div>
 

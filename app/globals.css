@@ -6747,3 +6747,19 @@ body .player-dashboard-roster-section,
 body .player-dashboard-quests-section {
   border: 5px solid var(--comic-ink) !important;
 }
+
+.hire-dm-adventure-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.hire-dm-adventure-grid > article {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1000px) {
+  .hire-dm-adventure-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .hire-dm-adventure-grid { grid-template-columns: minmax(0, 1fr); }
+}

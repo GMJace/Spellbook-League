@@ -101,11 +101,11 @@ export default async function DmDashboardPage({ searchParams }: PageProps) {
             </dl>
           </div>
           <div className="dashboard-account-character">
-            <HomepageSpeechBubble>Welcome Weaver!</HomepageSpeechBubble>
+            <HomepageSpeechBubble>Welcome to the Weaver&apos;s Guild. From here you can create Quests, assign seats at your table, award gameplay achievements, track service hours and manage your SPELLBOOK games.</HomepageSpeechBubble>
             <img
               alt=""
               className="dashboard-account-wizard"
-              src="/wizard_medium.png"
+              src="/weaver%20wizard.png"
             />
           </div>
         </div>

@@ -213,40 +213,24 @@ export default async function HireADmProfilePage({ params }: PageProps) {
             <h2 style={{ margin: 0 }}>Recent adventure log</h2>
           </div>
 
-          <div className="table-wrap">
-            <table className="ledger-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Code</th>
-                  <th>Title</th>
-                  <th>Tier</th>
-                  <th>Status</th>
-                  <th>Players</th>
-                </tr>
-              </thead>
-              <tbody>
-                {games.length ? (
-                  games.map((game) => (
-                    <tr key={game.id}>
-                      <td>{formatDate(game.datePlayed)}</td>
-                      <td>{game.adventureCode}</td>
-                      <td>{game.title}</td>
-                      <td>{formatTier(game.tier)}</td>
-                      <td>{formatStatus(game.status)}</td>
-                      <td>{game._count.participants}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="muted" colSpan={6}>
-                      No games logged yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {games.length ? (
+            <div className="hire-dm-adventure-grid">
+              {games.map((game) => (
+                <article className="list-card" key={game.id} aria-label={game.title}>
+                  <dl className="dashboard-account-info">
+                    <div><dt>Date:</dt><dd>{formatDate(game.datePlayed)}</dd></div>
+                    <div><dt>Code:</dt><dd>{game.adventureCode}</dd></div>
+                    <div><dt>Title:</dt><dd>{game.title}</dd></div>
+                    <div><dt>Tier:</dt><dd>{formatTier(game.tier)}</dd></div>
+                    <div><dt>Status:</dt><dd>{formatStatus(game.status)}</dd></div>
+                    <div><dt>Players:</dt><dd>{game._count.participants}</dd></div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="muted" style={{ margin: 0 }}>No games logged yet.</p>
+          )}
         </div>
       </section>
     </main>
